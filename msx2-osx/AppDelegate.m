@@ -9,24 +9,31 @@
 
 @interface AppDelegate ()
 
-
 @end
 
 @implementation AppDelegate
 
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-    // Insert code here to initialize your application
+- (void)applicationDidFinishLaunching:(NSNotification*)aNotification
+{
 }
 
-
-- (void)applicationWillTerminate:(NSNotification *)aNotification {
-    // Insert code here to tear down your application
+- (void)applicationWillTerminate:(NSNotification*)aNotification
+{
 }
 
-
-- (BOOL)applicationSupportsSecureRestorableState:(NSApplication *)app {
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication*)theApplication
+{
+    // Windowを閉じたらアプリを終了させる
     return YES;
 }
 
+- (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename
+{
+    if (_openFileDelegate) {
+        return [_openFileDelegate application:self didOpenFile:filename];
+    } else {
+        return NO;
+    }
+}
 
 @end

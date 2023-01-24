@@ -7,8 +7,14 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface AppDelegate : NSObject <NSApplicationDelegate>
+@class AppDelegate;
 
-
+@protocol OpenFileDelegate <NSObject>
+- (BOOL)application:(AppDelegate*)app didOpenFile:(NSString*)file;
 @end
 
+@interface AppDelegate : NSObject <NSApplicationDelegate>
+@property (nonatomic, weak) id<OpenFileDelegate> openFileDelegate;
+@property (nonatomic, weak) IBOutlet NSMenu* menu;
+@property (nonatomic, weak) IBOutlet NSMenuItem* menuQuickLoadFromMemory;
+@end
