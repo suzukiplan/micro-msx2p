@@ -24,6 +24,8 @@
 		748D22DE297E7E2E00B504AF /* DISK.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 748D22D4297E7E2E00B504AF /* DISK.ROM */; };
 		748D22DF297E7E2E00B504AF /* MSX2.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 748D22D5297E7E2E00B504AF /* MSX2.ROM */; };
 		748D22E0297E7E2E00B504AF /* MSX2EXT.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 748D22D6297E7E2E00B504AF /* MSX2EXT.ROM */; };
+		748D22E5297FB69800B504AF /* cbios_main_msx2_jp.rom in Resources */ = {isa = PBXBuildFile; fileRef = 748D22E4297FB69800B504AF /* cbios_main_msx2_jp.rom */; };
+		748D22E72980CB8400B504AF /* MSX2J.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 748D22E62980CB8400B504AF /* MSX2J.ROM */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,7 +39,7 @@
 		748D22B5297E652800B504AF /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		748D22B7297E652800B504AF /* msx2_osx.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = msx2_osx.entitlements; sourceTree = "<group>"; };
 		748D22BE297E670500B504AF /* ay8910.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ay8910.hpp; sourceTree = "<group>"; };
-		748D22BF297E670500B504AF /* v9938.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = v9938.hpp; sourceTree = "<group>"; };
+		748D22BF297E670500B504AF /* vdp.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = vdp.hpp; sourceTree = "<group>"; };
 		748D22C0297E672F00B504AF /* msx2.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = msx2.hpp; sourceTree = "<group>"; };
 		748D22C1297E675000B504AF /* z80.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = z80.hpp; sourceTree = "<group>"; };
 		748D22C2297E691A00B504AF /* mmu.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = mmu.hpp; sourceTree = "<group>"; };
@@ -57,6 +59,8 @@
 		748D22D4297E7E2E00B504AF /* DISK.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = DISK.ROM; sourceTree = "<group>"; };
 		748D22D5297E7E2E00B504AF /* MSX2.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = MSX2.ROM; sourceTree = "<group>"; };
 		748D22D6297E7E2E00B504AF /* MSX2EXT.ROM */ = {isa = PBXFileReference; lastKnownFileType = text; path = MSX2EXT.ROM; sourceTree = "<group>"; };
+		748D22E4297FB69800B504AF /* cbios_main_msx2_jp.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_main_msx2_jp.rom; sourceTree = "<group>"; };
+		748D22E62980CB8400B504AF /* MSX2J.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = MSX2J.ROM; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -116,7 +120,7 @@
 				748D22BE297E670500B504AF /* ay8910.hpp */,
 				748D22C2297E691A00B504AF /* mmu.hpp */,
 				748D22C0297E672F00B504AF /* msx2.hpp */,
-				748D22BF297E670500B504AF /* v9938.hpp */,
+				748D22BF297E670500B504AF /* vdp.hpp */,
 				748D22C1297E675000B504AF /* z80.hpp */,
 			);
 			path = core;
@@ -125,11 +129,13 @@
 		748D22CD297E7E0000B504AF /* bios */ = {
 			isa = PBXGroup;
 			children = (
+				748D22E4297FB69800B504AF /* cbios_main_msx2_jp.rom */,
 				748D22D4297E7E2E00B504AF /* DISK.ROM */,
 				748D22D0297E7E2D00B504AF /* FMBIOS.ROM */,
 				748D22CE297E7E2D00B504AF /* KNJDRV.ROM */,
 				748D22D2297E7E2D00B504AF /* KNJFNT16.ROM */,
 				748D22D5297E7E2E00B504AF /* MSX2.ROM */,
+				748D22E62980CB8400B504AF /* MSX2J.ROM */,
 				748D22D6297E7E2E00B504AF /* MSX2EXT.ROM */,
 				748D22D3297E7E2D00B504AF /* MSX2P.ROM */,
 				748D22CF297E7E2D00B504AF /* MSX2PEXT.ROM */,
@@ -195,7 +201,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				748D22E72980CB8400B504AF /* MSX2J.ROM in Resources */,
 				748D22D8297E7E2E00B504AF /* KNJDRV.ROM in Resources */,
+				748D22E5297FB69800B504AF /* cbios_main_msx2_jp.rom in Resources */,
 				748D22DF297E7E2E00B504AF /* MSX2.ROM in Resources */,
 				748D22DC297E7E2E00B504AF /* KNJFNT16.ROM in Resources */,
 				748D22DD297E7E2E00B504AF /* MSX2P.ROM in Resources */,

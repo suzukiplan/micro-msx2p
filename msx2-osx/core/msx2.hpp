@@ -1,7 +1,7 @@
 #ifndef INCLUDE_MSX2_HPP
 #define INCLUDE_MSX2_HPP
 #include "z80.hpp"
-#include "v9938.hpp"
+#include "vdp.hpp"
 #include "ay8910.hpp"
 #include "mmu.hpp"
 
@@ -19,7 +19,7 @@ private:
 public:
     Z80* cpu;
     MMU mmu;
-    V9938 vdp;
+    VDP vdp;
     AY8910 psg;
     
     MSX2(int colorMode) {
@@ -56,13 +56,13 @@ public:
         this->psg.reset(27);
     }
     
-    void setup(int pri, int sec, int idx, bool isRAM, void* data, int size) {
-        mmu.setup(pri, sec, idx, isRAM, (unsigned char*)data, size);
+    void setup(int pri, int sec, int idx, bool isRAM, void* data, int size, const char* label = NULL) {
+        mmu.setup(pri, sec, idx, isRAM, (unsigned char*)data, size, label);
     }
     
     void loadRom(void* data, int size) {
-        reset();
         mmu.setupCartridge(1, 0, 2, data, size);
+        reset();
     }
     
     void tick() {
@@ -86,7 +86,6 @@ public:
     }
     
     inline unsigned char inPort(unsigned char port) {
-        printf("IN $%02X\n", port);
         switch (port) {
             case 0x98: return this->vdp.readPort0();
             case 0x99: return this->vdp.readPort1();
@@ -98,7 +97,6 @@ public:
     }
     
     inline void outPort(unsigned char port, unsigned char value) {
-        printf("OUT $%02X <- $%02X\n", port, value);
         switch (port) {
             case 0x98: this->vdp.writePort0(value); break;
             case 0x99: this->vdp.writePort1(value); break;
@@ -107,10 +105,10 @@ public:
             case 0xA0: this->psg.latch(value); break;
             case 0xA1: this->psg.write(value); break;
             case 0xA8: this->mmu.updatePrimary(value); break;
-                //case 0xFC: this->mmu.pageMap(3, value); break;
-                //case 0xFD: this->mmu.pageMap(2, value); break;
-                //case 0xFE: this->mmu.pageMap(1, value); break;
-                //case 0xFF: this->mmu.pageMap(0, value); break;
+            case 0xFC: this->mmu.updateSegment(3, value); break;
+            case 0xFD: this->mmu.updateSegment(2, value); break;
+            case 0xFE: this->mmu.updateSegment(1, value); break;
+            case 0xFF: this->mmu.updateSegment(0, value); break;
             default: printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
     }

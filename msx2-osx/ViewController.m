@@ -11,10 +11,9 @@
 #import "VideoView.h"
 #import "ViewController.h"
 
-@interface ViewController () <NSWindowDelegate, VideoViewDelegate, OpenFileDelegate>
+@interface ViewController () <NSWindowDelegate, OpenFileDelegate>
 @property (nonatomic, weak) AppDelegate* appDelegate;
 @property (nonatomic) VideoView* video;
-@property (nonatomic) NSTextField* scoreView;
 @property (nonatomic) NSData* rom;
 @property (nonatomic) BOOL isFullScreen;
 @property (nonatomic, nullable) NSData* saveData;
@@ -26,16 +25,27 @@
 {
     [super viewDidLoad];
 
-    NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2" ofType:@"ROM"]];
-    NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2EXT" ofType:@"ROM"]];
+#if 0
+    NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_main_msx2_jp" ofType:@"rom"]];
+    emu_init_bios(biosMain.bytes, biosMain.length, NULL, 0, NULL, 0, NULL, 0);
+#elif 1
+    NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2P" ofType:@"ROM"]];
+    NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2PEXT" ofType:@"ROM"]];
+    emu_init_bios(biosMain.bytes, biosMain.length,
+                  biosExt.bytes, biosExt.length,
+                  NULL, 0,
+                  NULL, 0);
+#else
+    NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2P" ofType:@"ROM"]];
+    NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2PEXT" ofType:@"ROM"]];
     NSData* biosDisk = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DISK" ofType:@"ROM"]];
     NSData* biosFm = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FMBIOS" ofType:@"ROM"]];
-
     emu_init_bios(biosMain.bytes, biosMain.length,
                   biosExt.bytes, biosExt.length,
                   biosDisk.bytes, biosDisk.length,
                   biosFm.bytes, biosFm.length);
-
+#endif
+    
     NSString* romFile = [[NSUserDefaults standardUserDefaults] objectForKey:@"previous_rom_file"];
     if (romFile) {
         NSLog(@"previous_rom_file: %@", romFile);
@@ -50,12 +60,7 @@
     [self.view setWantsLayer:YES];
     [self.view setLayer:layer];
     _video = [[VideoView alloc] initWithFrame:[self calcVramRect]];
-    _video.delegate = self;
     [self.view addSubview:_video];
-    //_scoreView = [[NSTextField alloc] initWithFrame:NSRectFromCGRect(CGRectMake(0, 0, 0, 0))];
-    _scoreView.stringValue = @"SCORE:";
-    [_scoreView sizeToFit];
-    [self.view addSubview:_scoreView];
     _appDelegate = (AppDelegate*)[NSApplication sharedApplication].delegate;
     NSLog(@"menu: %@", _appDelegate.menu);
     _appDelegate.menu.autoenablesItems = NO;
@@ -97,23 +102,6 @@
         CGFloat y = (self.view.frame.size.height - height) / 2;
         return NSRectFromCGRect(CGRectMake(0, y, width, height));
     }
-}
-
-- (void)videoView:(VideoView*)view
-    didChangeScore:(NSInteger)score
-        isGameOver:(BOOL)isGameOver
-{
-    __weak ViewController* weakSelf = self;
-    NSString* scoreString;
-    if (isGameOver) {
-        scoreString = [NSString stringWithFormat:@"SCORE: %ld [GAME OVER]", score];
-    } else {
-        scoreString = [NSString stringWithFormat:@"SCORE: %ld", score];
-    }
-    dispatch_async(dispatch_get_main_queue(), ^{
-        weakSelf.scoreView.stringValue = scoreString;
-        [weakSelf.scoreView sizeToFit];
-    });
 }
 
 - (void)dealloc
