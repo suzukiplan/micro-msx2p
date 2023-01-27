@@ -29,7 +29,6 @@ extern "C" void emu_init_bios(const void* main, size_t mainSize,
         memcpy(bios.main, main, 0x8000);
         msx2.setup(0, 0, 0, false, bios.main, 0x8000, "MAIN");
     }
-    msx2.setup(0, 0, 4, true, ram + 0x8000, 0x8000, "RAM");
     msx2.setup(3, 0, 0, true, ram, 0x10000, "RAM");
     if (ext && 0x4000 == extSize) {
         memcpy(bios.ext, ext, 0x4000);
@@ -132,6 +131,7 @@ extern "C" void emu_dumpVideoMemory()
     printf("ScreenMode = %d\n", vdp->getScreenMode());
     dump("PatternNameTable", vram, vdp->getNameTableAddress(), vdp->getNameTableSize());
     dump("PatternGeneratorTable", vram, vdp->getPatternGeneratorAddress(), vdp->getPatternGeneratorSize());
+    dump("ColorTable", vram, vdp->getColorTableAddress(), vdp->getColorTableSize());
 }
 
 

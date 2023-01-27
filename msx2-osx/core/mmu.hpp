@@ -81,7 +81,7 @@ public:
     }
 
     inline void dumpPageLayout(const char* msg) {
-#if 0
+#if 1
         auto page0 = slots[ctx.primary[0]][ctx.secondary[0]];
         auto page1 = slots[ctx.primary[1]][ctx.secondary[1]];
         auto page2 = slots[ctx.primary[2]][ctx.secondary[2]];

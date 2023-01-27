@@ -37,10 +37,41 @@ public:
             return ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
+            printf("Execute Interrupt %d from VDP\n", ie);
+            ((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
         }, [](void* arg) {
             ((MSX2*)arg)->cpu->requestBreak();
         });
+        this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
+            auto this_ = (MSX2*)arg;
+            printf("Update VDP register #%d = $%02X (PC:$%04X)\n", rn, value, this_->cpu->reg.PC);
+            if (9 == rn) {
+                this_->cpu->setDebugMessage([](void* arg, const char* msg) {
+                    puts(msg);
+                });
+            }
+        });
+        /*
+        this->cpu->setDebugMessage([](void* arg, const char* msg) {
+            puts(msg);
+        });
+         */
+        /*
+        this->vdp.setVramWriteListener(this, [](void* arg, int addr, unsigned char value) {
+            auto this_ = (MSX2*)arg;
+            printf("write VRAM[$%04X] = $%02X (PC:$%04X)\n", addr, value, this_->cpu->reg.PC);
+        });
+         */
+#if 0
+        this->cpu->addBreakPoint(0x8143, [](void* arg) {
+            ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
+                if (0x8000 < ((MSX2*)arg)->cpu->reg.PC) {
+                    puts(msg);
+                }
+            });
+        });
+#endif
         this->cpu->setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX2*)arg)->consumeClock(cpuClocks);
         });

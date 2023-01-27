@@ -11,6 +11,13 @@ class VDP
     void (*detectInterrupt)(void* arg, int ie);
     void (*detectBreak)(void* arg);
 
+    struct DebugTool {
+        void (*registerUpdateListener)(void* arg, int number, unsigned char value);
+        void (*vramReadListener)(void* arg, int addr, unsigned char value);
+        void (*vramWriteListener)(void* arg, int addr, unsigned char value);
+        void* arg;
+    } debug;
+
   public:
     unsigned short display[284 * 240];
     unsigned short palette[16];
@@ -35,9 +42,25 @@ class VDP
         unsigned short commandY;
     } ctx;
 
+    void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value)) {
+        debug.arg = arg;
+        debug.registerUpdateListener = listener;
+    }
+
+    void setVramReadListener(void* arg, void (*listener)(void* arg, int addr, unsigned char value)) {
+        debug.arg = arg;
+        debug.vramReadListener = listener;
+    }
+
+    void setVramWriteListener(void* arg, void (*listener)(void* arg, int addr, unsigned char value)) {
+        debug.arg = arg;
+        debug.vramWriteListener = listener;
+    }
+
     VDP()
     {
         memset(palette, 0, sizeof(palette));
+        memset(&debug, 0, sizeof(debug));
         this->reset();
     }
 
@@ -101,14 +124,31 @@ class VDP
 
     inline bool isExpansionRAM() { return ctx.reg[45] & 0b01000000 ? true : false; }
     inline int getVramSize() { return sizeof(ctx.ram); }
+    inline int getSpriteSize() { return ctx.reg[1] & 0b00000010 ? 16 : 8; }
+    inline bool isSpriteMag() { return ctx.reg[1] & 0b00000001 ? true : false; }
     inline bool isEnabledExternalVideoInput() { return ctx.reg[0] & 0b00000001 ? true : false; }
     inline bool isEnabledScreen() { return ctx.reg[1] & 0b01000000 ? true : false; }
     inline bool isEnabledInterrupt0() { return ctx.reg[1] & 0b00100000 ? true : false; }
     inline bool isEnabledInterrupt1() { return ctx.reg[0] & 0b00010000 ? true : false; }
     inline bool isEnabledInterrupt2() { return ctx.reg[0] & 0b00100000 ? true : false; }
-    inline unsigned short getBackdropColor() { return palette[ctx.reg[7] & 0b00001111]; }
     inline bool isEnabledMouse() { return ctx.reg[8] & 0b10000000 ? true : false; }
     inline bool isEnabledLightPen() { return ctx.reg[8] & 0b01000000 ? true : false; }
+
+    inline unsigned short getBackdropColor() {
+        if (this->getScreenMode() == 0b00111) {
+            return convertColor_8bit_to_16bit(ctx.reg[7]);
+        } else {
+            return palette[ctx.reg[7] & 0b00001111];
+        }
+    }
+
+    inline unsigned short getTextColor() {
+        if (this->getScreenMode() == 0b00111) {
+            return 0;
+        } else {
+            return palette[(ctx.reg[7] & 0b11110000) >> 4];
+        }
+    }
  
     inline int getNameTableAddress() {
         switch (this->getScreenMode()) {
@@ -249,7 +289,7 @@ class VDP
         this->ctx.countH++;
         if (37 == this->ctx.countH) {
             this->ctx.stat[2] &= 0b11011111; // reset HR flag
-            if (this->isEnabledScreen() && this->isEnabledInterrupt1()) {
+            if (this->isEnabledInterrupt1()) {
                 this->ctx.stat[1] |= this->ctx.countV == this->ctx.reg[19] ? 0x01 : 0x00;
                 this->detectInterrupt(this->arg, 1);
             }
@@ -274,6 +314,9 @@ class VDP
 
     inline unsigned char readPort0()
     {
+        if (debug.vramReadListener) {
+            debug.vramReadListener(debug.arg, this->ctx.addr, this->ctx.readBuffer);
+        }
         unsigned char result = this->ctx.readBuffer;
         this->readVideoMemory();
         this->ctx.latch = 0;
@@ -308,8 +351,10 @@ class VDP
     {
         this->ctx.addr &= this->getVramSize() - 1;
         this->ctx.readBuffer = value;
-        //printf("NAME[$%04X] = %02X\n", this->ctx.addr, value);
         this->ctx.ram[this->ctx.addr] = this->ctx.readBuffer;
+        if (this->debug.vramWriteListener) {
+            this->debug.vramWriteListener(this->debug.arg, this->ctx.addr, this->ctx.readBuffer);
+        }
         this->ctx.addr++;
         this->ctx.latch = 0;
     }
@@ -329,7 +374,7 @@ class VDP
                 this->readVideoMemory();
             }
         } else if (1 == this->ctx.latch) {
-            this->ctx.addr &= 0xFF00;
+            this->ctx.addr &= 0xFFFFFF00;
             this->ctx.addr |= this->ctx.tmpAddr[0];
         }
     }
@@ -456,12 +501,10 @@ class VDP
 
     inline void updateRegister(int rn, unsigned char value)
     {
-        printf("update VDP register #%d = $%02X\n", rn, value);
+        if (debug.registerUpdateListener) {
+            debug.registerUpdateListener(debug.arg, rn, value);
+        }
 #ifdef DEBUG
-        int previousMode = 0;
-        if (ctx.reg[1] & 0b00010000) previousMode |= 1; // Mode 1
-        if (ctx.reg[0] & 0b00000010) previousMode |= 2; // Mode 2
-        if (ctx.reg[1] & 0b00001000) previousMode |= 4; // Mode 3
         int vramSize = getVramSize();
         int screenMode = this->getScreenMode();
         bool screen = this->isEnabledScreen();
@@ -469,6 +512,13 @@ class VDP
         int patternGeneratorAddsress = this->getPatternGeneratorAddress();
         int nameTableAddress = this->getNameTableAddress();
         int colorTableAddress = this->getColorTableAddress();
+        bool ie0 = this->isEnabledInterrupt0();
+        bool ie1 = this->isEnabledInterrupt1();
+        bool ie2 = this->isEnabledInterrupt2();
+        int spriteSize = this->getSpriteSize();
+        bool spriteMag = this->isSpriteMag();
+        unsigned short backdropColor = this->getBackdropColor();
+        unsigned short textColor = this->getTextColor();
 #endif
         bool previousInterrupt = this->isEnabledInterrupt0();
         this->ctx.reg[rn] = value;
@@ -484,13 +534,6 @@ class VDP
             this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
         }
 #ifdef DEBUG
-        int currentMode = 0;
-        if (ctx.reg[1] & 0b00010000) currentMode |= 1; // Mode 1
-        if (ctx.reg[0] & 0b00000010) currentMode |= 2; // Mode 2
-        if (ctx.reg[1] & 0b00001000) currentMode |= 4; // Mode 3
-        if (previousMode != currentMode) {
-            printf("Change display mode: %d -> %d\n", previousMode, currentMode);
-        }
         if (vramSize != getVramSize()) {
             printf("Change VDP RAM size: %d -> %d\n", vramSize, getVramSize());
         }
@@ -511,6 +554,27 @@ class VDP
         }
         if (externalVideoInput != this->isEnabledExternalVideoInput()) {
             printf("Change VDP external video input enabled: %s\n", this->isEnabledExternalVideoInput() ? "ENABLED" : "DISABLED");
+        }
+        if (ie0 != this->isEnabledInterrupt0()) {
+            printf("Change Enabled Interrupt 0: %s\n", ie0 ? "OFF" : "ON");
+        }
+        if (ie1 != this->isEnabledInterrupt1()) {
+            printf("Change Enabled Interrupt 1: %s\n", ie0 ? "OFF" : "ON");
+        }
+        if (ie2 != this->isEnabledInterrupt2()) {
+            printf("Change Enabled Interrupt 2: %s\n", ie0 ? "OFF" : "ON");
+        }
+        if (spriteSize != this->getSpriteSize()) {
+            printf("Change Sprite Size: %d -> %d\n", spriteSize, this->getSpriteSize());
+        }
+        if (spriteMag != this->isSpriteMag()) {
+            printf("Change Sprite MAG mode: %s\n", spriteMag ? "OFF" : "ON");
+        }
+        if (backdropColor != this->getBackdropColor()) {
+            printf("Change Backdrop Color: $%04X -> $%04X\n", backdropColor, this->getBackdropColor());
+        }
+        if (textColor != this->getTextColor()) {
+            printf("Change Text Color: $%04X -> $%04X\n", textColor, this->getTextColor());
         }
 #endif
     }
