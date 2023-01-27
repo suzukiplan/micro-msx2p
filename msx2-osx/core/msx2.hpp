@@ -22,6 +22,10 @@ public:
     VDP vdp;
     AY8910 psg;
     
+    struct Context {
+        unsigned char io[256];
+    } ctx;
+
     MSX2(int colorMode) {
         this->cpu = new Z80([](void* arg, unsigned short addr) {
             return ((MSX2*)arg)->mmu.read(addr);
@@ -91,12 +95,15 @@ public:
             case 0x99: return this->vdp.readPort1();
             case 0xA2: return this->psg.read();
             case 0xA8: return this->mmu.getPrimary();
+            case 0xA9: return 0xFF;
+            case 0xAA: return 0xFF;
             default: printf("ignore an unknown input port $%02X\n", port);
         }
-        return 0xFF;
+        return this->ctx.io[port];
     }
     
     inline void outPort(unsigned char port, unsigned char value) {
+        this->ctx.io[port] = value;
         switch (port) {
             case 0x98: this->vdp.writePort0(value); break;
             case 0x99: this->vdp.writePort1(value); break;
@@ -105,6 +112,8 @@ public:
             case 0xA0: this->psg.latch(value); break;
             case 0xA1: this->psg.write(value); break;
             case 0xA8: this->mmu.updatePrimary(value); break;
+            case 0xAA: break;
+            case 0xAB: break;
             case 0xFC: this->mmu.updateSegment(3, value); break;
             case 0xFD: this->mmu.updateSegment(2, value); break;
             case 0xFE: this->mmu.updateSegment(1, value); break;

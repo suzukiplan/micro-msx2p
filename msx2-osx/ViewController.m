@@ -25,12 +25,16 @@
 {
     [super viewDidLoad];
 
-#if 0
+#if 1
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_main_msx2_jp" ofType:@"rom"]];
-    emu_init_bios(biosMain.bytes, biosMain.length, NULL, 0, NULL, 0, NULL, 0);
+    NSData* biosLogo = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_logo_msx2" ofType:@"rom"]];
+    NSData* biosSub = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_sub" ofType:@"rom"]];
+    emu_init_cbios(biosMain.bytes, biosMain.length,
+                   biosLogo.bytes, biosLogo.length,
+                   biosSub.bytes, biosSub.length);
 #elif 1
-    NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2P" ofType:@"ROM"]];
-    NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2PEXT" ofType:@"ROM"]];
+    NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2" ofType:@"ROM"]];
+    NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2EXT" ofType:@"ROM"]];
     emu_init_bios(biosMain.bytes, biosMain.length,
                   biosExt.bytes, biosExt.length,
                   NULL, 0,

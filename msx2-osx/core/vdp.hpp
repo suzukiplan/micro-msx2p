@@ -52,17 +52,40 @@ class VDP
 
     void reset()
     {
-        //static unsigned int rgb[16] = {0x000000, 0x000000, 0x3EB849, 0x74D07D, 0x5955E0, 0x8076F1, 0xB95E51, 0x65DBEF, 0xDB6559, 0xFF897D, 0xCCC35E, 0xDED087, 0x3AA241, 0xB766B5, 0xCCCCCC, 0xFFFFFF};
+        static unsigned int rgb[16] = {0x000000, 0x000000,
+            //***     ***     ***
+            0b110000000010000000100000, // 6 1 1
+            0b111000000110000001100000, // 7 3 3
+            0b001000000010000011100000, // 1 1 7
+            0b011000000100000011100000, // 3 2 7
+            0b001000010100000000100000, // 1 5 1
+            0b110000001000000011100000, // 6 2 7
+            0b001000011100000000100000, // 1 7 1
+            0b011000011100000001100000, // 3 7 3
+            0b110000011000000000100000, // 6 6 1
+            0b110000011000000010000000, // 6 6 4
+            0b100000000100000000100000, // 4 1 1
+            0b010000011000000010100000, // 2 6 5
+            0b101000101000000010100000, // 5 5 5
+            0b111000111000000011100000  // 7 7 7
+        };
         memset(display, 0, sizeof(display));
         memset(&ctx, 0, sizeof(ctx));
         for (int i = 0; i < 16; i++) {
-            //this->ctx.pal[i][0] = 0;
-            //this->ctx.pal[i][1] = 0;
-            //this->ctx.pal[i][0] |= (rgb[i] & 0b111000000000000000000000) >> 17;
-            //this->ctx.pal[i][1] |= (rgb[i] & 0b000000001110000000000000) >> 13;
-            //this->ctx.pal[i][0] |= (rgb[i] & 0b000000000000000011100000) >> 5;
+            this->ctx.pal[i][0] = 0;
+            this->ctx.pal[i][1] = 0;
+            this->ctx.pal[i][0] |= (rgb[i] & 0b111000000000000000000000) >> 17;
+            this->ctx.pal[i][1] |= (rgb[i] & 0b000000001110000000000000) >> 13;
+            this->ctx.pal[i][0] |= (rgb[i] & 0b000000000000000011100000) >> 5;
             updatePaletteCacheFromRegister(i);
         }
+    }
+
+    inline int getScreenMode()
+    {
+        int mode = this->ctx.reg[1] & 0b00011000;
+        mode |= (this->ctx.reg[0] & 0b00001110) >> 1;
+        return mode;
     }
 
     inline int getVideoMode()
@@ -77,7 +100,7 @@ class VDP
     }
 
     inline bool isExpansionRAM() { return ctx.reg[45] & 0b01000000 ? true : false; }
-    inline int getVramSize() { return 0x20000; }
+    inline int getVramSize() { return sizeof(ctx.ram); }
     inline bool isEnabledExternalVideoInput() { return ctx.reg[0] & 0b00000001 ? true : false; }
     inline bool isEnabledScreen() { return ctx.reg[1] & 0b01000000 ? true : false; }
     inline bool isEnabledInterrupt0() { return ctx.reg[1] & 0b00100000 ? true : false; }
@@ -86,6 +109,104 @@ class VDP
     inline unsigned short getBackdropColor() { return palette[ctx.reg[7] & 0b00001111]; }
     inline bool isEnabledMouse() { return ctx.reg[8] & 0b10000000 ? true : false; }
     inline bool isEnabledLightPen() { return ctx.reg[8] & 0b01000000 ? true : false; }
+ 
+    inline int getNameTableAddress() {
+        switch (this->getScreenMode()) {
+            case 0b00000: // GRAPHIC1
+            case 0b00001: // GRAPHIC2
+            case 0b00010: // GRAPHIC3
+            case 0b01000: // MULTI COLOR
+            case 0b10000: // TEXT1
+                return (this->ctx.reg[2] & 0b01111111) << 10;
+            case 0b00011: // GRAPHIC4
+            case 0b00100: // GRAPHIC5
+                return (this->ctx.reg[2] & 0b01100000) << 10;
+            case 0b00101: // GRAPHIC6
+            case 0b00111: // GRAPHIC7
+                return (this->ctx.reg[2] & 0b00100000) << 11;
+            case 0b10010: // TEXT2
+                return (this->ctx.reg[2] & 0b01111100) << 10;
+            default:
+                return 0;
+        }
+    }
+
+    inline int getNameTableSize() {
+        switch (this->getScreenMode()) {
+            case 0b00000: return 768; // GRAPHIC1
+            case 0b00001: return 768; // GRAPHIC2
+            case 0b00010: return 768; // GRAPHIC3
+            case 0b00011: // GRAPHIC4
+            case 0b00100: // GRAPHIC5
+                return this->getLineNumber() == 192 ? 0x6000 : 0x6A00;
+            case 0b00101: // GRAPHIC6
+            case 0b00111: // GRAPHIC7
+                return this->getLineNumber() == 192 ? 0xC000 : 0xD400;
+            case 0b01000: return 192; // MULTI COLOR
+            case 0b10000: return 40 * 24; // TEXT1
+            case 0b10010: return 80 * 27; // TEXT2
+            default: return 0; // n/a
+        }
+    }
+
+    inline int getPatternGeneratorAddress() {
+        switch (this->getScreenMode()) {
+            case 0b00000: // GRAPHIC1
+                return (this->ctx.reg[4] & 0b00111111) << 11;
+            case 0b00001: // GRAPHIC2
+            case 0b00010: // GRAPHIC3
+                return (this->ctx.reg[4] & 0b00111100) << 11;
+            default:
+                return 0; // n/a
+        }
+    }
+
+    inline int getPatternGeneratorSize() {
+        switch (this->getScreenMode()) {
+            case 0b00000: return 2048; // GRAPHIC1
+            case 0b00001: return 6144; // GRAPHIC2
+            case 0b00010: return 6144; // GRAPHIC3
+            case 0b10000: return 2048; // TEXT1
+            case 0b10010: return 2048; // TEXT2
+            default: return 0; // n/a
+        }
+    }
+
+    inline int getColorTableAddress() {
+        switch (this->getScreenMode()) {
+            case 0b00000: // GRAPHIC1
+            {
+                int r3 = this->ctx.reg[3];
+                int r10 = this->ctx.reg[10] & 0b00000111;
+                return (r3 << 6) + (r10 << 14);
+            }
+            case 0b00001: // GRAPHIC2
+            case 0b00010: // GRAPHIC3
+            {
+                int r3 = this->ctx.reg[3] & 0b10000000;
+                int r10 = this->ctx.reg[10] & 0b00000111;
+                return (r3 << 6) + (r10 << 14);
+            }
+            case 0b10010: // TEXT2 (Blink Table)
+            {
+                int r3 = this->ctx.reg[3] & 0b11111000;
+                int r10 = this->ctx.reg[10] & 0b00000111;
+                return (r3 << 6) + (r10 << 14);
+            }
+            default:
+                return 0; // n/a
+        }
+    }
+
+    inline int getColorTableSize() {
+        switch (this->getScreenMode()) {
+            case 0b00000: return 32; // GRAPHIC1
+            case 0b00001: return 6144; // GRAPHIC2
+            case 0b00010: return 6144; // GRAPHIC3
+            case 0b10010: return 240; // TEXT2 (Blink Table)
+            default: return 0; // n/a
+        }
+    }
 
     inline void tick()
     {
@@ -187,7 +308,7 @@ class VDP
     {
         this->ctx.addr &= this->getVramSize() - 1;
         this->ctx.readBuffer = value;
-        printf("VRAM[$%04X] = $%02X\n", this->ctx.addr, value);
+        //printf("NAME[$%04X] = %02X\n", this->ctx.addr, value);
         this->ctx.ram[this->ctx.addr] = this->ctx.readBuffer;
         this->ctx.addr++;
         this->ctx.latch = 0;
@@ -239,13 +360,9 @@ class VDP
   private:
     inline int getLineNumber()
     {
-        switch (this->getVideoMode()) {
-            case 0b00000: return 192; // G1
-            case 0b00100: return 192; // G2
-            case 0b01000: return 192; // G3
-            case 0b00001: return 192; // TEXT1
-            default: return this->ctx.reg[9] & 0x80 ? 212 : 192;
-        }
+        int mode = this->getScreenMode();
+        if (mode < 3 || 7 < mode) return 192;
+        return this->ctx.reg[9] & 0x80 ? 212 : 192;
     }
 
     inline void updatePaletteCacheFromRegister(int pn)
@@ -296,14 +413,38 @@ class VDP
         this->paletteG7[pn] = r | g | b;
     }
 
+    inline const char* where(int addr) {
+        static const char* answer[] = {
+            "UNKNOWN",
+            "NameTable",
+            "PatternGenerator",
+            "ColorTable",
+        };
+        int nt = this->getNameTableAddress();
+        int pg = this->getPatternGeneratorAddress();
+        int ct = this->getColorTableAddress();
+        if (nt <= addr && addr < nt + this->getNameTableSize()) {
+            return answer[1];
+        }
+        if (pg <= addr && addr < pg + this->getPatternGeneratorSize()) {
+            return answer[2];
+        }
+        if (ct <= addr && addr < ct + this->getColorTableSize()) {
+            return answer[3];
+        }
+        return answer[0];
+    }
+
     inline void updateAddress()
     {
-        this->ctx.addr = this->ctx.tmpAddr[1];
+        this->ctx.addr = this->ctx.tmpAddr[1] & 0b00111111;
         this->ctx.addr <<= 8;
         this->ctx.addr |= this->ctx.tmpAddr[0];
         unsigned int ha = this->ctx.reg[14] & 0b00000111;
         ha <<= 14;
         this->ctx.addr += ha;
+        this->ctx.addr += this->ctx.reg[45] & 0b01000000 ? 0x10000 : 0;
+        printf("update VRAM address: $%05X (%s)\n", this->ctx.addr, this->where(this->ctx.addr));
     }
 
     inline void readVideoMemory()
@@ -322,8 +463,12 @@ class VDP
         if (ctx.reg[0] & 0b00000010) previousMode |= 2; // Mode 2
         if (ctx.reg[1] & 0b00001000) previousMode |= 4; // Mode 3
         int vramSize = getVramSize();
+        int screenMode = this->getScreenMode();
         bool screen = this->isEnabledScreen();
         bool externalVideoInput = this->isEnabledExternalVideoInput();
+        int patternGeneratorAddsress = this->getPatternGeneratorAddress();
+        int nameTableAddress = this->getNameTableAddress();
+        int colorTableAddress = this->getColorTableAddress();
 #endif
         bool previousInterrupt = this->isEnabledInterrupt0();
         this->ctx.reg[rn] = value;
@@ -352,6 +497,18 @@ class VDP
         if (screen != this->isEnabledScreen()) {
             printf("Change VDP screen enabled: %s\n", this->isEnabledScreen() ? "ENABLED" : "DISABLED");
         }
+        if (screenMode != this->getScreenMode()) {
+            printf("Screen Mode Changed: %d -> %d\n", screenMode, this->getScreenMode());
+        }
+        if (patternGeneratorAddsress != this->getPatternGeneratorAddress()) {
+            printf("Pattern Generator Address: $%04X -> $%04X\n", patternGeneratorAddsress, this->getPatternGeneratorAddress());
+        }
+        if (nameTableAddress != this->getNameTableAddress()) {
+            printf("Name Table Address: $%04X -> $%04X\n", nameTableAddress, this->getNameTableAddress());
+        }
+        if (colorTableAddress != this->getColorTableAddress()) {
+            printf("Color Table Address: $%04X -> $%04X\n", colorTableAddress, this->getColorTableAddress());
+        }
         if (externalVideoInput != this->isEnabledExternalVideoInput()) {
             printf("Change VDP external video input enabled: %s\n", this->isEnabledExternalVideoInput() ? "ENABLED" : "DISABLED");
         }
@@ -363,27 +520,38 @@ class VDP
         if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
             this->ctx.stat[2] &= 0b10111111; // reset VR flag
             if (this->isEnabledScreen()) {
-                int mode = 0;
-                if (ctx.reg[1] & 0b00010000) mode |= 1; // Mode 1
-                if (ctx.reg[0] & 0b00000010) mode |= 2; // Mode 2
-                if (ctx.reg[1] & 0b00001000) mode |= 4; // Mode 3
-                switch (mode) {
-                    case 0:
+                // 00 000 : GRAPHIC1    256x192             Mode1   chr           16KB
+                // 00 001 : GRAPHIC2    256x192             Mode1   chr           16KB
+                // 00 010 : GRAPHIC3    256x192             Mode2   chr           16KB
+                // 00 011 : GRAPHIC4    256x292 or 256x212  Mode2   bitmap(4bit)  64KB
+                // 00 100 : GRAPHIC5    512x292 or 512x212  Mode2   bitmap(2bit)  64KB
+                // 00 101 : GRAPHIC6    512x292 or 512x212  Mode2   bitmap(4bit)  128KB
+                // 00 111 : GRAPHIC7    512x292 or 512x212  Mode2   bitmap(8bit)  128KB
+                // 01 000 : MULTI COLOR 64x48 (4px/block)   Mode1   low bitmap    16KB
+                // 10 000 : TEXT1       40x24 (6x8px/block) n/a     chr           16KB
+                // 10 010 : TEXT2       80x24 (6x8px/block) n/a     chr           16KB
+                switch (this->getScreenMode()) {
+                    case 0b00000: // GRAPHIC1
                         this->renderScanlineModeG1(lineNumber, renderPosition);
                         break;
-                    case 1:
-                        this->renderScanlineModeG2(lineNumber, false, renderPosition);
+                        /*
+                    case 0b00001: // GRAPHIC2
+                        this->renderScanlineModeG23(lineNumber, false, renderPosition);
                         break;
-                    case 2:
-                        this->renderScanlineModeG2(lineNumber, false, renderPosition);
+                    case 0b00010: // GRAPHIC3
+                        this->renderScanlineModeG23(lineNumber, true, renderPosition);
                         break;
-                    case 4:
+                    case 0b00011: // GRAPHIC4
                         this->renderScanlineModeG4(lineNumber, renderPosition);
                         break;
-                    case 7:
+                    case 0b00111: // GRAPHIC7
                         this->renderScanlineModeG7(lineNumber, renderPosition);
                         break;
-                    default: return;
+                         */
+                    default:
+                        puts("UNSUPPORTED SCREEN MODE!");
+                        exit(-1);
+                        return;
                 }
             } else return;
         } else {
@@ -398,21 +566,18 @@ class VDP
 
     inline void renderScanlineModeG1(int lineNumber, unsigned short* renderPosition)
     {
-        int pn = (this->ctx.reg[2] & 0b00001111) << 10;
-        int ct = this->ctx.reg[3] << 6;
-        int pg = (this->ctx.reg[4] & 0b00000111) << 11;
-        int bd = this->ctx.reg[7] & 0b00001111;
-        int pixelLine = lineNumber % 8;
+        int pn = this->getNameTableAddress();
+        int ct = this->getColorTableAddress();
+        int pg = this->getPatternGeneratorAddress();
+        int lineNumberMod8 = lineNumber & 0b111;
         unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
         int cur = 0;
         for (int i = 0; i < 32; i++) {
-            unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + pixelLine];
+            unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + lineNumberMod8];
             unsigned char c = this->ctx.ram[ct + nam[i] / 8];
             unsigned char cc[2];
             cc[1] = (c & 0xF0) >> 4;
-            cc[1] = cc[1] ? cc[1] : bd;
             cc[0] = c & 0x0F;
-            cc[0] = cc[0] ? cc[0] : bd;
             this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b10000000) >> 7]);
             this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b01000000) >> 6]);
             this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00100000) >> 5]);
@@ -422,10 +587,10 @@ class VDP
             this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00000010) >> 1]);
             this->renderPixel(&renderPosition[cur++], cc[ptn & 0b00000001]);
         }
-        renderSpritesMode1(lineNumber, renderPosition);
+        //renderSpritesMode1(lineNumber, renderPosition);
     }
 
-    inline void renderScanlineModeG2(int lineNumber, bool isSpriteMode2, unsigned short* renderPosition)
+    inline void renderScanlineModeG23(int lineNumber, bool isSpriteMode2, unsigned short* renderPosition)
     {
         int pn = (this->ctx.reg[2] & 0b00001111) << 10;
         int ct = (this->ctx.reg[3] & 0b10000000) << 6;

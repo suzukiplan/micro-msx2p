@@ -57,7 +57,6 @@ public:
         if (label) {
             printf("Setup SLOT %d-%d $%04X~$%04X = %s\n", pri, sec, idx * 0x2000, idx * 0x2000 + size - 1, label);
         }
-
         do {
             memset(this->slots[pri][sec].data[idx].label, 0, sizeof(this->slots[pri][sec].data[idx].label));
             if (label) {
@@ -81,12 +80,13 @@ public:
         return result;
     }
 
-    inline void dumpPageLayout() {
+    inline void dumpPageLayout(const char* msg) {
+#if 0
         auto page0 = slots[ctx.primary[0]][ctx.secondary[0]];
         auto page1 = slots[ctx.primary[1]][ctx.secondary[1]];
         auto page2 = slots[ctx.primary[2]][ctx.secondary[2]];
         auto page3 = slots[ctx.primary[3]][ctx.secondary[3]];
-        printf("Page0=%d-%d(%s), Page1=%d-%d(%s), Page2=%d-%d(%s), Page3=%d-%d(%s)\n"
+        printf("Pages #0:%d-%d(%s), #1:%d-%d(%s), #2:%d-%d(%s), #3:%d-%d(%s) <%s>\n"
                , ctx.primary[0], ctx.secondary[0]
                , page0.data[0].label[0] ? page0.data[0].label : "n/a"
                , ctx.primary[1], ctx.secondary[1]
@@ -95,7 +95,8 @@ public:
                , page2.data[4].label[0] ? page2.data[4].label : "n/a"
                , ctx.primary[3], ctx.secondary[3]
                , page3.data[6].label[0] ? page3.data[6].label : "n/a"
-               );
+               , msg);
+#endif
     }
 
     inline void updatePrimary(unsigned char value)
@@ -113,8 +114,7 @@ public:
             prev[1] != this->ctx.primary[1] ||
             prev[2] != this->ctx.primary[2] ||
             prev[3] != this->ctx.primary[3]) {
-            printf("update primary: %d, %d, %d, %d\n", this->ctx.primary[0], this->ctx.primary[1], this->ctx.primary[2], this->ctx.primary[3]);
-            dumpPageLayout();
+            dumpPageLayout("updatePrimary");
         }
 #endif
     }
@@ -150,20 +150,20 @@ public:
             prev[1] != this->ctx.secondary[1] ||
             prev[2] != this->ctx.secondary[2] ||
             prev[3] != this->ctx.secondary[3]) {
-            printf("update secondary: %d, %d, %d, %d\n", this->ctx.secondary[0], this->ctx.secondary[1], this->ctx.secondary[2], this->ctx.secondary[3]);
-            dumpPageLayout();
+            dumpPageLayout("updateSecondary");
         }
 #endif
     }
 
     inline unsigned char read(unsigned short addr)
     {
+        if (addr == 0xFFFF) return this->getSecondary();
         int page = (addr & 0b1100000000000000) >> 14;
         int pri = this->ctx.primary[page];
-        int sec = this->ctx.secondary[page];
-        //auto s = 0 == page ? &this->slots[0][0] : &this->slots[pri][sec];
+        int sec = 3 == pri ? this->ctx.secondary[page] : 0;
+        int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
-        auto ptr = s->data[addr / 0x2000].ptr;
+        auto ptr = s->data[idx].ptr;
         return ptr ? ptr[addr & 0x1FFF] : 0xFF;
     }
 
@@ -171,12 +171,15 @@ public:
     {
         //printf("write memory $%04X <- $%02X\n", addr, value);
         if (addr == 0xFFFF) {
-            updateSecondary(value);
+            this->updateSecondary(value);
             return;
         }
         int page = (addr & 0b1100000000000000) >> 14;
-        auto s = &this->slots[this->ctx.primary[page]][this->ctx.secondary[page]];
-        auto data = &s->data[addr / 0x2000];
+        int pri = this->ctx.primary[page];
+        int sec = 3 == pri ? this->ctx.secondary[page] : 0;
+        int idx = addr / 0x2000;
+        auto s = &this->slots[pri][sec];
+        auto data = &s->data[idx];
         if (data->isRAM && data->ptr) {
             data->ptr[addr & 0x1FFF] = value;
         }
