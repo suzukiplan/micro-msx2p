@@ -1281,33 +1281,10 @@ class VDP
     inline int getDotPerByteX()
     {
         switch (this->getScreenMode()) {
-            case 0b00000: return 8; // GRAPHIC1
-            case 0b00001: return 8; // GRAPHIC2
-            case 0b00010: return 8; // GRAPHIC3
-            case 0b01000: return 0; // MULTI COLOR (unsupported)
-            case 0b10000: return 0; // TEXT1 (unsupported)
             case 0b00011: return 2; // GRAPHIC4
             case 0b00100: return 4; // GRAPHIC5
             case 0b00101: return 2; // GRAPHIC6
             case 0b00111: return 1; // GRAPHIC7
-            case 0b10010: return 0; // TEXT2 (unsupported)
-            default: return 0;
-        }
-    }
-
-    inline int getDotPerByteY()
-    {
-        switch (this->getScreenMode()) {
-            case 0b00000: return 8; // GRAPHIC1
-            case 0b00001: return 8; // GRAPHIC2
-            case 0b00010: return 8; // GRAPHIC3
-            case 0b01000: return 0; // MULTI COLOR (unsupported)
-            case 0b10000: return 0; // TEXT1 (unsupported)
-            case 0b00011: return 1; // GRAPHIC4
-            case 0b00100: return 1; // GRAPHIC5
-            case 0b00101: return 1; // GRAPHIC6
-            case 0b00111: return 1; // GRAPHIC7
-            case 0b10010: return 0; // TEXT2 (unsupported)
             default: return 0;
         }
     }
@@ -1318,13 +1295,10 @@ class VDP
             case 0b00000: return 256; // GRAPHIC1
             case 0b00001: return 256; // GRAPHIC2
             case 0b00010: return 256; // GRAPHIC3
-            case 0b01000: return 0; // MULTI COLOR (unsupported)
-            case 0b10000: return 0; // TEXT1 (unsupported)
             case 0b00011: return 256; // GRAPHIC4
             case 0b00100: return 512; // GRAPHIC5
             case 0b00101: return 512; // GRAPHIC6
             case 0b00111: return 256; // GRAPHIC7
-            case 0b10010: return 0; // TEXT2 (unsupported)
             default: return 0;
         }
     }
@@ -1359,9 +1333,7 @@ class VDP
         int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
         int addr = this->getNameTableAddress() + mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
 #if 1
-        if (resetPosition) {
-            printf("ExecuteCommand<HMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.reg[44], getScreenMode());
-        }
+        printf("ExecuteCommand<HMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.reg[44], getScreenMode());
 #endif
         this->ctx.ram[addr & 0x1FFFF] = this->ctx.reg[44];
         this->ctx.commandDX += dix;
@@ -1518,35 +1490,95 @@ class VDP
         }
         int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
+        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
         int addr = this->getNameTableAddress() + mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
+        int dst = this->ctx.reg[44];
+        if (2 == dst) dst &= 0x0F;
+        else if (4 == dst) dst &= 0b11;
 #if 1
-        if (resetPosition) {
-            printf("ExecuteCommand<LMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X, LO=%X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.reg[44], ctx.commandL, getScreenMode());
-        }
+        printf("ExecuteCommand<LMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X, LO=%X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, dst, ctx.commandL, getScreenMode());
 #endif
-        int lo3 = this->ctx.commandL & 0b0111;
-        if (this->ctx.reg[44] || 0 == (this->ctx.commandL & 0b1000)) {
-            switch (lo3) {
-                case 0b0000: // IMP
-                    this->ctx.ram[addr & 0x1FFFF] = this->ctx.reg[44];
+        if (dst || 0 == (this->ctx.commandL & 0b1000)) {
+            switch (dpb) {
+                case 1:
+                    switch (this->ctx.commandL & 0b0111) {
+                        case 0b0000: this->ctx.ram[addr & 0x1FFFF] = dst; break; // IMP
+                        case 0b0001: this->ctx.ram[addr & 0x1FFFF] &= dst; break; // AND
+                        case 0b0010: this->ctx.ram[addr & 0x1FFFF] |= dst; break; // OR
+                        case 0b0011: this->ctx.ram[addr & 0x1FFFF] ^= dst; break;// EOR
+                        case 0b0100: this->ctx.ram[addr & 0x1FFFF] = 0xFF ^ dst; break; // NOT
+                    }
                     break;
-                case 0b0001: // AND
-                    this->ctx.ram[addr & 0x1FFFF] &= this->ctx.reg[44];
+                case 2: {
+                    unsigned char src = this->ctx.ram[addr & 0x1FFFF];
+                    if (this->ctx.commandDX & 1) {
+                        src &= 0x0F;
+                        this->ctx.ram[addr & 0x1FFFF] &= 0xF0;
+                    } else {
+                        src &= 0xF0;
+                        src >>= 4;
+                        this->ctx.ram[addr & 0x1FFFF] &= 0x0F;
+                    }
+                    switch (this->ctx.commandL & 0b0111) {
+                        case 0b0000: src = dst; break; // IMP
+                        case 0b0001: src &= dst; break; // AND
+                        case 0b0010: src |= dst; break; // OR
+                        case 0b0011: src ^= dst; break; // EOR
+                        case 0b0100: src = 0xFF ^ dst; break; // NOT
+                    }
+                    src &= 0x0F;
+                    if (this->ctx.commandDX & 1) {
+                        this->ctx.ram[addr & 0x1FFFF] |= src;
+                    } else {
+                        src <<= 4;
+                        this->ctx.ram[addr & 0x1FFFF] |= src;
+                    }
                     break;
-                case 0b0010: // OR
-                    this->ctx.ram[addr & 0x1FFFF] |= this->ctx.reg[44];
+                }
+                case 4: {
+                    unsigned char src = this->ctx.ram[addr & 0x1FFFF];
+                    switch (this->ctx.commandDX & 3) {
+                        case 3:
+                            src &= 0b00000011;
+                            this->ctx.ram[addr & 0x1FFFF] &= 0b11000000;
+                            break;
+                        case 2:
+                            src &= 0b00001100;
+                            src >>= 2;
+                            this->ctx.ram[addr & 0x1FFFF] &= 0b00110000;
+                            break;
+                        case 1:
+                            src &= 0b00110000;
+                            src >>= 4;
+                            this->ctx.ram[addr & 0x1FFFF] &= 0b00001100;
+                            break;
+                        case 0 :
+                            src &= 0b11000000;
+                            src >>= 6;
+                            this->ctx.ram[addr & 0x1FFFF] &= 0b00000011;
+                            break;
+                    }
+                    switch (this->ctx.commandL & 0b0111) {
+                        case 0b0000: src = dst; break; // IMP
+                        case 0b0001: src &= dst; break; // AND
+                        case 0b0010: src |= dst; break; // OR
+                        case 0b0011: src ^= dst; break; // EOR
+                        case 0b0100: src = 0xFF ^ dst; break; // NOT
+                    }
+                    src &= 0b00000011;
+                    switch (this->ctx.commandDX & 3) {
+                        case 3: break;
+                        case 2: src <<= 2; break;
+                        case 1: src <<= 4; break;
+                        case 0: src <<= 6; break;
+                    }
+                    this->ctx.ram[addr & 0x1FFFF] |= src;
                     break;
-                case 0b0011: // EOR
-                    this->ctx.ram[addr & 0x1FFFF] ^= this->ctx.reg[44];
-                    break;
-                case 0b0100: // NOT
-                    this->ctx.ram[addr & 0x1FFFF] = 0xFF ^ this->ctx.reg[44];
-                    break;
+                }
             }
         }
         this->ctx.commandDX += dix;
-        this->ctx.commandNX -= dpb;
+        this->ctx.commandNX--;
         if (this->ctx.commandNX <= 0) {
             this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
             this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
