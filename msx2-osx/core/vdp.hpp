@@ -1356,7 +1356,7 @@ class VDP
         }
         int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = dpb * this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
         int addr = this->getNameTableAddress() + mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
 #if 1
         if (resetPosition) {
@@ -1518,7 +1518,7 @@ class VDP
         }
         int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = dpb * this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
         int addr = this->getNameTableAddress() + mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
 #if 1
         if (resetPosition) {
