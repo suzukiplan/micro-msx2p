@@ -43,35 +43,23 @@ public:
         }, [](void* arg) {
             ((MSX2*)arg)->cpu->requestBreak();
         });
+        /*
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
             printf("Update VDP register #%d = $%02X (PC:$%04X)\n", rn, value, this_->cpu->reg.PC);
-            if (9 == rn) {
-                this_->cpu->setDebugMessage([](void* arg, const char* msg) {
-                    puts(msg);
-                });
-            }
-        });
-        /*
-        this->cpu->setDebugMessage([](void* arg, const char* msg) {
-            puts(msg);
         });
          */
         /*
-        this->vdp.setVramWriteListener(this, [](void* arg, int addr, unsigned char value) {
-            auto this_ = (MSX2*)arg;
-            printf("write VRAM[$%04X] = $%02X (PC:$%04X)\n", addr, value, this_->cpu->reg.PC);
-        });
-         */
-#if 0
-        this->cpu->addBreakPoint(0x8143, [](void* arg) {
+        this->cpu->addBreakPoint(0x015F, [](void* arg) {
+            puts("Called $015F");
             ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
-                if (0x8000 < ((MSX2*)arg)->cpu->reg.PC) {
-                    puts(msg);
+                puts(msg);
+                if (strstr(msg, "RET to $8") != NULL) {
+                    ((MSX2*)arg)->cpu->resetDebugMessage();
                 }
             });
         });
-#endif
+         */
         this->cpu->setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX2*)arg)->consumeClock(cpuClocks);
         });
@@ -126,8 +114,8 @@ public:
             case 0x99: return this->vdp.readPort1();
             case 0xA2: return this->psg.read();
             case 0xA8: return this->mmu.getPrimary();
-            case 0xA9: return 0xFF;
-            case 0xAA: return 0xFF;
+            //case 0xA9: return 0xFF;
+            case 0xAA: return 0x00;
             default: printf("ignore an unknown input port $%02X\n", port);
         }
         return this->ctx.io[port];
@@ -143,8 +131,8 @@ public:
             case 0xA0: this->psg.latch(value); break;
             case 0xA1: this->psg.write(value); break;
             case 0xA8: this->mmu.updatePrimary(value); break;
-            case 0xAA: break;
-            case 0xAB: break;
+            //case 0xAA: break;
+            //case 0xAB: break;
             case 0xFC: this->mmu.updateSegment(3, value); break;
             case 0xFD: this->mmu.updateSegment(2, value); break;
             case 0xFE: this->mmu.updateSegment(1, value); break;

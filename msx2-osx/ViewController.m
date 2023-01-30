@@ -32,7 +32,7 @@
     emu_init_cbios(biosMain.bytes, biosMain.length,
                    biosLogo.bytes, biosLogo.length,
                    biosSub.bytes, biosSub.length);
-#elif 1
+#elif 0
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2" ofType:@"ROM"]];
     NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2EXT" ofType:@"ROM"]];
     emu_init_bios(biosMain.bytes, biosMain.length,

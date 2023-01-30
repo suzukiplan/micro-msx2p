@@ -81,11 +81,11 @@ public:
     }
 
     inline void dumpPageLayout(const char* msg) {
-#if 1
-        auto page0 = slots[ctx.primary[0]][ctx.secondary[0]];
-        auto page1 = slots[ctx.primary[1]][ctx.secondary[1]];
-        auto page2 = slots[ctx.primary[2]][ctx.secondary[2]];
-        auto page3 = slots[ctx.primary[3]][ctx.secondary[3]];
+#if 0
+        auto page0 = slots[ctx.primary[0]][3 != ctx.primary[0] ? 0 : ctx.secondary[0]];
+        auto page1 = slots[ctx.primary[1]][3 != ctx.primary[1] ? 0 : ctx.secondary[1]];
+        auto page2 = slots[ctx.primary[2]][3 != ctx.primary[2] ? 0 : ctx.secondary[2]];
+        auto page3 = slots[ctx.primary[3]][3 != ctx.primary[3] ? 0 : ctx.secondary[3]];
         printf("Pages #0:%d-%d(%s), #1:%d-%d(%s), #2:%d-%d(%s), #3:%d-%d(%s) <%s>\n"
                , ctx.primary[0], ctx.secondary[0]
                , page0.data[0].label[0] ? page0.data[0].label : "n/a"

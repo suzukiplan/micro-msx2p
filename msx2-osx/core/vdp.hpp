@@ -37,9 +37,13 @@ class VDP
         unsigned char latch;
         unsigned char readBuffer;
         unsigned char command;
+        unsigned short commandDX;
+        unsigned short commandDY;
+        unsigned short commandNX;
+        unsigned short commandNY;
         unsigned char commandL;
-        unsigned short commandX;
-        unsigned short commandY;
+        unsigned short commandX; // TODO: remove
+        unsigned short commandY; // TODO: remove
     } ctx;
 
     void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value)) {
@@ -526,9 +530,9 @@ class VDP
             this->detectInterrupt(this->arg, 0);
         }
         if (44 == rn && this->ctx.command) {
-            switch (this->ctx.commandX) {
-                case 0b1111: this->executeCommandHMMC(); break;
-                case 0b1011: this->executeCommandLMMC(); break;
+            switch (this->ctx.command) {
+                case 0b1111: this->executeCommandHMMC(false); break;
+                case 0b1011: this->executeCommandLMMC(false); break;
             }
         } else if (46 == rn) {
             this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
@@ -598,15 +602,15 @@ class VDP
                     case 0b00000: // GRAPHIC1
                         this->renderScanlineModeG1(lineNumber, renderPosition);
                         break;
+                    case 0b00011: // GRAPHIC4
+                        this->renderScanlineModeG4(lineNumber, renderPosition);
+                        break;
                         /*
                     case 0b00001: // GRAPHIC2
                         this->renderScanlineModeG23(lineNumber, false, renderPosition);
                         break;
                     case 0b00010: // GRAPHIC3
                         this->renderScanlineModeG23(lineNumber, true, renderPosition);
-                        break;
-                    case 0b00011: // GRAPHIC4
-                        this->renderScanlineModeG4(lineNumber, renderPosition);
                         break;
                     case 0b00111: // GRAPHIC7
                         this->renderScanlineModeG7(lineNumber, renderPosition);
@@ -624,7 +628,8 @@ class VDP
     }
 
     inline void renderPixel(unsigned short* renderPosition, int paletteNumber) {
-        if (!this->palette[paletteNumber]) return;
+        //if (!this->palette[paletteNumber]) return;
+        if (!paletteNumber) return;
         *renderPosition = this->palette[paletteNumber];
     }
 
@@ -1165,11 +1170,11 @@ class VDP
             this->ctx.commandY = 0;
             this->ctx.stat[2] |= 0b00000001;
             switch (cm) {
-                case 0b1111: this->executeCommandHMMC(); break;
+                case 0b1111: this->executeCommandHMMC(true); break;
                 case 0b1110: this->executeCommandYMMM(); break;
                 case 0b1101: this->executeCommandHMMM(); break;
                 case 0b1100: this->executeCommandHMMV(); break;
-                case 0b1011: this->executeCommandLMMC(); break;
+                case 0b1011: this->executeCommandLMMC(true); break;
                 case 0b1010: break;
                 case 0b1001: this->executeCommandLMMM(); break;
                 case 0b1000: this->executeCommandLMMV(); break;
@@ -1273,30 +1278,103 @@ class VDP
         }
     }
 
-    inline void executeCommandHMMC()
+    inline int getDotPerByteX()
     {
-        int ax = this->getCommandAddX();
-        switch (ax) {
-            case 2:
-                this->ctx.reg[36] &= 0b11111110;
-                this->ctx.reg[40] &= 0b11111110;
-                break;
-            case 4:
-                this->ctx.reg[36] &= 0b11111100;
-                this->ctx.reg[40] &= 0b11111100;
-                break;
+        switch (this->getScreenMode()) {
+            case 0b00000: return 8; // GRAPHIC1
+            case 0b00001: return 8; // GRAPHIC2
+            case 0b00010: return 8; // GRAPHIC3
+            case 0b01000: return 0; // MULTI COLOR (unsupported)
+            case 0b10000: return 0; // TEXT1 (unsupported)
+            case 0b00011: return 2; // GRAPHIC4
+            case 0b00100: return 4; // GRAPHIC5
+            case 0b00101: return 2; // GRAPHIC6
+            case 0b00111: return 1; // GRAPHIC7
+            case 0b10010: return 0; // TEXT2 (unsupported)
+            default: return 0;
         }
-        int dx = this->getDestinationX();
-        int dy = this->getDestinationY();
-        int ox = this->ctx.reg[45] & 0b000000100 ? -this->ctx.commandX : this->ctx.commandX;
-        int oy = this->ctx.reg[45] & 0b000001000 ? -this->ctx.commandY : this->ctx.commandY;
-        // NOTE: in fact, the transfer is not completed immediatly, but it is completed immediatly.
-        this->ctx.ram[this->getDestinationAddr(dx, dy, ox, oy)] = this->ctx.reg[44];
-        this->ctx.commandX += ax;
-        if (this->getNumberOfDotsX() == this->ctx.commandX) {
-            this->ctx.commandX = 0;
-            this->ctx.commandY++;
-            if (this->getNumberOfDotsY() == this->ctx.commandY) {
+    }
+
+    inline int getDotPerByteY()
+    {
+        switch (this->getScreenMode()) {
+            case 0b00000: return 8; // GRAPHIC1
+            case 0b00001: return 8; // GRAPHIC2
+            case 0b00010: return 8; // GRAPHIC3
+            case 0b01000: return 0; // MULTI COLOR (unsupported)
+            case 0b10000: return 0; // TEXT1 (unsupported)
+            case 0b00011: return 1; // GRAPHIC4
+            case 0b00100: return 1; // GRAPHIC5
+            case 0b00101: return 1; // GRAPHIC6
+            case 0b00111: return 1; // GRAPHIC7
+            case 0b10010: return 0; // TEXT2 (unsupported)
+            default: return 0;
+        }
+    }
+
+    inline int getScreenWidth()
+    {
+        switch (this->getScreenMode()) {
+            case 0b00000: return 256; // GRAPHIC1
+            case 0b00001: return 256; // GRAPHIC2
+            case 0b00010: return 256; // GRAPHIC3
+            case 0b01000: return 0; // MULTI COLOR (unsupported)
+            case 0b10000: return 0; // TEXT1 (unsupported)
+            case 0b00011: return 256; // GRAPHIC4
+            case 0b00100: return 512; // GRAPHIC5
+            case 0b00101: return 512; // GRAPHIC6
+            case 0b00111: return 256; // GRAPHIC7
+            case 0b10010: return 0; // TEXT2 (unsupported)
+            default: return 0;
+        }
+    }
+
+    inline bool isBitmapMode() {
+        switch (this->getScreenMode()) {
+            case 0b00011: return true; // GRAPHIC4
+            case 0b00100: return true; // GRAPHIC5
+            case 0b00101: return true; // GRAPHIC6
+            case 0b00111: return true; // GRAPHIC7
+            default: return false;
+        }
+    }
+
+    inline void executeCommandHMMC(bool resetPosition)
+    {
+        if (!this->isBitmapMode()) {
+            printf("Error: HMMC was executed in invalid screen mode (%d)\n", this->getScreenMode());
+            exit(-1);
+        }
+        int screenWidth = this->getScreenWidth();
+        int dpb = this->getDotPerByteX();
+        int lineBytes = screenWidth / dpb;
+        if (resetPosition) {
+            this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+            this->ctx.commandDY = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+            this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+            this->ctx.commandNY = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        }
+        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
+        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
+        int dix = dpb * this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int addr = this->getNameTableAddress() + mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
+#if 1
+        if (resetPosition) {
+            printf("ExecuteCommand<HMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.reg[44], getScreenMode());
+        }
+#endif
+        this->ctx.ram[addr & 0x1FFFF] = this->ctx.reg[44];
+        this->ctx.commandDX += dix;
+        this->ctx.commandNX -= dpb;
+        if (this->ctx.commandNX <= 0) {
+            this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+            this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+            this->ctx.commandDY += diy;
+            this->ctx.commandNY--;
+            if (this->ctx.commandNY <= 0) {
+#if 1
+                puts("End HMMC");
+#endif
                 this->ctx.command = 0;
                 this->ctx.stat[2] &= 0b11111110;
             }
@@ -1305,6 +1383,9 @@ class VDP
 
     inline void executeCommandYMMM()
     {
+        puts("execute YMMM (not implemented yet");
+        exit(-1);
+        /*
         int ex, ey, dpb;
         getEdge(&ex, &ey, &dpb);
         switch (this->getCommandAddX()) {
@@ -1335,10 +1416,14 @@ class VDP
         }
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11111110;
+         */
     }
 
     inline void executeCommandHMMM()
     {
+        puts("execute HMMM (not implemented yet");
+        exit(-1);
+        /*
         int ex, ey, dpb;
         getEdge(&ex, &ey, &dpb);
         switch (dpb) {
@@ -1380,118 +1465,97 @@ class VDP
         }
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11111110;
+         */
     }
 
     inline void executeCommandHMMV()
     {
-        int ex, ey, dpb;
-        getEdge(&ex, &ey, &dpb);
-        switch (this->getCommandAddX()) {
-            case 2:
-                this->ctx.reg[36] &= 0b11111110;
-                this->ctx.reg[40] &= 0b11111110;
-                break;
-            case 4:
-                this->ctx.reg[36] &= 0b11111100;
-                this->ctx.reg[40] &= 0b11111100;
-                break;
+        if (!this->isBitmapMode()) {
+            printf("Error: HMMV was executed in invalid screen mode (%d)\n", this->getScreenMode());
+            exit(-1);
         }
-        int sy = this->getSourceY();
-        int dx = this->getDestinationX();
-        int dy = this->getDestinationY();
-        int nx = this->getNumberOfDotsX();
-        int ny = this->getNumberOfDotsY();
-        int baseX = this->ctx.reg[45] & 0b000000100 ? dx - nx : dx;
-        int size = nx;
-        size /= dpb;
-        // NOTE: in fact, YMMM command is not completed immediatly, but it is completed immediatly.
-        while (ny--) {
-            memset(&this->ctx.ram[this->getDestinationAddr(baseX, dy, 0, 0)], this->ctx.reg[44], size);
-            if (this->ctx.reg[45] & 0b000001000) {
-                dy--;
-                sy--;
-                if (dy < 0) dy += ey;
-                if (sy < 0) sy += ey;
+        int screenWidth = this->getScreenWidth();
+        int dpb = this->getDotPerByteX();
+        int lineBytes = screenWidth / dpb;
+        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+        int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+        int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        unsigned char clr = this->ctx.reg[44];
+        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
+        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
+        int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
+        int addr = this->getNameTableAddress() + mxd + dx / dpb + dy * lineBytes;
+        printf("ExecuteCommand<HMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, CLR=$%02X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addr, clr, getScreenMode());
+        while (0 < ny) {
+            addr &= 0x1FFFF;
+            if (0 < dix) {
+                memset(&this->ctx.ram[addr], clr, nx);
             } else {
-                dy++;
-                sy++;
-                if (ey <= dy) dy -= ey;
-                if (ey <= sy) sy -= ey;
+                memset(&this->ctx.ram[addr + nx / dpb], clr, nx);
             }
+            addr += lineBytes * diy;
+            ny--;
         }
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11111110;
     }
 
-    inline void executeCommandLMMC()
+    inline void executeCommandLMMC(bool resetPosition)
     {
-        int dx = this->getDestinationX();
-        int dy = this->getDestinationY();
-        int ox = this->ctx.reg[45] & 0b000000100 ? -this->ctx.commandX : this->ctx.commandX;
-        int oy = this->ctx.reg[45] & 0b000001000 ? -this->ctx.commandY : this->ctx.commandY;
-        // NOTE: in fact, the transfer is not completed immediatly, but it is completed immediatly.
-        int addr = this->getDestinationAddr(dx, dy, ox, oy);
-        switch (this->getCommandAddX()) {
-            case 1: // G7 (8bit)
-                this->ctx.ram[addr] = this->logicalOperation(this->ctx.commandL, this->ctx.ram[addr], this->ctx.reg[44]);
-                break;
-            case 2: // G4, G6 (4bit)
-                if ((dx + ox) & 1) {
-                    // low 4bit
-                    unsigned char dc = this->ctx.ram[addr] & 0x0F;
-                    dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]) & 0x0F;
-                    this->ctx.ram[addr] &= 0xF0;
-                    this->ctx.ram[addr] |= dc;
-                } else {
-                    // high 4bit
-                    unsigned char dc = (this->ctx.ram[addr] & 0xF0) >> 4;
-                    dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]);
-                    dc <<= 4;
-                    this->ctx.ram[addr] &= 0x0F;
-                    this->ctx.ram[addr] |= dc;
-                }
-                break;
-            case 4: // G5 (2bit)
-                switch ((dx + ox) & 3) {
-                    case 0: { // xx------
-                        unsigned char dc = (this->ctx.ram[addr] & 0b11000000) >> 6;
-                        dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]) & 0b00000011;
-                        dc <<= 6;
-                        this->ctx.ram[addr] &= 0b00111111;
-                        this->ctx.ram[addr] |= dc;
-                        break;
-                    }
-                    case 1: { // --xx----
-                        unsigned char dc = (this->ctx.ram[addr] & 0b00110000) >> 4;
-                        dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]) & 0b00000011;
-                        dc <<= 4;
-                        this->ctx.ram[addr] &= 0b11001111;
-                        this->ctx.ram[addr] |= dc;
-                        break;
-                    }
-                    case 2: { // ----xx--
-                        unsigned char dc = (this->ctx.ram[addr] & 0b00001100) >> 2;
-                        dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]) & 0b00000011;
-                        dc <<= 2;
-                        this->ctx.ram[addr] &= 0b11110011;
-                        this->ctx.ram[addr] |= dc;
-                        break;
-                    }
-                    case 3: { // ------xx
-                        unsigned char dc = this->ctx.ram[addr] & 0b00000011;
-                        dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]) & 0b00000011;
-                        this->ctx.ram[addr] &= 0b11111100;
-                        this->ctx.ram[addr] |= dc;
-                        break;
-                    }
-                }
-                break;
+        if (!this->isBitmapMode()) {
+            printf("Error: LMMC was executed in invalid screen mode (%d)\n", this->getScreenMode());
+            exit(-1);
         }
-        this->ctx.commandX++;
-        if (this->getNumberOfDotsX() == this->ctx.commandX) {
-            this->ctx.commandX = 0;
-            this->ctx.commandY++;
-            if (this->getNumberOfDotsY() == this->ctx.commandY) {
+        int screenWidth = this->getScreenWidth();
+        int dpb = this->getDotPerByteX();
+        int lineBytes = screenWidth / dpb;
+        if (resetPosition) {
+            this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+            this->ctx.commandDY = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+            this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+            this->ctx.commandNY = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        }
+        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
+        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
+        int dix = dpb * this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int addr = this->getNameTableAddress() + mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
+#if 1
+        if (resetPosition) {
+            printf("ExecuteCommand<LMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X, LO=%X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.reg[44], ctx.commandL, getScreenMode());
+        }
+#endif
+        int lo3 = this->ctx.commandL & 0b0111;
+        if (this->ctx.reg[44] || 0 == (this->ctx.commandL & 0b1000)) {
+            switch (lo3) {
+                case 0b0000: // IMP
+                    this->ctx.ram[addr & 0x1FFFF] = this->ctx.reg[44];
+                    break;
+                case 0b0001: // AND
+                    this->ctx.ram[addr & 0x1FFFF] &= this->ctx.reg[44];
+                    break;
+                case 0b0010: // OR
+                    this->ctx.ram[addr & 0x1FFFF] |= this->ctx.reg[44];
+                    break;
+                case 0b0011: // EOR
+                    this->ctx.ram[addr & 0x1FFFF] ^= this->ctx.reg[44];
+                    break;
+                case 0b0100: // NOT
+                    this->ctx.ram[addr & 0x1FFFF] = 0xFF ^ this->ctx.reg[44];
+                    break;
+            }
+        }
+        this->ctx.commandDX += dix;
+        this->ctx.commandNX -= dpb;
+        if (this->ctx.commandNX <= 0) {
+            this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+            this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+            this->ctx.commandDY += diy;
+            this->ctx.commandNY--;
+            if (this->ctx.commandNY <= 0) {
+#if 1
+                puts("End LMMC");
+#endif
                 this->ctx.command = 0;
                 this->ctx.stat[2] &= 0b11111110;
             }
@@ -1500,6 +1564,10 @@ class VDP
 
     inline unsigned char executeCommandLMCM()
     {
+        puts("execute LMCM (not implemented yet");
+        exit(-1);
+        return 0;
+        /*
         int sx = this->getSourceX();
         int sy = this->getSourceY();
         int ox = this->ctx.reg[45] & 0b000000100 ? -this->ctx.commandX : this->ctx.commandX;
@@ -1534,10 +1602,14 @@ class VDP
             }
         }
         return result;
+         */
     }
 
     inline void executeCommandLMMM()
     {
+        puts("execute LMMM (not implemented yet");
+        exit(-1);
+        /*
         int ex, ey, dpb;
         getEdge(&ex, &ey, &dpb);
         int sx = this->getSourceX();
@@ -1625,10 +1697,14 @@ class VDP
         }
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11111110;
+         */
     }
 
     inline void executeCommandLMMV()
     {
+        puts("execute LMMV (not implemented yet");
+        exit(-1);
+        /*
         int ex, ey, dpb;
         getEdge(&ex, &ey, &dpb);
         int dx = this->getDestinationX();
@@ -1652,10 +1728,14 @@ class VDP
         }
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11111110;
+         */
     }
 
     inline void executeCommandLINE()
     {
+        puts("execute LINE (not implemented yet");
+        exit(-1);
+        /*
         int ex, ey, dpb;
         getEdge(&ex, &ey, &dpb);
         int x1, y1, x2, y2;
@@ -1709,10 +1789,14 @@ class VDP
         }
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11111110;
+         */
     }
 
     inline void executeCommandSRCH()
     {
+        puts("execute SRCH (not implemented yet");
+        exit(-1);
+        /*
         int ex, ey, dpb;
         getEdge(&ex, &ey, &dpb);
         int sx = this->getSourceX();
@@ -1749,10 +1833,14 @@ class VDP
         }
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11101110;
+         */
     }
 
     inline void executeCommandPSET()
     {
+        puts("execute PSET (not implemented yet");
+        exit(-1);
+        /*
         int ex, ey, dpb;
         getEdge(&ex, &ey, &dpb);
         int dx = this->getDestinationX();
@@ -1760,10 +1848,14 @@ class VDP
         this->drawLogicalPixel(dx, dy, 0, 0, dpb);
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11111110;
+         */
     }
 
     inline void executeCommandPOINT()
     {
+        puts("execute POINT (not implemented yet");
+        exit(-1);
+        /*
         int ex, ey, dpb;
         getEdge(&ex, &ey, &dpb);
         int sx = this->getSourceX();
@@ -1771,6 +1863,7 @@ class VDP
         this->ctx.stat[7] = this->getLogicalPixel(sx, sy, 0, 0, dpb);
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11111110;
+         */
     }
 
     inline void drawLogicalPixel(int x, int y, int ox, int oy, int dpb)
