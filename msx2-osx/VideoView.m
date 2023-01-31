@@ -8,6 +8,7 @@
 #import "VideoLayer.h"
 #import "VideoView.h"
 #import "emu.h"
+#import "msx2def.h"
 #include <ctype.h>
 
 static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const CVTimeStamp* outputTime, CVOptionFlags flagsIn, CVOptionFlags* flagsOut, void* context);

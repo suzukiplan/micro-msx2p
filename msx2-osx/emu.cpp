@@ -80,7 +80,7 @@ extern "C" void emu_reset()
 
 extern "C" void emu_vsync()
 {
-    msx2.tick();
+    msx2.tick(emu_key, 0, emu_keycode);
     memcpy(emu_vram, msx2.vdp.display, sizeof(emu_vram));
 }
 

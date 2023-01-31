@@ -4,9 +4,7 @@
 #include "vdp.hpp"
 #include "ay8910.hpp"
 #include "mmu.hpp"
-
-#define MSX2_COLOR_MODE_RGB555 0
-#define MSX2_COLOR_MODE_RGB565 1
+#include "msx2def.h"
 
 class MSX2 {
 private:
@@ -15,7 +13,20 @@ private:
     const int PSG_CLOCK = 44100;
     short soundBuffer[65536];
     unsigned short soundBufferCursor;
-    
+   
+    struct KeyCode {
+        bool exist;
+        int x;
+        int y;
+    } keyCodes[0x80];
+
+    void initKeyCode(char code, int x, int y) {
+        code &= 0x7F;
+        keyCodes[code].exist = true;
+        keyCodes[code].x = x;
+        keyCodes[code].y = y;
+    }
+
 public:
     Z80* cpu;
     MMU mmu;
@@ -24,6 +35,7 @@ public:
     
     struct Context {
         unsigned char io[256];
+        unsigned char key;
     } ctx;
 
     MSX2(int colorMode) {
@@ -47,20 +59,60 @@ public:
             auto this_ = (MSX2*)arg;
             printf("Update VDP register #%d = $%02X (PC:$%04X)\n", rn, value, this_->cpu->reg.PC);
         });
-        /*
-        this->cpu->addBreakPoint(0x015F, [](void* arg) {
-            puts("Called $015F");
-            ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
-                puts(msg);
-                if (strstr(msg, "RET to $8") != NULL) {
-                    ((MSX2*)arg)->cpu->resetDebugMessage();
-                }
-            });
-        });
-         */
         this->cpu->setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX2*)arg)->consumeClock(cpuClocks);
         });
+        memset(&keyCodes, 0, sizeof(keyCodes));
+        initKeyCode('0', 0, 0);
+        initKeyCode('1', 1, 0);
+        initKeyCode('2', 2, 0);
+        initKeyCode('3', 3, 0);
+        initKeyCode('4', 4, 0);
+        initKeyCode('5', 5, 0);
+        initKeyCode('6', 6, 0);
+        initKeyCode('7', 7, 0);
+        initKeyCode('8', 0, 1);
+        initKeyCode('9', 1, 1);
+        initKeyCode('-', 2, 1);
+        initKeyCode('^', 3, 1);
+        initKeyCode('\\', 4, 1);
+        initKeyCode('@', 5, 1);
+        initKeyCode('[', 6, 1);
+        initKeyCode(';', 7, 1);
+        initKeyCode(':', 0, 2);
+        initKeyCode(']', 1, 2);
+        initKeyCode(',', 2, 2);
+        initKeyCode('.', 3, 2);
+        initKeyCode('/', 4, 2);
+        initKeyCode('_', 5, 2);
+        initKeyCode('A', 6, 2);
+        initKeyCode('B', 7, 2);
+        initKeyCode('C', 0, 3);
+        initKeyCode('D', 1, 3);
+        initKeyCode('E', 2, 3);
+        initKeyCode('F', 3, 3);
+        initKeyCode('G', 4, 3);
+        initKeyCode('H', 5, 3);
+        initKeyCode('I', 6, 3);
+        initKeyCode('J', 7, 3);
+        initKeyCode('K', 0, 4);
+        initKeyCode('L', 1, 4);
+        initKeyCode('M', 2, 4);
+        initKeyCode('N', 3, 4);
+        initKeyCode('O', 4, 4);
+        initKeyCode('P', 5, 4);
+        initKeyCode('Q', 6, 4);
+        initKeyCode('R', 7, 4);
+        initKeyCode('S', 0, 5);
+        initKeyCode('T', 1, 5);
+        initKeyCode('U', 2, 5);
+        initKeyCode('V', 3, 5);
+        initKeyCode('W', 4, 5);
+        initKeyCode('X', 5, 5);
+        initKeyCode('Y', 6, 5);
+        initKeyCode('Z', 7, 5);
+        initKeyCode('\n', 7, 7);
+        initKeyCode(' ', 0, 8);
     }
     
     void reset() {
@@ -86,7 +138,9 @@ public:
         reset();
     }
     
-    void tick() {
+    void tick(unsigned char pad1, unsigned char pad2, unsigned char key) {
+        this->psg.setPads(pad1, pad2);
+        this->ctx.key = toupper(key);
         cpu->execute(0x7FFFFFFF);
     }
 
@@ -112,8 +166,26 @@ public:
             case 0x99: return this->vdp.readPort1();
             case 0xA2: return this->psg.read();
             case 0xA8: return this->mmu.getPrimary();
-            //case 0xA9: return 0xFF;
             case 0xAA: return 0x00;
+            case 0xA9: {
+                // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
+                static unsigned char bit[8] = {
+                    0b00000001,
+                    0b00000010,
+                    0b00000100,
+                    0b00001000,
+                    0b00010000,
+                    0b00100000,
+                    0b01000000,
+                    0b10000000};
+                unsigned char result = 0;
+                if (this->ctx.key && this->keyCodes[this->ctx.key].exist) {
+                    if ((this->ctx.io[0xAA] & 0x0F) == this->keyCodes[this->ctx.key].y) {
+                        result |= bit[this->keyCodes[this->ctx.key].x];
+                    }
+                }
+                return ~result;
+            }
             default: printf("ignore an unknown input port $%02X\n", port);
         }
         return this->ctx.io[port];
@@ -129,7 +201,7 @@ public:
             case 0xA0: this->psg.latch(value); break;
             case 0xA1: this->psg.write(value); break;
             case 0xA8: this->mmu.updatePrimary(value); break;
-            //case 0xAA: break;
+            case 0xAA: break;
             //case 0xAB: break;
             case 0xFC: this->mmu.updateSegment(3, value); break;
             case 0xFD: this->mmu.updateSegment(2, value); break;
