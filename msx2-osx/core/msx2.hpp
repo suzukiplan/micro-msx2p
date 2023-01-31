@@ -43,12 +43,10 @@ public:
         }, [](void* arg) {
             ((MSX2*)arg)->cpu->requestBreak();
         });
-        /*
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
             printf("Update VDP register #%d = $%02X (PC:$%04X)\n", rn, value, this_->cpu->reg.PC);
         });
-         */
         /*
         this->cpu->addBreakPoint(0x015F, [](void* arg) {
             puts("Called $015F");

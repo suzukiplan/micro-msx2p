@@ -83,6 +83,7 @@ extern unsigned char emu_keycode;
         case 0x0078: emu_key |= MSX2_JOY_T2; break;
         case 0x007A: emu_key |= MSX2_JOY_T1; break;
         case 0x0064: emu_dumpVideoMemory(); break;
+        case 0x0072: emu_reset(); break;
         default: emu_keycode = c;
     }
 }

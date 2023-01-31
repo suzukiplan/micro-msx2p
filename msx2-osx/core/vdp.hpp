@@ -34,7 +34,8 @@ class VDP
         unsigned char tmpAddr[2];
         unsigned char stat[16];
         unsigned int addr;
-        unsigned char latch;
+        unsigned char latch1;
+        unsigned char latch2;
         unsigned char readBuffer;
         unsigned char command;
         unsigned short commandDX;
@@ -323,7 +324,7 @@ class VDP
         }
         unsigned char result = this->ctx.readBuffer;
         this->readVideoMemory();
-        this->ctx.latch = 0;
+        this->ctx.latch1 = 0;
         return result;
     }
 
@@ -347,7 +348,7 @@ class VDP
                 }
                 break;
         }
-        this->ctx.latch = 0;
+        this->ctx.latch1 = 0;
         return result;
     }
 
@@ -355,19 +356,20 @@ class VDP
     {
         this->ctx.addr &= this->getVramSize() - 1;
         this->ctx.readBuffer = value;
+        //printf("VRAM[$%05X] = $%02X\n", this->ctx.addr, value);
         this->ctx.ram[this->ctx.addr] = this->ctx.readBuffer;
         if (this->debug.vramWriteListener) {
             this->debug.vramWriteListener(this->debug.arg, this->ctx.addr, this->ctx.readBuffer);
         }
         this->ctx.addr++;
-        this->ctx.latch = 0;
+        this->ctx.latch1 = 0;
     }
 
     inline void writePort1(unsigned char value)
     {
-        this->ctx.latch &= 1;
-        this->ctx.tmpAddr[this->ctx.latch++] = value;
-        if (2 == this->ctx.latch) {
+        this->ctx.latch1 &= 1;
+        this->ctx.tmpAddr[this->ctx.latch1++] = value;
+        if (2 == this->ctx.latch1) {
             if ((this->ctx.tmpAddr[1] & 0b11000000) == 0b10000000) {
                 // Direct access to VDP registers
                 this->updateRegister(this->ctx.tmpAddr[1] & 0b00111111, this->ctx.tmpAddr[0]);
@@ -377,22 +379,22 @@ class VDP
                 this->updateAddress();
                 this->readVideoMemory();
             }
-        } else if (1 == this->ctx.latch) {
-            this->ctx.addr &= 0xFFFFFF00;
-            this->ctx.addr |= this->ctx.tmpAddr[0];
         }
     }
 
     inline void writePort2(unsigned char value)
     {
-        this->ctx.latch &= 1;
+        this->ctx.latch2 &= 1;
         int pn = this->ctx.reg[16] & 0b00001111;
-        this->ctx.pal[pn][this->ctx.latch++] = value;
-        if (2 == this->ctx.latch) {
-            printf("update palette #%d\n", pn);
+        this->ctx.pal[pn][this->ctx.latch2++] = value;
+        if (2 == this->ctx.latch2) {
+            printf("update palette #%d ($%02X%02X)\n", pn, this->ctx.pal[pn][1], this->ctx.pal[pn][0]);
             updatePaletteCacheFromRegister(pn);
             this->ctx.reg[16]++;
             this->ctx.reg[16] &= 0b00001111;
+        } else {
+            this->ctx.pal[pn][1] = 0;
+            updatePaletteCacheFromRegister(pn);
         }
     }
 
@@ -536,6 +538,8 @@ class VDP
             }
         } else if (46 == rn) {
             this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
+        } else if (16 == rn) {
+            this->ctx.latch2 = 0;
         }
 #ifdef DEBUG
         if (vramSize != getVramSize()) {
@@ -640,21 +644,20 @@ class VDP
         int pg = this->getPatternGeneratorAddress();
         int lineNumberMod8 = lineNumber & 0b111;
         unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
-        int cur = 0;
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + lineNumberMod8];
             unsigned char c = this->ctx.ram[ct + nam[i] / 8];
             unsigned char cc[2];
             cc[1] = (c & 0xF0) >> 4;
             cc[0] = c & 0x0F;
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b10000000) >> 7]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b01000000) >> 6]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00100000) >> 5]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00010000) >> 4]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00001000) >> 3]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00000100) >> 2]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00000010) >> 1]);
-            this->renderPixel(&renderPosition[cur++], cc[ptn & 0b00000001]);
+            this->renderPixel(renderPosition++, cc[(ptn & 0b10000000) >> 7]);
+            this->renderPixel(renderPosition++, cc[(ptn & 0b01000000) >> 6]);
+            this->renderPixel(renderPosition++, cc[(ptn & 0b00100000) >> 5]);
+            this->renderPixel(renderPosition++, cc[(ptn & 0b00010000) >> 4]);
+            this->renderPixel(renderPosition++, cc[(ptn & 0b00001000) >> 3]);
+            this->renderPixel(renderPosition++, cc[(ptn & 0b00000100) >> 2]);
+            this->renderPixel(renderPosition++, cc[(ptn & 0b00000010) >> 1]);
+            this->renderPixel(renderPosition++, cc[ptn & 0b00000001]);
         }
         //renderSpritesMode1(lineNumber, renderPosition);
     }

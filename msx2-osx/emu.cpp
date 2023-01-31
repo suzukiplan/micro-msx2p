@@ -99,7 +99,7 @@ static void dump(const char* label, unsigned char* vram, int addr, int size)
         memset(ascii, 0, sizeof(ascii));
         int i;
         for (i = 0; 0 < size && i < 16; i++) {
-            if (i != 7) {
+            if (i != 8) {
                 snprintf(buf, sizeof(buf), " %02X", vram[addr]);
             } else {
                 snprintf(buf, sizeof(buf), " - %02X", vram[addr]);
