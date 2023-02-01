@@ -25,20 +25,22 @@
 {
     [super viewDidLoad];
 
-#if 1
+#if 0
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_main_msx2_jp" ofType:@"rom"]];
     NSData* biosLogo = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_logo_msx2" ofType:@"rom"]];
     NSData* biosSub = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_sub" ofType:@"rom"]];
     emu_init_cbios(biosMain.bytes, biosMain.length,
                    biosLogo.bytes, biosLogo.length,
                    biosSub.bytes, biosSub.length);
-#elif 0
+#elif 1
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2" ofType:@"ROM"]];
     NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2EXT" ofType:@"ROM"]];
+    NSData* biosDisk = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DISK" ofType:@"ROM"]];
+    NSData* biosFm = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FMBIOS" ofType:@"ROM"]];
     emu_init_bios(biosMain.bytes, biosMain.length,
                   biosExt.bytes, biosExt.length,
-                  NULL, 0,
-                  NULL, 0);
+                  biosDisk.bytes, biosDisk.length,
+                  biosFm.bytes, biosFm.length);
 #else
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2P" ofType:@"ROM"]];
     NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2PEXT" ofType:@"ROM"]];
@@ -50,14 +52,16 @@
                   biosFm.bytes, biosFm.length);
 #endif
     
+#if 0
     NSString* romFile = [[NSUserDefaults standardUserDefaults] objectForKey:@"previous_rom_file"];
     if (romFile) {
         NSLog(@"previous_rom_file: %@", romFile);
         __weak ViewController* weakSelf = self;
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.3 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.5 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
             [weakSelf _openURL:[NSURL fileURLWithPath:romFile]];
         });
     }
+#endif
     self.view.frame = CGRectMake(0, 0, VRAM_WIDTH * 2, VRAM_HEIGHT * 2);
     CALayer* layer = [CALayer layer];
     [layer setBackgroundColor:CGColorCreateGenericRGB(0.0, 0.0, 0.2525, 1.0)];
@@ -130,8 +134,12 @@
 
 - (void)_openURL:(NSURL*)url
 {
-    NSData* data = [NSData dataWithContentsOfURL:url];
-    if (!data) return;
+    NSError* error;
+    NSData* data = [NSData dataWithContentsOfURL:url options:NSDataReadingUncached error:&error];
+    if (!data) {
+        NSLog(@"File open error: %@", error);
+        return;
+    }
     char gameCode[16];
     memset(gameCode, 0, sizeof(gameCode));
     gameCode[0] = '\0';

@@ -3,10 +3,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "msx2def.h"
 
 class MMU
 {
-  private:
+  public:
     // MSX slots are separated by 16KB, but MegaROMs are separated by 8KB or 16KB, so data blocks are managed by 8KB
     struct DataBlock8KB {
         char label[8];
@@ -19,13 +20,14 @@ class MMU
         struct DataBlock8KB data[8];
     } slots[4][4];
 
-    // TODO: Memorize cartridge addresses in case of MegaROMs support (need keep megarom type and switch bank routine at the write method)
+    bool secondaryExist[4];
+
     struct Cartridge {
         unsigned char* ptr;
         size_t size;
+        int romType;
     } cartridge;
 
-public:
     struct Context {
         unsigned char primary[4];
         unsigned char secondary[4];
@@ -37,6 +39,13 @@ public:
         memset(&this->slots, 0, sizeof(this->slots));
     }
 
+    void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
+        secondaryExist[0] = page0;
+        secondaryExist[1] = page1;
+        secondaryExist[2] = page2;
+        secondaryExist[3] = page3;
+    }
+
     void reset()
     {
         memset(&this->ctx, 0, sizeof(this->ctx));
@@ -45,10 +54,11 @@ public:
     inline int primaryNumber(int page) { return this->ctx.primary[page & 0b11]; }
     inline int secondaryNumber(int page) { return this->ctx.secondary[page & 0b11]; }
 
-    void setupCartridge(int pri, int sec, int idx, void* data, size_t size)
+    void setupCartridge(int pri, int sec, int idx, void* data, size_t size, int romType)
     {
         this->cartridge.ptr = (unsigned char*)data;
         this->cartridge.size = size;
+        this->cartridge.romType = romType;
         setup(pri, sec, idx, false, this->cartridge.ptr, this->cartridge.size < 0x8000 ? 0x4000 : 0x8000, "CART");
     }
 
@@ -75,17 +85,17 @@ public:
         unsigned char result = 0;
         for (int i = 0; i < 4; i++) {
             result <<= 2;
-            result += this->ctx.primary[3 - i] & 0b11;
+            result |= this->ctx.primary[3 - i] & 0b11;
         }
         return result;
     }
 
     inline void dumpPageLayout(const char* msg) {
-#if 0
-        auto page0 = slots[ctx.primary[0]][3 != ctx.primary[0] ? 0 : ctx.secondary[0]];
-        auto page1 = slots[ctx.primary[1]][3 != ctx.primary[1] ? 0 : ctx.secondary[1]];
-        auto page2 = slots[ctx.primary[2]][3 != ctx.primary[2] ? 0 : ctx.secondary[2]];
-        auto page3 = slots[ctx.primary[3]][3 != ctx.primary[3] ? 0 : ctx.secondary[3]];
+#if 1
+        auto page0 = slots[ctx.primary[0]][ctx.secondary[0]];
+        auto page1 = slots[ctx.primary[1]][ctx.secondary[1]];
+        auto page2 = slots[ctx.primary[2]][ctx.secondary[2]];
+        auto page3 = slots[ctx.primary[3]][ctx.secondary[3]];
         printf("Pages #0:%d-%d(%s), #1:%d-%d(%s), #2:%d-%d(%s), #3:%d-%d(%s) <%s>\n"
                , ctx.primary[0], ctx.secondary[0]
                , page0.data[0].label[0] ? page0.data[0].label : "n/a"
@@ -130,7 +140,11 @@ public:
         unsigned char result = 0;
         for (int i = 0; i < 4; i++) {
             result <<= 2;
-            result += this->ctx.secondary[3 - i] & 0b11;
+            if (this->secondaryExist[3 - i]) {
+                result |= (0b11 ^ this->ctx.secondary[3 - i]) & 0b11;
+            } else {
+                result |= this->ctx.secondary[3 - i] & 0b11;
+            }
         }
         return result;
     }
@@ -157,10 +171,14 @@ public:
 
     inline unsigned char read(unsigned short addr)
     {
-        if (addr == 0xFFFF) return this->getSecondary();
+        if (addr == 0xFFFF) {
+            return this->getSecondary();
+        }
         int page = (addr & 0b1100000000000000) >> 14;
         int pri = this->ctx.primary[page];
-        int sec = 3 == pri ? this->ctx.secondary[page] : 0;
+        //int sec = 3 == pri ? this->ctx.secondary[page] : 0;
+        //int sec = this->ctx.secondary[page];
+        int sec = this->secondaryExist[pri] ? this->ctx.secondary[page] : 0;
         int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
         auto ptr = s->data[idx].ptr;
@@ -176,12 +194,47 @@ public:
         }
         int page = (addr & 0b1100000000000000) >> 14;
         int pri = this->ctx.primary[page];
-        int sec = 3 == pri ? this->ctx.secondary[page] : 0;
+        int sec = this->secondaryExist[pri] ? this->ctx.secondary[page] : 0;
+        //int sec = this->ctx.secondary[page];
         int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
         auto data = &s->data[idx];
         if (data->isRAM && data->ptr) {
             data->ptr[addr & 0x1FFF] = value;
+#if 1
+            if (0xFAAC == addr) {
+                bool kana = value & 0x80 ? true : false;
+                bool mask = value & 0x08 ? false : true;
+                int vsize = ((value & 0x06) >> 1) * 64;
+                if (0 == vsize) vsize = 16;
+                bool conv = value & 0x01 ? true : false;
+                printf("Update MODE($%04X) = $%02X (Kana:%s, Mask:%s, VRAM:%dKB, Conv:%s)\n", addr, value, kana ? "Yes": "No", mask ? "Yes" : "No", vsize, conv ? "Yes" : "No");
+                
+            }
+            else if (0xFCC1 <= addr && addr <= 0xFCC1 + 4) {
+                printf("Update EXPTBL($%04X) = $%02X\n", addr, value);
+            }
+            else if (0xFCC5 <= addr && addr <= 0xFCC5 + 4) {
+                printf("Update SLTTBL($%04X) = $%02X\n", addr, value);
+            }
+            else if (0xFCC9 <= addr && addr <= 0xFCC9 + 64) {
+                printf("Update SLTATR($%04X) = $%02X\n", addr, value);
+            }
+            else if (0xFD09 <= addr && addr <= 0xFD09 + 128) {
+                printf("Update SLTWRK($%04X) = $%02X\n", addr, value);
+            }
+#endif
+        } else if (data->isCartridge) {
+            switch (this->cartridge.romType) {
+                case MSX2_ROM_TYPE_NORMAL:
+                    break;
+                case MSX2_ROM_TYPE_ASC8:
+                    break;
+                case MSX2_ROM_TYPE_ASC16:
+                    break;
+            }
+            puts("DETECT ROM WRITE");
+            exit(-1);
         }
     }
 };

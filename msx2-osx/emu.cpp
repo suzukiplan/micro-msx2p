@@ -25,30 +25,37 @@ extern "C" void emu_init_bios(const void* main, size_t mainSize,
                               const void* disk, size_t diskSize,
                               const void* fm, size_t fmSize)
 {
+    msx2.setupSecondaryExist(false, false, false, true);
     if (main && 0x8000 == mainSize) {
         memcpy(bios.main, main, 0x8000);
         msx2.setup(0, 0, 0, false, bios.main, 0x8000, "MAIN");
     }
-    msx2.setup(3, 0, 0, true, ram, 0x10000, "RAM");
+    msx2.setup(3, 3, 0, true, ram, 0x10000, "RAM");
+#if 0
+    msx2.setup(3, 1, 6, true, &ram[0xC000], 0x4000, "RAM");
+    msx2.setup(3, 2, 6, true, &ram[0xC000], 0x4000, "RAM");
+    msx2.setup(3, 3, 6, true, &ram[0xC000], 0x4000, "RAM");
+#endif
     if (ext && 0x4000 == extSize) {
         memcpy(bios.ext, ext, 0x4000);
-        msx2.setup(3, 1, 0, false, bios.ext, 0x4000, "SUB");
+        msx2.setup(3, 0, 0, false, bios.ext, 0x4000, "SUB");
     }
     if (disk && 0x4000 <= diskSize) {
         memcpy(bios.disk, disk, 0x4000);
-        msx2.setup(3, 2, 2, false, bios.disk, 0x4000, "DISK");
+        msx2.setup(3, 1, 2, false, bios.disk, 0x4000, "DISK");
     }
     if (fm && 0x4000 <= fmSize) {
         memcpy(bios.fm, fm, 0x4000);
-        msx2.setup(3, 3, 2, false, bios.fm, 0x4000, "FM");
+        msx2.setup(3, 2, 2, false, bios.fm, 0x4000, "FM");
     }
-    msx2.reset();
+    emu_reset();
 }
 
 extern "C" void emu_init_cbios(const void* main, size_t mainSize,
                                const void* logo, size_t logoSize,
                                const void* sub, size_t subSize)
 {
+    msx2.setupSecondaryExist(false, false, false, true);
     if (main && 0x8000 == mainSize) {
         memcpy(bios.main, main, 0x8000);
         msx2.setup(0, 0, 0, false, bios.main, 0x8000, "MAIN");
@@ -62,7 +69,7 @@ extern "C" void emu_init_cbios(const void* main, size_t mainSize,
         memcpy(bios.ext, sub, 0x4000);
         msx2.setup(3, 3, 0, false, bios.ext, 0x4000, "SUB");
     }
-    msx2.reset();
+    emu_reset();
 }
 
 void emu_loadRom(const void* rom_, size_t romSize)
@@ -70,12 +77,14 @@ void emu_loadRom(const void* rom_, size_t romSize)
     if (rom) free(rom);
     rom = (unsigned char*)malloc(romSize);
     memcpy(rom, rom_, romSize);
-    msx2.loadRom(rom, (int)romSize);
+    msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC16);
+    emu_reset();
 }
 
 extern "C" void emu_reset()
 {
     msx2.reset();
+    memset(ram, 0xFF, sizeof(ram));
 }
 
 extern "C" void emu_vsync()
@@ -134,4 +143,17 @@ extern "C" void emu_dumpVideoMemory()
     dump("ColorTable", vram, vdp->getColorTableAddress(), vdp->getColorTableSize());
 }
 
+extern "C" void emu_startDebug()
+{
+    msx2.cpu->setDebugMessage([](void* arg, const char* msg) {
+        auto msx2 = (MSX2*)arg;
+        printf("[%d:%d:%d:%d] L=%3d %s\n",
+               msx2->mmu.ctx.primary[0],
+               msx2->mmu.ctx.primary[1],
+               msx2->mmu.ctx.primary[2],
+               msx2->mmu.ctx.primary[3],
+               msx2->vdp.ctx.countV,
+               msg);
+    });
+}
 

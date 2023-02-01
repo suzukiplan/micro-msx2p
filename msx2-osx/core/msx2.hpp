@@ -49,16 +49,50 @@ public:
             return ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
-            printf("Execute Interrupt %d from VDP\n", ie);
+            puts("VSYNC");
             ((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
         }, [](void* arg) {
             ((MSX2*)arg)->cpu->requestBreak();
         });
+        /*
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
             printf("Update VDP register #%d = $%02X (PC:$%04X)\n", rn, value, this_->cpu->reg.PC);
         });
+         */
+
+        // RDSLT
+        //this->cpu->addBreakPoint(0x23D2, [](void* arg) {
+        this->cpu->addBreakPoint(0x000C, [](void* arg) {
+            unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
+            unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
+            hl <<= 8;
+            hl |= ((MSX2*)arg)->cpu->reg.pair.L;
+            printf("RDSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X\n", a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl);
+        });
+
+        // WRSLT
+        //this->cpu->addBreakPoint(0x2413, [](void* arg) {
+        this->cpu->addBreakPoint(0x0014, [](void* arg) {
+            unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
+            unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
+            hl <<= 8;
+            hl |= ((MSX2*)arg)->cpu->reg.pair.L;
+            unsigned char e = ((MSX2*)arg)->cpu->reg.pair.E;
+            printf("WRSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X E=$%02X\n", a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl, e);
+        });
+
+        this->cpu->addBreakOperand(0xCD, [](void* arg, unsigned char* op, int size) {
+            int pri3 = ((MSX2*)arg)->mmu.ctx.primary[3];
+            int sec3 = ((MSX2*)arg)->mmu.ctx.secondary[3];
+            auto data = &((MSX2*)arg)->mmu.slots[pri3][sec3].data[7];
+            if (!data->isRAM) {
+                puts("invalid call");
+                exit(-1);
+            }
+        });
+
         this->cpu->setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX2*)arg)->consumeClock(cpuClocks);
         });
@@ -129,19 +163,23 @@ public:
         this->psg.reset(27);
     }
     
+    void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
+        this->mmu.setupSecondaryExist(page0, page1, page2, page3);
+    }
+
     void setup(int pri, int sec, int idx, bool isRAM, void* data, int size, const char* label = NULL) {
-        mmu.setup(pri, sec, idx, isRAM, (unsigned char*)data, size, label);
+        this->mmu.setup(pri, sec, idx, isRAM, (unsigned char*)data, size, label);
     }
     
-    void loadRom(void* data, int size) {
-        mmu.setupCartridge(1, 0, 2, data, size);
-        reset();
+    void loadRom(void* data, int size, int romType) {
+        this->mmu.setupCartridge(1, 0, 2, data, size, romType);
+        this->reset();
     }
     
     void tick(unsigned char pad1, unsigned char pad2, unsigned char key) {
         this->psg.setPads(pad1, pad2);
         this->ctx.key = toupper(key);
-        cpu->execute(0x7FFFFFFF);
+        this->cpu->execute(0x7FFFFFFF);
     }
 
     inline void consumeClock(int cpuClocks) {

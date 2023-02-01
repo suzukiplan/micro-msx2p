@@ -29,6 +29,7 @@ void emu_loadRom(const void* rom, size_t romSize);
 void emu_vsync(void);
 void emu_destroy(void);
 void emu_dumpVideoMemory(void);
+void emu_startDebug(void);
 
 #ifdef __cplusplus
 };

@@ -388,7 +388,7 @@ class VDP
         int pn = this->ctx.reg[16] & 0b00001111;
         this->ctx.pal[pn][this->ctx.latch2++] = value;
         if (2 == this->ctx.latch2) {
-            printf("update palette #%d ($%02X%02X)\n", pn, this->ctx.pal[pn][1], this->ctx.pal[pn][0]);
+            //printf("update palette #%d ($%02X%02X)\n", pn, this->ctx.pal[pn][1], this->ctx.pal[pn][0]);
             updatePaletteCacheFromRegister(pn);
             this->ctx.reg[16]++;
             this->ctx.reg[16] &= 0b00001111;
@@ -495,7 +495,7 @@ class VDP
         ha <<= 14;
         this->ctx.addr += ha;
         this->ctx.addr += this->ctx.reg[45] & 0b01000000 ? 0x10000 : 0;
-        printf("update VRAM address: $%05X (%s)\n", this->ctx.addr, this->where(this->ctx.addr));
+        //printf("update VRAM address: $%05X (%s)\n", this->ctx.addr, this->where(this->ctx.addr));
     }
 
     inline void readVideoMemory()
@@ -510,7 +510,7 @@ class VDP
         if (debug.registerUpdateListener) {
             debug.registerUpdateListener(debug.arg, rn, value);
         }
-#ifdef DEBUG
+#if 1
         int vramSize = getVramSize();
         int screenMode = this->getScreenMode();
         bool screen = this->isEnabledScreen();
@@ -541,7 +541,7 @@ class VDP
         } else if (16 == rn) {
             this->ctx.latch2 = 0;
         }
-#ifdef DEBUG
+#if 1
         if (vramSize != getVramSize()) {
             printf("Change VDP RAM size: %d -> %d\n", vramSize, getVramSize());
         }
@@ -595,10 +595,10 @@ class VDP
                 // 00 000 : GRAPHIC1    256x192             Mode1   chr           16KB
                 // 00 001 : GRAPHIC2    256x192             Mode1   chr           16KB
                 // 00 010 : GRAPHIC3    256x192             Mode2   chr           16KB
-                // 00 011 : GRAPHIC4    256x292 or 256x212  Mode2   bitmap(4bit)  64KB
-                // 00 100 : GRAPHIC5    512x292 or 512x212  Mode2   bitmap(2bit)  64KB
-                // 00 101 : GRAPHIC6    512x292 or 512x212  Mode2   bitmap(4bit)  128KB
-                // 00 111 : GRAPHIC7    512x292 or 512x212  Mode2   bitmap(8bit)  128KB
+                // 00 011 : GRAPHIC4    256x192 or 256x212  Mode2   bitmap(4bit)  64KB
+                // 00 100 : GRAPHIC5    512x192 or 512x212  Mode2   bitmap(2bit)  64KB
+                // 00 101 : GRAPHIC6    512x192 or 512x212  Mode2   bitmap(4bit)  128KB
+                // 00 111 : GRAPHIC7    256x192 or 256x212  Mode2   bitmap(8bit)  128KB
                 // 01 000 : MULTI COLOR 64x48 (4px/block)   Mode1   low bitmap    16KB
                 // 10 000 : TEXT1       40x24 (6x8px/block) n/a     chr           16KB
                 // 10 010 : TEXT2       80x24 (6x8px/block) n/a     chr           16KB
@@ -606,20 +606,18 @@ class VDP
                     case 0b00000: // GRAPHIC1
                         this->renderScanlineModeG1(lineNumber, renderPosition);
                         break;
-                    case 0b00011: // GRAPHIC4
-                        this->renderScanlineModeG4(lineNumber, renderPosition);
-                        break;
-                        /*
                     case 0b00001: // GRAPHIC2
                         this->renderScanlineModeG23(lineNumber, false, renderPosition);
                         break;
                     case 0b00010: // GRAPHIC3
                         this->renderScanlineModeG23(lineNumber, true, renderPosition);
                         break;
+                    case 0b00011: // GRAPHIC4
+                        this->renderScanlineModeG4(lineNumber, renderPosition);
+                        break;
                     case 0b00111: // GRAPHIC7
                         this->renderScanlineModeG7(lineNumber, renderPosition);
                         break;
-                         */
                     default:
                         puts("UNSUPPORTED SCREEN MODE!");
                         exit(-1);
@@ -1335,7 +1333,7 @@ class VDP
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
         int addr = this->getNameTableAddress() + mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
-#if 1
+#if 0
         printf("ExecuteCommand<HMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.reg[44], getScreenMode());
 #endif
         this->ctx.ram[addr & 0x1FFFF] = this->ctx.reg[44];
@@ -1347,7 +1345,7 @@ class VDP
             this->ctx.commandDY += diy;
             this->ctx.commandNY--;
             if (this->ctx.commandNY <= 0) {
-#if 1
+#if 0
                 puts("End HMMC");
 #endif
                 this->ctx.command = 0;
@@ -1461,7 +1459,9 @@ class VDP
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
         int addr = this->getNameTableAddress() + mxd + dx / dpb + dy * lineBytes;
+#if 0
         printf("ExecuteCommand<HMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, CLR=$%02X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addr, clr, getScreenMode());
+#endif
         while (0 < ny) {
             addr &= 0x1FFFF;
             if (0 < dix) {
@@ -1498,7 +1498,7 @@ class VDP
         int dst = this->ctx.reg[44];
         if (2 == dst) dst &= 0x0F;
         else if (4 == dst) dst &= 0b11;
-#if 1
+#if 0
         printf("ExecuteCommand<LMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X, LO=%X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, dst, ctx.commandL, getScreenMode());
 #endif
         if (dst || 0 == (this->ctx.commandL & 0b1000)) {
@@ -1588,7 +1588,7 @@ class VDP
             this->ctx.commandDY += diy;
             this->ctx.commandNY--;
             if (this->ctx.commandNY <= 0) {
-#if 1
+#if 0
                 puts("End LMMC");
 #endif
                 this->ctx.command = 0;
