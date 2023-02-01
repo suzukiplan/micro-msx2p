@@ -617,6 +617,9 @@ class VDP
                     case 0b00011: // GRAPHIC4
                         this->renderScanlineModeG4(lineNumber, renderPosition);
                         break;
+                    case 0b00100: // GRAPHIC5
+                        this->renderScanlineModeG5(lineNumber, renderPosition);
+                        break;
                     case 0b00111: // GRAPHIC7
                         this->renderScanlineModeG7(lineNumber, renderPosition);
                         break;
@@ -631,8 +634,12 @@ class VDP
         }
     }
 
+    inline void renderPixel1(unsigned short* renderPosition, int paletteNumber) {
+        if (!paletteNumber) return;
+        *renderPosition = this->palette[paletteNumber];
+    }
+
     inline void renderPixel2(unsigned short* renderPosition, int paletteNumber) {
-        //if (!this->palette[paletteNumber]) return;
         if (!paletteNumber) return;
         *renderPosition = this->palette[paletteNumber];
         *(renderPosition + 1) = this->palette[paletteNumber];
@@ -674,12 +681,12 @@ class VDP
 
     inline void renderScanlineModeG23(int lineNumber, bool isSpriteMode2, unsigned short* renderPosition)
     {
-        int pn = (this->ctx.reg[2] & 0b00001111) << 10;
-        int ct = (this->ctx.reg[3] & 0b10000000) << 6;
+        int pn = this->getNameTableAddress();
+        int ct = this->getColorTableAddress();
         int cmask = this->ctx.reg[3] & 0b01111111;
         cmask <<= 3;
         cmask |= 0x07;
-        int pg = (this->ctx.reg[4] & 0b00000100) << 11;
+        int pg = this->getPatternGeneratorAddress();
         int pmask = this->ctx.reg[4] & 0b00000011;
         pmask <<= 8;
         pmask |= 0xFF;
@@ -723,12 +730,25 @@ class VDP
     inline void renderScanlineModeG4(int lineNumber, unsigned short* renderPosition)
     {
         int curD = 0;
-        int curP = lineNumber * 128;
+        int curP = this->getNameTableAddress() + lineNumber * 128;
         for (int i = 0; i < 128; i++) {
             this->renderPixel2(&renderPosition[curD], (this->ctx.ram[curP] & 0xF0) >> 4);
             curD += 2;
             this->renderPixel2(&renderPosition[curD], this->ctx.ram[curP++] & 0x0F);
             curD += 2;
+        }
+        renderSpritesMode2(lineNumber, renderPosition);
+    }
+
+    inline void renderScanlineModeG5(int lineNumber, unsigned short* renderPosition)
+    {
+        int curD = 0;
+        int curP = this->getNameTableAddress() + lineNumber * 128;
+        for (int i = 0; i < 128; i++) {
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[curP] & 0xC0) >> 6);
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[curP] & 0x30) >> 4);
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[curP] & 0x0C) >> 2);
+            this->renderPixel1(&renderPosition[curD++], this->ctx.ram[curP++] & 0x03);
         }
         renderSpritesMode2(lineNumber, renderPosition);
     }
