@@ -9,7 +9,7 @@
 #import "emu.h"
 #import "VideoLayer.h"
 
-static unsigned short imgbuf[2][VRAM_WIDTH * VRAM_HEIGHT];
+static unsigned short imgbuf[2][VRAM_WIDTH * 2 * VRAM_HEIGHT];
 static CGContextRef img[2];
 static volatile int bno;
 
@@ -28,10 +28,10 @@ static volatile int bno;
         img[1] = nil;
         // create image buffer
         CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-        NSInteger width = VRAM_WIDTH;
+        NSInteger width = VRAM_WIDTH * 2;
         NSInteger height = VRAM_HEIGHT;
         for (int i = 0; i < 2; i++) {
-            img[i] = CGBitmapContextCreate(imgbuf[i], width, height, 5, 2 * VRAM_WIDTH, colorSpace, kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder16Little);
+            img[i] = CGBitmapContextCreate(imgbuf[i], width, height, 5, 2 * VRAM_WIDTH * 2, colorSpace, kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder16Little);
         }
         CFRelease(colorSpace);
     }
@@ -44,8 +44,8 @@ static volatile int bno;
     unsigned short* buf = imgbuf[1 - bno];
     int i = 0;
     for (int y = 0; y < VRAM_HEIGHT; y++) {
-        int ptr = y * VRAM_WIDTH;
-        for (int x = 0; x < VRAM_WIDTH; x++) {
+        int ptr = y * VRAM_WIDTH * 2;
+        for (int x = 0; x < VRAM_WIDTH * 2; x++) {
             buf[i++] = emu_vram[ptr++];
         }
     }

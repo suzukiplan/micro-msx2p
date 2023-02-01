@@ -19,7 +19,7 @@ class VDP
     } debug;
 
   public:
-    unsigned short display[284 * 240];
+    unsigned short display[568 * 240];
     unsigned short palette[16];
     unsigned short paletteG7[16];
 
@@ -283,11 +283,13 @@ class VDP
         // rendering
         int x = this->ctx.countH - 24;
         int y = this->ctx.countV - 16;
+        int x2 = x << 1;
         if (0 <= y && y < 240 && 0 <= x && x < 284) {
-            auto renderPosition = &this->display[y * 284];
-            renderPosition[x] = this->getBackdropColor();
+            auto renderPosition = &this->display[y * 284 * 2];
+            renderPosition[x2] = this->getBackdropColor();
+            renderPosition[x2 + 1] = renderPosition[x2];
             if (283 == x) {
-                this->renderScanline(y - 24, &renderPosition[13]);
+                this->renderScanline(y - 24, &renderPosition[13 * 2]);
             }
         }
         // increment H/V counter
@@ -629,10 +631,11 @@ class VDP
         }
     }
 
-    inline void renderPixel(unsigned short* renderPosition, int paletteNumber) {
+    inline void renderPixel2(unsigned short* renderPosition, int paletteNumber) {
         //if (!this->palette[paletteNumber]) return;
         if (!paletteNumber) return;
         *renderPosition = this->palette[paletteNumber];
+        *(renderPosition + 1) = this->palette[paletteNumber];
     }
 
     inline void renderScanlineModeG1(int lineNumber, unsigned short* renderPosition)
@@ -642,22 +645,31 @@ class VDP
         int pg = this->getPatternGeneratorAddress();
         int lineNumberMod8 = lineNumber & 0b111;
         unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
+        int cur = 0;
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + lineNumberMod8];
             unsigned char c = this->ctx.ram[ct + nam[i] / 8];
             unsigned char cc[2];
             cc[1] = (c & 0xF0) >> 4;
             cc[0] = c & 0x0F;
-            this->renderPixel(renderPosition++, cc[(ptn & 0b10000000) >> 7]);
-            this->renderPixel(renderPosition++, cc[(ptn & 0b01000000) >> 6]);
-            this->renderPixel(renderPosition++, cc[(ptn & 0b00100000) >> 5]);
-            this->renderPixel(renderPosition++, cc[(ptn & 0b00010000) >> 4]);
-            this->renderPixel(renderPosition++, cc[(ptn & 0b00001000) >> 3]);
-            this->renderPixel(renderPosition++, cc[(ptn & 0b00000100) >> 2]);
-            this->renderPixel(renderPosition++, cc[(ptn & 0b00000010) >> 1]);
-            this->renderPixel(renderPosition++, cc[ptn & 0b00000001]);
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b10000000) >> 7]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b01000000) >> 6]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00100000) >> 5]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00010000) >> 4]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00001000) >> 3]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00000100) >> 2]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00000010) >> 1]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[ptn & 0b00000001]);
+            cur += 2;
         }
-        //renderSpritesMode1(lineNumber, renderPosition);
+        renderSpritesMode1(lineNumber, renderPosition);
     }
 
     inline void renderScanlineModeG23(int lineNumber, bool isSpriteMode2, unsigned short* renderPosition)
@@ -684,14 +696,22 @@ class VDP
             cc[1] = cc[1] ? cc[1] : bd;
             cc[0] = c & 0x0F;
             cc[0] = cc[0] ? cc[0] : bd;
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b10000000) >> 7]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b01000000) >> 6]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00100000) >> 5]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00010000) >> 4]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00001000) >> 3]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00000100) >> 2]);
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00000010) >> 1]);
-            this->renderPixel(&renderPosition[cur++], cc[ptn & 0b00000001]);
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b10000000) >> 7]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b01000000) >> 6]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00100000) >> 5]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00010000) >> 4]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00001000) >> 3]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00000100) >> 2]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00000010) >> 1]);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], cc[ptn & 0b00000001]);
+            cur += 2;
         }
         if (isSpriteMode2) {
             renderSpritesMode2(lineNumber, renderPosition);
@@ -705,8 +725,10 @@ class VDP
         int curD = 0;
         int curP = lineNumber * 128;
         for (int i = 0; i < 128; i++) {
-            this->renderPixel(&renderPosition[curD++], (this->ctx.ram[curP] & 0xF0) >> 4);
-            this->renderPixel(&renderPosition[curD++], this->ctx.ram[curP++] & 0x0F);
+            this->renderPixel2(&renderPosition[curD], (this->ctx.ram[curP] & 0xF0) >> 4);
+            curD += 2;
+            this->renderPixel2(&renderPosition[curD], this->ctx.ram[curP++] & 0x0F);
+            curD += 2;
         }
         renderSpritesMode2(lineNumber, renderPosition);
     }
@@ -733,10 +755,12 @@ class VDP
     inline void renderScanlineModeG7(int lineNumber, unsigned short* renderPosition)
     {
         //int pn = (this->ctx.reg[2] & 0b01111111) << 10;
-        int curD = lineNumber * 256;
+        int curD = 0;
         int curP = lineNumber * 256;
         for (int i = 0; i < 256; i++) {
-            this->display[curD++] = convertColor_8bit_to_16bit(this->ctx.ram[curP++]);
+            renderPosition[curD] = convertColor_8bit_to_16bit(this->ctx.ram[curP++]);
+            renderPosition[curD + 1] = renderPosition[curD];
+            curD += 2;
         }
         renderSpritesMode2(lineNumber, renderPosition);
     }
@@ -792,7 +816,7 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
@@ -805,7 +829,7 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
@@ -831,7 +855,7 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
@@ -860,7 +884,7 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
@@ -873,7 +897,7 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
@@ -899,7 +923,7 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
@@ -983,14 +1007,14 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             } else if (cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
                                     col |= dlog[x];
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
@@ -1003,14 +1027,14 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             } else if (cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
                                     col |= dlog[x];
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
@@ -1042,14 +1066,14 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             } else if (cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
                                     col |= dlog[x];
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
@@ -1083,14 +1107,14 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             } else if (cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     col |= dlog[x];
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
@@ -1103,14 +1127,14 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             } else if (cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     col |= dlog[x];
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
@@ -1142,14 +1166,14 @@ class VDP
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             } else if (cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     col |= dlog[x];
-                                    this->renderPixel(&renderPosition[x], col);
+                                    this->renderPixel2(&renderPosition[x * 2], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }

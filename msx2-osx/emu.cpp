@@ -3,7 +3,7 @@
 #include <string.h>
 
 extern "C" {
-unsigned short emu_vram[VRAM_WIDTH * VRAM_HEIGHT];
+unsigned short emu_vram[VRAM_WIDTH * 2 * VRAM_HEIGHT];
 unsigned char emu_key;
 unsigned char emu_keycode;
 };
