@@ -214,6 +214,7 @@ public:
     
     inline unsigned char inPort(unsigned char port) {
         switch (port) {
+            case 0x81: return 0x00; // 8251 status command
             case 0x88: return this->vdp.readPort0();
             case 0x90: return 0x00; // printer
             case 0x98: return this->vdp.readPort0();
@@ -246,6 +247,18 @@ public:
             case 0xB9: return 0x00; // light pen
             case 0xBA: return 0x00; // light pen
             case 0xBB: return 0x00; // light pen
+            case 0xC0: return 0x00; // MSX audio
+            case 0xC1: return 0x00; // MSX audio
+            case 0xC8: return 0x00; // MSX interface
+            case 0xC9: return 0x00; // MSX interface
+            case 0xCA: return 0x00; // MSX interface
+            case 0xCB: return 0x00; // MSX interface
+            case 0xCC: return 0x00; // MSX interface
+            case 0xCD: return 0x00; // MSX interface
+            case 0xCE: return 0x00; // MSX interface
+            case 0xCF: return 0x00; // MSX interface
+            case 0xD9: return 0x00; // kanji (toshiba)
+            case 0xF7: return 0x00; // AV control
             default: printf("ignore an unknown input port $%02X\n", port);
         }
         return this->ctx.io[port];
@@ -254,6 +267,7 @@ public:
     inline void outPort(unsigned char port, unsigned char value) {
         this->ctx.io[port] = value;
         switch (port) {
+            case 0x81: break; // 8251 status command
             case 0x88: this->vdp.writePort0(value); break;
             case 0x98: this->vdp.writePort0(value); break;
             case 0x89: this->vdp.writePort1(value); break;
@@ -285,6 +299,9 @@ public:
             case 0xB9: break; // light pen
             case 0xBA: break; // light pen
             case 0xBB: break; // light pen
+            case 0xD8: break; // kanji (toshiba)
+            case 0xD9: break; // kanji (toshiba)
+            case 0xF5: break; // System Control
             case 0xF7: { // AV controll
 #if 1
                 bool audioRLMixingON = value & 0b00000001 ? true : false;
