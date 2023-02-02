@@ -51,7 +51,6 @@ public:
             return ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
-            puts("VSYNC");
             ((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
         }, [](void* arg) {
@@ -221,7 +220,6 @@ public:
             case 0x99: return this->vdp.readPort1();
             case 0xA2: return this->psg.read();
             case 0xA8: return this->mmu.getPrimary();
-            case 0xAA: return 0x00;
             case 0xA9: {
                 // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
                 static unsigned char bit[8] = {
@@ -241,7 +239,12 @@ public:
                 }
                 return ~result;
             }
+            case 0xAA: break;
             case 0xB5: return this->rtc.inPort();
+            case 0xB8: return 0x00; // light pen
+            case 0xB9: return 0x00; // light pen
+            case 0xBA: return 0x00; // light pen
+            case 0xBB: return 0x00; // light pen
             default: printf("ignore an unknown input port $%02X\n", port);
         }
         return this->ctx.io[port];
@@ -262,9 +265,23 @@ public:
             case 0xA1: this->psg.write(value); break;
             case 0xA8: this->mmu.updatePrimary(value); break;
             case 0xAA: break;
-            //case 0xAB: break;
+            case 0xAB: {
+                if (0 == (value & 0x80)) {
+                    unsigned char bitmask = (unsigned char)(1 << ((value & 0x0E) >> 1));
+                    if (value & 0x01) {
+                        this->ctx.io[0xAA] = this->ctx.io[0xAA] | bitmask;
+                    } else {
+                        this->ctx.io[0xAA] = this->ctx.io[0xAA] & ~bitmask;
+                    }
+                }
+                break;
+            }
             case 0xB4: this->rtc.outPort0(value); break;
             case 0xB5: this->rtc.outPort1(value); break;
+            case 0xB8: break; // light pen
+            case 0xB9: break; // light pen
+            case 0xBA: break; // light pen
+            case 0xBB: break; // light pen
             case 0xFC: this->mmu.updateSegment(3, value); break;
             case 0xFD: this->mmu.updateSegment(2, value); break;
             case 0xFE: this->mmu.updateSegment(1, value); break;

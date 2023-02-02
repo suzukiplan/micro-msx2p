@@ -122,19 +122,33 @@ public:
         memset(&this->ctx, 0, sizeof(this->ctx));
         time_t t1 = time(NULL);
         struct tm* t2 = localtime(&t1);
-        this->ctx.block[0][0x0] = t2->tm_sec % 10;
-        this->ctx.block[0][0x1] = t2->tm_sec / 10;
-        this->ctx.block[0][0x2] = t2->tm_min % 10;
-        this->ctx.block[0][0x3] = t2->tm_min / 10;
-        this->ctx.block[0][0x4] = t2->tm_hour % 10;
-        this->ctx.block[0][0x5] = t2->tm_hour / 10;
-        this->ctx.block[0][0x6] = t2->tm_wday;
-        this->ctx.block[0][0x7] = t2->tm_mday % 10;
-        this->ctx.block[0][0x8] = t2->tm_mday / 10;
-        this->ctx.block[0][0x9] = (t2->tm_mon + 1) % 10;
-        this->ctx.block[0][0xa] = (t2->tm_mon + 1) / 10;
-        this->ctx.block[0][0xb] = (t2->tm_year + 80) % 10;
-        this->ctx.block[0][0xc] = (t2->tm_year + 80) / 10;
+        int sec = t2->tm_sec;
+        int min = t2->tm_min;
+        int hour = t2->tm_hour;
+#if 0
+        int wday = 2;
+        int mday = 1;
+        int month = 1;
+        int year = 1991 - 1980;
+#else
+        int wday = t2->tm_wday;
+        int mday = t2->tm_mday;
+        int month = t2->tm_mon + 1;
+        int year = t2->tm_year + 80;
+#endif
+        this->ctx.block[0][0x0] = sec % 10;
+        this->ctx.block[0][0x1] = sec / 10;
+        this->ctx.block[0][0x2] = min % 10;
+        this->ctx.block[0][0x3] = min / 10;
+        this->ctx.block[0][0x4] = hour % 10;
+        this->ctx.block[0][0x5] = hour / 10;
+        this->ctx.block[0][0x6] = wday;
+        this->ctx.block[0][0x7] = mday % 10;
+        this->ctx.block[0][0x8] = mday / 10;
+        this->ctx.block[0][0x9] = month % 10;
+        this->ctx.block[0][0xa] = month / 10;
+        this->ctx.block[0][0xb] = year % 10;
+        this->ctx.block[0][0xc] = year / 10;
     }
 
     void tick() {

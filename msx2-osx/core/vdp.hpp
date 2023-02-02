@@ -395,7 +395,7 @@ class VDP
         int pn = this->ctx.reg[16] & 0b00001111;
         this->ctx.pal[pn][this->ctx.latch2++] = value;
         if (2 == this->ctx.latch2) {
-            printf("update palette #%d ($%02X%02X)\n", pn, this->ctx.pal[pn][1], this->ctx.pal[pn][0]);
+            //printf("update palette #%d ($%02X%02X)\n", pn, this->ctx.pal[pn][1], this->ctx.pal[pn][0]);
             updatePaletteCacheFromRegister(pn);
             this->ctx.reg[16]++;
             this->ctx.reg[16] &= 0b00001111;
@@ -547,6 +547,8 @@ class VDP
             this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
         } else if (16 == rn) {
             this->ctx.latch2 = 0;
+        } else if (8 == rn) {
+            this->ctx.reg[8] &= 0b00111111; // force disable mouse & light-pen
         }
 #if 1
         if (vramSize != getVramSize()) {
@@ -1406,87 +1408,12 @@ class VDP
     {
         puts("execute YMMM (not implemented yet");
         exit(-1);
-        /*
-        int ex, ey, dpb;
-        getEdge(&ex, &ey, &dpb);
-        switch (this->getCommandAddX()) {
-            case 2: this->ctx.reg[36] &= 0b11111110; break;
-            case 4: this->ctx.reg[36] &= 0b11111100; break;
-        }
-        int sy = this->getSourceY();
-        int dx = this->getDestinationX();
-        int dy = this->getDestinationY();
-        int ny = this->getNumberOfDotsY();
-        int baseX = this->ctx.reg[45] & 0b000000100 ? 0 : dx;
-        int size = baseX ? ex - baseX : baseX;
-        size /= dpb;
-        // NOTE: in fact, YMMM command is not completed immediatly, but it is completed immediatly.
-        while (ny--) {
-            memmove(&this->ctx.ram[this->getDestinationAddr(baseX, dy, 0, 0)], &this->ctx.ram[this->getDestinationAddr(baseX, sy, 0, 0)], size);
-            if (this->ctx.reg[45] & 0b000001000) {
-                dy--;
-                sy--;
-                if (dy < 0) dy += ey;
-                if (sy < 0) sy += ey;
-            } else {
-                dy++;
-                sy++;
-                if (ey <= dy) dy -= ey;
-                if (ey <= sy) sy -= ey;
-            }
-        }
-        this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b11111110;
-         */
     }
 
     inline void executeCommandHMMM()
     {
         puts("execute HMMM (not implemented yet");
         exit(-1);
-        /*
-        int ex, ey, dpb;
-        getEdge(&ex, &ey, &dpb);
-        switch (dpb) {
-            case 2:
-                this->ctx.reg[32] &= 0b11111110;
-                this->ctx.reg[36] &= 0b11111110;
-                this->ctx.reg[40] &= 0b11111110;
-                break;
-            case 4:
-                this->ctx.reg[32] &= 0b11111100;
-                this->ctx.reg[36] &= 0b11111100;
-                this->ctx.reg[40] &= 0b11111100;
-                break;
-        }
-        int sx = this->getSourceX();
-        int sy = this->getSourceY();
-        int dx = this->getDestinationX();
-        int dy = this->getDestinationY();
-        int nx = this->getNumberOfDotsX();
-        int ny = this->getNumberOfDotsY();
-        int baseX = this->ctx.reg[45] & 0b000000100 ? sx - nx : sx;
-        while (baseX < 0) baseX += ex;
-        int size = nx / dpb;
-        if (ex - dx < size) size = ex - dx;
-        // NOTE: in fact, YMMM command is not completed immediatly, but it is completed immediatly.
-        while (ny--) {
-            memmove(&this->ctx.ram[this->getDestinationAddr(dx, dy, 0, 0)], &this->ctx.ram[this->getDestinationAddr(baseX, sy, 0, 0)], size);
-            if (this->ctx.reg[45] & 0b000001000) {
-                dy--;
-                sy--;
-                if (dy < 0) dy += ey;
-                if (sy < 0) sy += ey;
-            } else {
-                dy++;
-                sy++;
-                if (ey <= dy) dy -= ey;
-                if (ey <= sy) sy -= ey;
-            }
-        }
-        this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b11111110;
-         */
     }
 
     inline void executeCommandHMMV()
@@ -1687,7 +1614,7 @@ class VDP
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
         int m = this->ctx.reg[45] & 0b00000001;
-#if 1
+#if 0
         printf("ExecuteCommand<LINE>: DX=%d, DY=%d, Maj=%d, Min=%d, DIX=%d, DIY=%d, MXD=$%05X, MAJ=%s, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, maj, min, dix, diy, mxd, m ? "Y" : "X", clr, ctx.commandL, getScreenMode());
 #endif
 
@@ -1776,7 +1703,7 @@ class VDP
             default: return;
         }
         int mxd = this->getNameTableAddress() + (this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0);
-#if 1
+#if 0
         printf("ExecuteCommand<PSET>: DX=%d, DY=%d, MXD=$%05X, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, mxd, clr, ctx.commandL, getScreenMode());
 #endif
         this->renderLogicalPixel((mxd + dx / dpb + dy * lineBytes) & 0x1FFFF, dpb, dx, clr, ctx.commandL);
