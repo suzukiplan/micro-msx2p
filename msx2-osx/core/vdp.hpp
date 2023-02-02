@@ -127,7 +127,6 @@ class VDP
     }
 
     inline bool isExpansionRAM() { return ctx.reg[45] & 0b01000000 ? true : false; }
-    inline int getVramSize() { return sizeof(ctx.ram); }
     inline int getSpriteSize() { return ctx.reg[1] & 0b00000010 ? 16 : 8; }
     inline bool isSpriteMag() { return ctx.reg[1] & 0b00000001 ? true : false; }
     inline bool isEnabledExternalVideoInput() { return ctx.reg[0] & 0b00000001 ? true : false; }
@@ -137,6 +136,25 @@ class VDP
     inline bool isEnabledInterrupt2() { return ctx.reg[0] & 0b00100000 ? true : false; }
     inline bool isEnabledMouse() { return ctx.reg[8] & 0b10000000 ? true : false; }
     inline bool isEnabledLightPen() { return ctx.reg[8] & 0b01000000 ? true : false; }
+
+    inline int getAddressMask() {
+        switch (this->getScreenMode()) {
+            case 0b00000: // GRAPHIC1
+            case 0b00001: // GRAPHIC2
+            case 0b01000: // MULTI COLOR
+            case 0b10000: // TEXT1
+                return 0x3FFF;
+            case 0b00010: // GRAPHIC3
+            case 0b00011: // GRAPHIC4
+            case 0b00100: // GRAPHIC5
+            case 0b00101: // GRAPHIC6
+            case 0b00111: // GRAPHIC7
+            case 0b10010: // TEXT2
+                return 0x1FFFF;
+            default:
+                return 0;
+        }
+    }
 
     inline unsigned short getBackdropColor() {
         if (this->getScreenMode() == 0b00111) {
@@ -362,7 +380,7 @@ class VDP
 
     inline void writePort0(unsigned char value)
     {
-        this->ctx.addr &= this->getVramSize() - 1;
+        this->ctx.addr &= this->getAddressMask();
         this->ctx.readBuffer = value;
         //printf("VRAM[$%05X] = $%02X\n", this->ctx.addr, value);
         this->ctx.ram[this->ctx.addr] = this->ctx.readBuffer;
@@ -508,7 +526,7 @@ class VDP
 
     inline void readVideoMemory()
     {
-        this->ctx.addr &= this->getVramSize() - 1;
+        this->ctx.addr &= this->getAddressMask();
         this->ctx.readBuffer = this->ctx.ram[this->ctx.addr & 0x1FFFF];
         this->ctx.addr++;
     }
@@ -519,7 +537,6 @@ class VDP
             debug.registerUpdateListener(debug.arg, rn, value);
         }
 #if 1
-        int vramSize = getVramSize();
         int screenMode = this->getScreenMode();
         bool screen = this->isEnabledScreen();
         bool externalVideoInput = this->isEnabledExternalVideoInput();
@@ -552,9 +569,6 @@ class VDP
             this->ctx.reg[8] &= 0b00111111; // force disable mouse & light-pen
         }
 #if 1
-        if (vramSize != getVramSize()) {
-            printf("Change VDP RAM size: %d -> %d\n", vramSize, getVramSize());
-        }
         if (screen != this->isEnabledScreen()) {
             printf("Change VDP screen enabled: %s\n", this->isEnabledScreen() ? "ENABLED" : "DISABLED");
         }
