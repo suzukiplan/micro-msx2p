@@ -215,6 +215,7 @@ public:
     inline unsigned char inPort(unsigned char port) {
         switch (port) {
             case 0x88: return this->vdp.readPort0();
+            case 0x90: return 0x00; // printer
             case 0x98: return this->vdp.readPort0();
             case 0x89: return this->vdp.readPort1();
             case 0x99: return this->vdp.readPort1();
@@ -256,6 +257,8 @@ public:
             case 0x88: this->vdp.writePort0(value); break;
             case 0x98: this->vdp.writePort0(value); break;
             case 0x89: this->vdp.writePort1(value); break;
+            case 0x90: break; // printer
+            case 0x91: break; // printer
             case 0x99: this->vdp.writePort1(value); break;
             case 0x8A: this->vdp.writePort2(value); break;
             case 0x9A: this->vdp.writePort2(value); break;
@@ -282,6 +285,28 @@ public:
             case 0xB9: break; // light pen
             case 0xBA: break; // light pen
             case 0xBB: break; // light pen
+            case 0xF7: { // AV controll
+#if 1
+                bool audioRLMixingON = value & 0b00000001 ? true : false;
+                bool audioLLMixingOFF = value & 0b00000010 ? true : false;
+                bool videoInSelectL = value & 0b00000100 ? true : false;
+                bool avControlL = value & 0b00010000 ? true : false;
+                bool ymControlL = value & 0b00100000 ? true : false;
+                bool reverseVdpR9Bit4 = value & 0b01000000 ? true : false;
+                bool reverseVdpR9Bit5 = value & 0b10000000 ? true : false;
+                puts("Update AV Control:")
+                printf(" - audioRLMixingON: %s\n", audioRLMixingON ? "Yes" : "No");
+                printf(" - audioLLMixingOFF: %s\n", audioLLMixingOFF ? "Yes" : "No");
+                printf(" - videoInSelectL: %s\n", videoInSelectL ? "Yes" : "No");
+                printf(" - avControlL: %s\n", avControlL ? "Yes" : "No");
+                printf(" - ymControlL: %s\n", ymControlL ? "Yes" : "No");
+                printf(" - reverseVdpR9Bit4: %s\n", reverseVdpR9Bit4 ? "Yes" : "No");
+                printf(" - reverseVdpR9Bit5: %s\n", reverseVdpR9Bit5 ? "Yes" : "No");
+#endif
+                this->vdp.reverseVdpR9Bit4 = value & 0b01000000 ? 1 : 0;
+                this->vdp.reverseVdpR9Bit5 = value & 0b10000000 ? 1 : 0;
+                break;
+            }
             case 0xFC: this->mmu.updateSegment(3, value); break;
             case 0xFD: this->mmu.updateSegment(2, value); break;
             case 0xFE: this->mmu.updateSegment(1, value); break;

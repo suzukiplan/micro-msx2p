@@ -27,22 +27,23 @@ class VDP
         int bobo;
         int countH;
         int countV;
-        int reserved;
+        unsigned int addr;
         unsigned char ram[0x20000];
         unsigned char reg[64];
         unsigned char pal[16][2];
         unsigned char tmpAddr[2];
         unsigned char stat[16];
-        unsigned int addr;
         unsigned char latch1;
         unsigned char latch2;
         unsigned char readBuffer;
         unsigned char command;
+        unsigned char commandL;
+        unsigned char reverseVdpR9Bit4;
+        unsigned char reverseVdpR9Bit5;
         unsigned short commandDX;
         unsigned short commandDY;
         unsigned short commandNX;
         unsigned short commandNY;
-        unsigned char commandL;
     } ctx;
 
     void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value)) {
