@@ -294,7 +294,7 @@ public:
                 bool ymControlL = value & 0b00100000 ? true : false;
                 bool reverseVdpR9Bit4 = value & 0b01000000 ? true : false;
                 bool reverseVdpR9Bit5 = value & 0b10000000 ? true : false;
-                puts("Update AV Control:")
+                puts("Update AV Control:");
                 printf(" - audioRLMixingON: %s\n", audioRLMixingON ? "Yes" : "No");
                 printf(" - audioLLMixingOFF: %s\n", audioLLMixingOFF ? "Yes" : "No");
                 printf(" - videoInSelectL: %s\n", videoInSelectL ? "Yes" : "No");
@@ -303,8 +303,8 @@ public:
                 printf(" - reverseVdpR9Bit4: %s\n", reverseVdpR9Bit4 ? "Yes" : "No");
                 printf(" - reverseVdpR9Bit5: %s\n", reverseVdpR9Bit5 ? "Yes" : "No");
 #endif
-                this->vdp.reverseVdpR9Bit4 = value & 0b01000000 ? 1 : 0;
-                this->vdp.reverseVdpR9Bit5 = value & 0b10000000 ? 1 : 0;
+                this->vdp.ctx.reverseVdpR9Bit4 = value & 0b01000000 ? 1 : 0;
+                this->vdp.ctx.reverseVdpR9Bit5 = value & 0b10000000 ? 1 : 0;
                 break;
             }
             case 0xFC: this->mmu.updateSegment(3, value); break;
