@@ -5,6 +5,7 @@
 #include "ay8910.hpp"
 #include "mmu.hpp"
 #include "msx2def.h"
+#include "rtc.hpp"
 
 class MSX2 {
 private:
@@ -32,6 +33,7 @@ public:
     MMU mmu;
     VDP vdp;
     AY8910 psg;
+    RTC rtc;
     
     struct Context {
         unsigned char io[256];
@@ -64,6 +66,7 @@ public:
 
         // RDSLT
         //this->cpu->addBreakPoint(0x23D2, [](void* arg) {
+        /*
         this->cpu->addBreakPoint(0x000C, [](void* arg) {
             unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
             unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
@@ -71,9 +74,11 @@ public:
             hl |= ((MSX2*)arg)->cpu->reg.pair.L;
             printf("RDSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X\n", a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl);
         });
+         */
 
         // WRSLT
         //this->cpu->addBreakPoint(0x2413, [](void* arg) {
+        /*
         this->cpu->addBreakPoint(0x0014, [](void* arg) {
             unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
             unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
@@ -82,7 +87,9 @@ public:
             unsigned char e = ((MSX2*)arg)->cpu->reg.pair.E;
             printf("WRSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X E=$%02X\n", a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl, e);
         });
+         */
 
+        // CALL命令をページ3にRAMを割り当てていない状態で実行した時に落とす
         this->cpu->addBreakOperand(0xCD, [](void* arg, unsigned char* op, int size) {
             int pri3 = ((MSX2*)arg)->mmu.ctx.primary[3];
             int sec3 = ((MSX2*)arg)->mmu.ctx.secondary[3];
@@ -155,12 +162,14 @@ public:
         memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
         memset(&this->cpu->reg.pair, 0xFF, sizeof(this->cpu->reg.pair));
         memset(&this->cpu->reg.back, 0xFF, sizeof(this->cpu->reg.back));
+        memset(&this->ctx, 0, sizeof(this->ctx));
         this->cpu->reg.SP = 0xF000;
         this->cpu->reg.IX = 0xFFFF;
         this->cpu->reg.IY = 0xFFFF;
         this->mmu.reset();
         this->vdp.reset();
         this->psg.reset(27);
+        this->rtc.reset();
     }
     
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
@@ -196,11 +205,19 @@ public:
             this->vdp.ctx.bobo -= CPU_CLOCK;
             this->vdp.tick();
         }
+        // Asynchronous with RTC
+        this->rtc.ctx.bobo += cpuClocks;
+        while (CPU_CLOCK <= this->rtc.ctx.bobo) {
+            this->rtc.ctx.bobo -= CPU_CLOCK;
+            this->rtc.tick();
+        }
     }
     
     inline unsigned char inPort(unsigned char port) {
         switch (port) {
+            case 0x88: return this->vdp.readPort0();
             case 0x98: return this->vdp.readPort0();
+            case 0x89: return this->vdp.readPort1();
             case 0x99: return this->vdp.readPort1();
             case 0xA2: return this->psg.read();
             case 0xA8: return this->mmu.getPrimary();
@@ -224,6 +241,7 @@ public:
                 }
                 return ~result;
             }
+            case 0xB5: return this->rtc.inPort();
             default: printf("ignore an unknown input port $%02X\n", port);
         }
         return this->ctx.io[port];
@@ -232,15 +250,21 @@ public:
     inline void outPort(unsigned char port, unsigned char value) {
         this->ctx.io[port] = value;
         switch (port) {
+            case 0x88: this->vdp.writePort0(value); break;
             case 0x98: this->vdp.writePort0(value); break;
+            case 0x89: this->vdp.writePort1(value); break;
             case 0x99: this->vdp.writePort1(value); break;
+            case 0x8A: this->vdp.writePort2(value); break;
             case 0x9A: this->vdp.writePort2(value); break;
-            case 0x9B:this->vdp.writePort3(value); break;
+            case 0x8B: this->vdp.writePort3(value); break;
+            case 0x9B: this->vdp.writePort3(value); break;
             case 0xA0: this->psg.latch(value); break;
             case 0xA1: this->psg.write(value); break;
             case 0xA8: this->mmu.updatePrimary(value); break;
             case 0xAA: break;
             //case 0xAB: break;
+            case 0xB4: this->rtc.outPort0(value); break;
+            case 0xB5: this->rtc.outPort1(value); break;
             case 0xFC: this->mmu.updateSegment(3, value); break;
             case 0xFD: this->mmu.updateSegment(2, value); break;
             case 0xFE: this->mmu.updateSegment(1, value); break;

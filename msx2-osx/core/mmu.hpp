@@ -91,7 +91,7 @@ class MMU
     }
 
     inline void dumpPageLayout(const char* msg) {
-#if 1
+#if 0
         auto page0 = slots[ctx.primary[0]][ctx.secondary[0]];
         auto page1 = slots[ctx.primary[1]][ctx.secondary[1]];
         auto page2 = slots[ctx.primary[2]][ctx.secondary[2]];
@@ -111,7 +111,7 @@ class MMU
 
     inline void updatePrimary(unsigned char value)
     {
-#if 1
+#if 0
         unsigned char prev[4];
         memcpy(prev, this->ctx.primary, 4);
 #endif
@@ -119,7 +119,7 @@ class MMU
             this->ctx.primary[i] = value & 0b11;
             value >>= 2;
         }
-#if 1
+#if 0
         if (prev[0] != this->ctx.primary[0] ||
             prev[1] != this->ctx.primary[1] ||
             prev[2] != this->ctx.primary[2] ||
@@ -151,7 +151,7 @@ class MMU
 
     inline void updateSecondary(unsigned char value)
     {
-#if 1
+#if 0
         unsigned char prev[4];
         memcpy(prev, this->ctx.secondary, 4);
 #endif
@@ -159,7 +159,7 @@ class MMU
             this->ctx.secondary[i] = value & 0b11;
             value >>= 2;
         }
-#if 1
+#if 0
         if (prev[0] != this->ctx.secondary[0] ||
             prev[1] != this->ctx.secondary[1] ||
             prev[2] != this->ctx.secondary[2] ||
@@ -201,7 +201,7 @@ class MMU
         auto data = &s->data[idx];
         if (data->isRAM && data->ptr) {
             data->ptr[addr & 0x1FFF] = value;
-#if 1
+#if 0
             if (0xFAAC == addr) {
                 bool kana = value & 0x80 ? true : false;
                 bool mask = value & 0x08 ? false : true;

@@ -43,8 +43,6 @@ class VDP
         unsigned short commandNX;
         unsigned short commandNY;
         unsigned char commandL;
-        unsigned short commandX; // TODO: remove
-        unsigned short commandY; // TODO: remove
     } ctx;
 
     void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value)) {
@@ -286,8 +284,15 @@ class VDP
         int x2 = x << 1;
         if (0 <= y && y < 240 && 0 <= x && x < 284) {
             auto renderPosition = &this->display[y * 284 * 2];
-            renderPosition[x2] = this->getBackdropColor();
-            renderPosition[x2 + 1] = renderPosition[x2];
+            switch (this->getScreenMode()) {
+                case 0b00100: // GRAPHIC5
+                    renderPosition[x2] = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
+                    renderPosition[x2 + 1] = this->palette[this->ctx.reg[7] & 0b00000011];
+                    break;
+                default:
+                    renderPosition[x2] = this->getBackdropColor();
+                    renderPosition[x2 + 1] = renderPosition[x2];
+            }
             if (283 == x) {
                 this->renderScanline(y - 24, &renderPosition[13 * 2]);
             }
@@ -390,7 +395,7 @@ class VDP
         int pn = this->ctx.reg[16] & 0b00001111;
         this->ctx.pal[pn][this->ctx.latch2++] = value;
         if (2 == this->ctx.latch2) {
-            //printf("update palette #%d ($%02X%02X)\n", pn, this->ctx.pal[pn][1], this->ctx.pal[pn][0]);
+            printf("update palette #%d ($%02X%02X)\n", pn, this->ctx.pal[pn][1], this->ctx.pal[pn][0]);
             updatePaletteCacheFromRegister(pn);
             this->ctx.reg[16]++;
             this->ctx.reg[16] &= 0b00001111;
@@ -635,12 +640,12 @@ class VDP
     }
 
     inline void renderPixel1(unsigned short* renderPosition, int paletteNumber) {
-        if (!paletteNumber) return;
+        if (0 == (this->ctx.reg[8] & 0b00100000) && !paletteNumber) return;
         *renderPosition = this->palette[paletteNumber];
     }
 
     inline void renderPixel2(unsigned short* renderPosition, int paletteNumber) {
-        if (!paletteNumber) return;
+        if (0 == (this->ctx.reg[8] & 0b00100000) && !paletteNumber) return;
         *renderPosition = this->palette[paletteNumber];
         *(renderPosition + 1) = this->palette[paletteNumber];
     }
@@ -730,7 +735,8 @@ class VDP
     inline void renderScanlineModeG4(int lineNumber, unsigned short* renderPosition)
     {
         int curD = 0;
-        int curP = this->getNameTableAddress() + lineNumber * 128;
+        int curP = lineNumber * 128 + 128 * this->ctx.reg[23];
+        curP += this->getNameTableAddress();
         for (int i = 0; i < 128; i++) {
             this->renderPixel2(&renderPosition[curD], (this->ctx.ram[curP] & 0xF0) >> 4);
             curD += 2;
@@ -743,14 +749,15 @@ class VDP
     inline void renderScanlineModeG5(int lineNumber, unsigned short* renderPosition)
     {
         int curD = 0;
-        int curP = this->getNameTableAddress() + lineNumber * 128;
+        int curP = lineNumber * 128 + 128 * this->ctx.reg[23];
+        curP += this->getNameTableAddress();
         for (int i = 0; i < 128; i++) {
             this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[curP] & 0xC0) >> 6);
             this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[curP] & 0x30) >> 4);
             this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[curP] & 0x0C) >> 2);
             this->renderPixel1(&renderPosition[curD++], this->ctx.ram[curP++] & 0x03);
         }
-        renderSpritesMode2(lineNumber, renderPosition);
+        //renderSpritesMode2(lineNumber, renderPosition);
     }
 
     inline unsigned short convertColor_8bit_to_16bit(unsigned char c)
@@ -774,9 +781,9 @@ class VDP
 
     inline void renderScanlineModeG7(int lineNumber, unsigned short* renderPosition)
     {
-        //int pn = (this->ctx.reg[2] & 0b01111111) << 10;
         int curD = 0;
-        int curP = lineNumber * 256;
+        int curP = lineNumber * 256 + 256 * this->ctx.reg[23];
+        curP += this->getNameTableAddress();
         for (int i = 0; i < 256; i++) {
             renderPosition[curD] = convertColor_8bit_to_16bit(this->ctx.ram[curP++]);
             renderPosition[curD + 1] = renderPosition[curD];
@@ -1211,8 +1218,6 @@ class VDP
             if (this->ctx.stat[2] & 0b00000001) return; // already executing
             this->ctx.command = cm;
             this->ctx.commandL = lo;
-            this->ctx.commandX = 0;
-            this->ctx.commandY = 0;
             this->ctx.stat[2] |= 0b00000001;
             switch (cm) {
                 case 0b1111: this->executeCommandHMMC(true); break;
@@ -1364,9 +1369,8 @@ class VDP
             printf("Error: HMMC was executed in invalid screen mode (%d)\n", this->getScreenMode());
             exit(-1);
         }
-        int screenWidth = this->getScreenWidth();
         int dpb = this->getDotPerByteX();
-        int lineBytes = screenWidth / dpb;
+        int lineBytes = this->getScreenWidth() / dpb;
         if (resetPosition) {
             this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
             this->ctx.commandDY = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
@@ -1520,15 +1524,96 @@ class VDP
         this->ctx.stat[2] &= 0b11111110;
     }
 
+    inline void renderLogicalPixel(int addr, int dpb, int dx, int clr, int lo) {
+        if (clr || 0 == (lo & 0b1000)) {
+            switch (dpb) {
+                case 1:
+                    switch (lo & 0b0111) {
+                        case 0b0000: this->ctx.ram[addr & 0x1FFFF] = clr; break; // IMP
+                        case 0b0001: this->ctx.ram[addr & 0x1FFFF] &= clr; break; // AND
+                        case 0b0010: this->ctx.ram[addr & 0x1FFFF] |= clr; break; // OR
+                        case 0b0011: this->ctx.ram[addr & 0x1FFFF] ^= clr; break;// EOR
+                        case 0b0100: this->ctx.ram[addr & 0x1FFFF] = 0xFF ^ clr; break; // NOT
+                    }
+                    break;
+                case 2: {
+                    unsigned char src = this->ctx.ram[addr & 0x1FFFF];
+                    if (dx & 1) {
+                        src &= 0x0F;
+                        this->ctx.ram[addr & 0x1FFFF] &= 0xF0;
+                    } else {
+                        src &= 0xF0;
+                        src >>= 4;
+                        this->ctx.ram[addr & 0x1FFFF] &= 0x0F;
+                    }
+                    switch (lo & 0b0111) {
+                        case 0b0000: src = clr; break; // IMP
+                        case 0b0001: src &= clr; break; // AND
+                        case 0b0010: src |= clr; break; // OR
+                        case 0b0011: src ^= clr; break; // EOR
+                        case 0b0100: src = 0xFF ^ clr; break; // NOT
+                    }
+                    src &= 0x0F;
+                    if (dx & 1) {
+                        this->ctx.ram[addr & 0x1FFFF] |= src;
+                    } else {
+                        src <<= 4;
+                        this->ctx.ram[addr & 0x1FFFF] |= src;
+                    }
+                    break;
+                }
+                case 4: {
+                    unsigned char src = this->ctx.ram[addr & 0x1FFFF];
+                    switch (dx & 3) {
+                        case 3:
+                            src &= 0b00000011;
+                            this->ctx.ram[addr & 0x1FFFF] &= 0b11111100;
+                            break;
+                        case 2:
+                            src &= 0b00001100;
+                            src >>= 2;
+                            this->ctx.ram[addr & 0x1FFFF] &= 0b11110011;
+                            break;
+                        case 1:
+                            src &= 0b00110000;
+                            src >>= 4;
+                            this->ctx.ram[addr & 0x1FFFF] &= 0b11001111;
+                            break;
+                        case 0 :
+                            src &= 0b11000000;
+                            src >>= 6;
+                            this->ctx.ram[addr & 0x1FFFF] &= 0b00111111;
+                            break;
+                    }
+                    switch (lo & 0b0111) {
+                        case 0b0000: src = clr; break; // IMP
+                        case 0b0001: src &= clr; break; // AND
+                        case 0b0010: src |= clr; break; // OR
+                        case 0b0011: src ^= clr; break; // EOR
+                        case 0b0100: src = 0xFF ^ clr; break; // NOT
+                    }
+                    src &= 0b00000011;
+                    switch (dx & 3) {
+                        case 3: break;
+                        case 2: src <<= 2; break;
+                        case 1: src <<= 4; break;
+                        case 0: src <<= 6; break;
+                    }
+                    this->ctx.ram[addr & 0x1FFFF] |= src;
+                    break;
+                }
+            }
+        }
+    }
+
     inline void executeCommandLMMC(bool resetPosition)
     {
         if (!this->isBitmapMode()) {
             printf("Error: LMMC was executed in invalid screen mode (%d)\n", this->getScreenMode());
             exit(-1);
         }
-        int screenWidth = this->getScreenWidth();
         int dpb = this->getDotPerByteX();
-        int lineBytes = screenWidth / dpb;
+        int lineBytes = this->getScreenWidth() / dpb;
         if (resetPosition) {
             this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
             this->ctx.commandDY = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
@@ -1545,85 +1630,7 @@ class VDP
 #if 0
         printf("ExecuteCommand<LMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X, LO=%X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, dst, ctx.commandL, getScreenMode());
 #endif
-        if (dst || 0 == (this->ctx.commandL & 0b1000)) {
-            switch (dpb) {
-                case 1:
-                    switch (this->ctx.commandL & 0b0111) {
-                        case 0b0000: this->ctx.ram[addr & 0x1FFFF] = dst; break; // IMP
-                        case 0b0001: this->ctx.ram[addr & 0x1FFFF] &= dst; break; // AND
-                        case 0b0010: this->ctx.ram[addr & 0x1FFFF] |= dst; break; // OR
-                        case 0b0011: this->ctx.ram[addr & 0x1FFFF] ^= dst; break;// EOR
-                        case 0b0100: this->ctx.ram[addr & 0x1FFFF] = 0xFF ^ dst; break; // NOT
-                    }
-                    break;
-                case 2: {
-                    unsigned char src = this->ctx.ram[addr & 0x1FFFF];
-                    if (this->ctx.commandDX & 1) {
-                        src &= 0x0F;
-                        this->ctx.ram[addr & 0x1FFFF] &= 0xF0;
-                    } else {
-                        src &= 0xF0;
-                        src >>= 4;
-                        this->ctx.ram[addr & 0x1FFFF] &= 0x0F;
-                    }
-                    switch (this->ctx.commandL & 0b0111) {
-                        case 0b0000: src = dst; break; // IMP
-                        case 0b0001: src &= dst; break; // AND
-                        case 0b0010: src |= dst; break; // OR
-                        case 0b0011: src ^= dst; break; // EOR
-                        case 0b0100: src = 0xFF ^ dst; break; // NOT
-                    }
-                    src &= 0x0F;
-                    if (this->ctx.commandDX & 1) {
-                        this->ctx.ram[addr & 0x1FFFF] |= src;
-                    } else {
-                        src <<= 4;
-                        this->ctx.ram[addr & 0x1FFFF] |= src;
-                    }
-                    break;
-                }
-                case 4: {
-                    unsigned char src = this->ctx.ram[addr & 0x1FFFF];
-                    switch (this->ctx.commandDX & 3) {
-                        case 3:
-                            src &= 0b00000011;
-                            this->ctx.ram[addr & 0x1FFFF] &= 0b11000000;
-                            break;
-                        case 2:
-                            src &= 0b00001100;
-                            src >>= 2;
-                            this->ctx.ram[addr & 0x1FFFF] &= 0b00110000;
-                            break;
-                        case 1:
-                            src &= 0b00110000;
-                            src >>= 4;
-                            this->ctx.ram[addr & 0x1FFFF] &= 0b00001100;
-                            break;
-                        case 0 :
-                            src &= 0b11000000;
-                            src >>= 6;
-                            this->ctx.ram[addr & 0x1FFFF] &= 0b00000011;
-                            break;
-                    }
-                    switch (this->ctx.commandL & 0b0111) {
-                        case 0b0000: src = dst; break; // IMP
-                        case 0b0001: src &= dst; break; // AND
-                        case 0b0010: src |= dst; break; // OR
-                        case 0b0011: src ^= dst; break; // EOR
-                        case 0b0100: src = 0xFF ^ dst; break; // NOT
-                    }
-                    src &= 0b00000011;
-                    switch (this->ctx.commandDX & 3) {
-                        case 3: break;
-                        case 2: src <<= 2; break;
-                        case 1: src <<= 4; break;
-                        case 0: src <<= 6; break;
-                    }
-                    this->ctx.ram[addr & 0x1FFFF] |= src;
-                    break;
-                }
-            }
-        }
+        renderLogicalPixel(addr, dpb, ctx.commandDX, dst, ctx.commandL);
         this->ctx.commandDX += dix;
         this->ctx.commandNX--;
         if (this->ctx.commandNX <= 0) {
@@ -1646,229 +1653,68 @@ class VDP
         puts("execute LMCM (not implemented yet");
         exit(-1);
         return 0;
-        /*
-        int sx = this->getSourceX();
-        int sy = this->getSourceY();
-        int ox = this->ctx.reg[45] & 0b000000100 ? -this->ctx.commandX : this->ctx.commandX;
-        int oy = this->ctx.reg[45] & 0b000001000 ? -this->ctx.commandY : this->ctx.commandY;
-        int addr = this->getDestinationAddr(sx, sy, ox, oy);
-        unsigned char result = 0;
-        switch (this->getCommandAddX()) {
-            case 1: result = this->ctx.ram[addr]; break;
-            case 2: // G4, G6 (4bit)
-                if ((sx + ox) & 1) {
-                    result = this->ctx.ram[addr] & 0x0F;
-                } else {
-                    result = (this->ctx.ram[addr] & 0xF0) >> 4;
-                }
-                break;
-            case 4: // G5 (2bit)
-                switch ((sx + ox) & 3) {
-                    case 0: result = (this->ctx.ram[addr] & 0b11000000) >> 6; break;
-                    case 1: result = (this->ctx.ram[addr] & 0b00110000) >> 4; break;
-                    case 2: result = (this->ctx.ram[addr] & 0b00001100) >> 2; break;
-                    case 3: result = this->ctx.ram[addr] & 0b00000011; break;
-                }
-                break;
-        }
-        this->ctx.commandX++;
-        if (this->getNumberOfDotsX() == this->ctx.commandX) {
-            this->ctx.commandX = 0;
-            this->ctx.commandY++;
-            if (this->getNumberOfDotsY() == this->ctx.commandY) {
-                this->ctx.command = 0;
-                this->ctx.stat[2] &= 0b11111110;
-            }
-        }
-        return result;
-         */
     }
 
     inline void executeCommandLMMM()
     {
         puts("execute LMMM (not implemented yet");
         exit(-1);
-        /*
-        int ex, ey, dpb;
-        getEdge(&ex, &ey, &dpb);
-        int sx = this->getSourceX();
-        int sy = this->getSourceY();
-        int dx = this->getDestinationX();
-        int dy = this->getDestinationY();
-        const int nxc = this->getNumberOfDotsX();
-        int ny = this->getNumberOfDotsY();
-        if (ny && nxc) {
-            // NOTE: in fact, YMMM command is not completed immediatly, but it is completed immediatly.
-            int oy = 0;
-            int dix = this->ctx.reg[45] & 0b000000100 ? -1 : 1;
-            int diy = this->ctx.reg[45] & 0b000001000 ? -1 : 1;
-            while (ny--) {
-                int nx = nxc;
-                int ox = 0;
-                while (nx--) {
-                    int sa = this->getDestinationAddr(sx, sy, ox, oy);
-                    int da = this->getDestinationAddr(dx, dy, ox, oy);
-                    unsigned char sc = this->ctx.ram[sa];
-                    unsigned char dc = this->ctx.ram[da];
-                    switch (dpb) {
-                        case 1: this->ctx.ram[da] = this->logicalOperation(this->ctx.commandL, dc, sc); break;
-                        case 2:
-                            if ((sx + ox) & 1) {
-                                sc = (sc & 0b11110000) >> 4;
-                            } else {
-                                sc = sc & 0b00001111;
-                            }
-                            if ((dx + ox) & 1) {
-                                dc = (dc & 0b11110000) >> 4;
-                                dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                dc <<= 4;
-                                this->ctx.ram[da] &= 0b00001111;
-                                this->ctx.ram[da] |= dc;
-                            } else {
-                                dc = dc & 0b00001111;
-                                dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                this->ctx.ram[da] &= 0b11110000;
-                                this->ctx.ram[da] |= dc;
-                            }
-                            break;
-                        case 4:
-                            switch ((sx + ox) & 3) {
-                                case 0: sc = (sc & 0b11000000) >> 6; break;
-                                case 1: sc = (sc & 0b00110000) >> 4; break;
-                                case 2: sc = (sc & 0b00001100) >> 2; break;
-                                case 3: sc &= 0b00000011; break;
-                            }
-                            switch ((dx + ox) & 3) {
-                                case 0:
-                                    dc = (dc & 0b11000000) >> 6;
-                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                    dc <<= 6;
-                                    this->ctx.ram[da] &= 0b00111111;
-                                    this->ctx.ram[da] |= dc;
-                                    break;
-                                case 1:
-                                    dc = (dc & 0b00110000) >> 4;
-                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                    dc <<= 4;
-                                    this->ctx.ram[da] &= 0b11001111;
-                                    this->ctx.ram[da] |= dc;
-                                    break;
-                                case 2:
-                                    dc = (dc & 0b00001100) >> 2;
-                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                    dc <<= 2;
-                                    this->ctx.ram[da] &= 0b11110011;
-                                    this->ctx.ram[da] |= dc;
-                                    break;
-                                case 3:
-                                    dc = dc & 0b00000011;
-                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                    this->ctx.ram[da] &= 0b11111100;
-                                    this->ctx.ram[da] |= dc;
-                                    break;
-                            }
-                            break;
-                    }
-                    ox += dix;
-                }
-                oy += diy;
-            }
-        }
-        this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b11111110;
-         */
     }
 
     inline void executeCommandLMMV()
     {
         puts("execute LMMV (not implemented yet");
         exit(-1);
-        /*
-        int ex, ey, dpb;
-        getEdge(&ex, &ey, &dpb);
-        int dx = this->getDestinationX();
-        int dy = this->getDestinationY();
-        const int nxc = this->getNumberOfDotsX();
-        int ny = this->getNumberOfDotsY();
-        if (ny && nxc) {
-            // NOTE: in fact, YMMM command is not completed immediatly, but it is completed immediatly.
-            int oy = 0;
-            int dix = this->ctx.reg[45] & 0b000000100 ? -1 : 1;
-            int diy = this->ctx.reg[45] & 0b000001000 ? -1 : 1;
-            while (ny--) {
-                int nx = nxc;
-                int ox = 0;
-                while (nx--) {
-                    this->drawLogicalPixel(dx, dy, ox, oy, dpb);
-                    ox += dix;
-                }
-                oy += diy;
-            }
-        }
-        this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b11111110;
-         */
     }
 
     inline void executeCommandLINE()
     {
-        puts("execute LINE (not implemented yet");
-        exit(-1);
-        /*
-        int ex, ey, dpb;
-        getEdge(&ex, &ey, &dpb);
-        int x1, y1, x2, y2;
-        int nx = this->getNumberOfDotsX();
-        int ny = this->getNumberOfDotsY();
-        bool isLongX = 0 == (this->ctx.reg[45] & 0b00000001) ? true : false;
-        {
-            int dx = this->getDestinationX();
-            int dy = this->getDestinationY();
-            int dix = this->ctx.reg[45] & 0b000000100 ? -1 : 1;
-            int diy = this->ctx.reg[45] & 0b000001000 ? -1 : 1;
-            if (0 < dix) {
-                x1 = dx;
-                x2 = dx + nx;
-            } else {
-                x1 = dx - nx;
-                x2 = dx;
-            }
-            if (0 < diy) {
-                y1 = dy;
-                y2 = dy + ny;
-            } else {
-                y1 = dy - ny;
-                y2 = dy;
-            }
+        int dpb = this->getDotPerByteX();
+        int lineBytes = this->getScreenWidth() / dpb;
+        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+        int maj = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+        int min = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        unsigned char clr = this->ctx.reg[44];
+        switch (this->getScreenMode()) {
+            case 0b00011: clr &= 0x0F; break; // GRAPHIC4
+            case 0b00100: clr &= 0x03; break; // GRAPHIC5
+            case 0b00101: clr &= 0x0F; break; // GRAPHIC6
+            case 0b00111: break; // GRAPHIC7
+            default: return;
         }
-        int dx, dy, x, y, e, dx2, dy2;
-        dx = x2 - x1;
-        dy = y2 - y1;
-        dx2 = dx << 1;
-        dy2 = dy << 1;
-        // NOTE: in fact, YMMM command is not completed immediatly, but it is completed immediatly.
-        if (isLongX) {
-            for (x = 0, e = 0, y = 0; x <= dx; x++) {
-                this->drawLogicalPixel(x1, y1, x, y, dpb);
-                e += dy2;
-                if (dx <= e) {
-                    y++;
-                    e -= dx2;
-                }
+        int mxd = this->getNameTableAddress() + (this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0);
+        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
+        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int m = this->ctx.reg[45] & 0b00000001;
+#if 1
+        printf("ExecuteCommand<LINE>: DX=%d, DY=%d, Maj=%d, Min=%d, DIX=%d, DIY=%d, MXD=$%05X, MAJ=%s, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, maj, min, dix, diy, mxd, m ? "Y" : "X", clr, ctx.commandL, getScreenMode());
+#endif
+
+        const double majF = (double)maj;
+        const double minF = (double)min;
+        while (0 < maj) {
+            this->renderLogicalPixel((mxd + dx / dpb + dy * lineBytes) & 0x1FFFF, dpb, dx, clr, ctx.commandL);
+            maj--;
+            if (m) {
+                dy += diy;
+            } else {
+                dx += dix;
             }
-        } else {
-            for (x = 0, e = 0, y = 0; y <= dy; y++) {
-                this->drawLogicalPixel(x1, y1, x, y, dpb);
-                e += dx2;
-                if (dy <= e) {
-                    x++;
-                    e -= dy2;
+            if (0 < min) {
+                int minN = (int)((maj / majF) * minF);
+                if (minN != min) {
+                    min = minN;
+                    if (m) {
+                        dx += dix;
+                    } else {
+                        dy += diy;
+                    }
                 }
             }
         }
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11111110;
-         */
     }
 
     inline void executeCommandSRCH()
@@ -1917,17 +1763,25 @@ class VDP
 
     inline void executeCommandPSET()
     {
-        puts("execute PSET (not implemented yet");
-        exit(-1);
-        /*
-        int ex, ey, dpb;
-        getEdge(&ex, &ey, &dpb);
-        int dx = this->getDestinationX();
-        int dy = this->getDestinationY();
-        this->drawLogicalPixel(dx, dy, 0, 0, dpb);
+        int dpb = this->getDotPerByteX();
+        int lineBytes = this->getScreenWidth() / dpb;
+        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+        unsigned char clr = this->ctx.reg[44];
+        switch (this->getScreenMode()) {
+            case 0b00011: clr &= 0x0F; break; // GRAPHIC4
+            case 0b00100: clr &= 0x03; break; // GRAPHIC5
+            case 0b00101: clr &= 0x0F; break; // GRAPHIC6
+            case 0b00111: break; // GRAPHIC7
+            default: return;
+        }
+        int mxd = this->getNameTableAddress() + (this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0);
+#if 1
+        printf("ExecuteCommand<PSET>: DX=%d, DY=%d, MXD=$%05X, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, mxd, clr, ctx.commandL, getScreenMode());
+#endif
+        this->renderLogicalPixel((mxd + dx / dpb + dy * lineBytes) & 0x1FFFF, dpb, dx, clr, ctx.commandL);
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11111110;
-         */
     }
 
     inline void executeCommandPOINT()
@@ -1943,86 +1797,6 @@ class VDP
         this->ctx.command = 0;
         this->ctx.stat[2] &= 0b11111110;
          */
-    }
-
-    inline void drawLogicalPixel(int x, int y, int ox, int oy, int dpb)
-    {
-        int da = this->getDestinationAddr(x, y, ox, oy);
-        unsigned char sc = this->ctx.reg[44];
-        unsigned char dc = this->ctx.ram[da];
-        switch (dpb) {
-            case 1: this->ctx.ram[da] = this->logicalOperation(this->ctx.commandL, dc, sc); break;
-            case 2:
-                if ((x + ox) & 1) {
-                    dc = (dc & 0b11110000) >> 4;
-                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                    dc <<= 4;
-                    this->ctx.ram[da] &= 0b00001111;
-                    this->ctx.ram[da] |= dc;
-                } else {
-                    dc = dc & 0b00001111;
-                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                    this->ctx.ram[da] &= 0b11110000;
-                    this->ctx.ram[da] |= dc;
-                }
-                break;
-            case 4:
-                switch ((x + ox) & 3) {
-                    case 0:
-                        dc = (dc & 0b11000000) >> 6;
-                        dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                        dc <<= 6;
-                        this->ctx.ram[da] &= 0b00111111;
-                        this->ctx.ram[da] |= dc;
-                        break;
-                    case 1:
-                        dc = (dc & 0b00110000) >> 4;
-                        dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                        dc <<= 4;
-                        this->ctx.ram[da] &= 0b11001111;
-                        this->ctx.ram[da] |= dc;
-                        break;
-                    case 2:
-                        dc = (dc & 0b00001100) >> 2;
-                        dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                        dc <<= 2;
-                        this->ctx.ram[da] &= 0b11110011;
-                        this->ctx.ram[da] |= dc;
-                        break;
-                    case 3:
-                        dc = dc & 0b00000011;
-                        dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                        this->ctx.ram[da] &= 0b11111100;
-                        this->ctx.ram[da] |= dc;
-                        break;
-                }
-                break;
-        }
-    }
-
-    inline unsigned char getLogicalPixel(int x, int y, int ox, int oy, int dpb)
-    {
-        int da = this->getDestinationAddr(x, y, ox, oy);
-        unsigned char dc = this->ctx.ram[da];
-        switch (dpb) {
-            case 1: return dc;
-            case 2:
-                if ((x + ox) & 1) {
-                    dc = (dc & 0b11110000) >> 4;
-                } else {
-                    dc = dc & 0b00001111;
-                }
-                return dc;
-            case 4:
-                switch ((x + ox) & 3) {
-                    case 0: return (dc & 0b11000000) >> 6;
-                    case 1: return (dc & 0b00110000) >> 4;
-                    case 2: return (dc & 0b00001100) >> 2;
-                    case 3: return dc & 0b00000011;
-                }
-                return 0;
-        }
-        return 0;
     }
 };
 
