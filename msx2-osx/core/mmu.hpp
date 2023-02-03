@@ -5,6 +5,8 @@
 #include <string.h>
 #include "msx2def.h"
 
+//#define MMU_DEBUG_SHOW_PAGE_LAYOUT
+
 class MMU
 {
   public:
@@ -91,7 +93,7 @@ class MMU
     }
 
     inline void dumpPageLayout(const char* msg) {
-#if 0
+#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
         auto page0 = slots[ctx.primary[0]][ctx.secondary[0]];
         auto page1 = slots[ctx.primary[1]][ctx.secondary[1]];
         auto page2 = slots[ctx.primary[2]][ctx.secondary[2]];
@@ -111,7 +113,7 @@ class MMU
 
     inline void updatePrimary(unsigned char value)
     {
-#if 0
+#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
         unsigned char prev[4];
         memcpy(prev, this->ctx.primary, 4);
 #endif
@@ -119,7 +121,7 @@ class MMU
             this->ctx.primary[i] = value & 0b11;
             value >>= 2;
         }
-#if 0
+#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
         if (prev[0] != this->ctx.primary[0] ||
             prev[1] != this->ctx.primary[1] ||
             prev[2] != this->ctx.primary[2] ||
@@ -151,7 +153,7 @@ class MMU
 
     inline void updateSecondary(unsigned char value)
     {
-#if 0
+#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
         unsigned char prev[4];
         memcpy(prev, this->ctx.secondary, 4);
 #endif
@@ -159,7 +161,7 @@ class MMU
             this->ctx.secondary[i] = value & 0b11;
             value >>= 2;
         }
-#if 0
+#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
         if (prev[0] != this->ctx.secondary[0] ||
             prev[1] != this->ctx.secondary[1] ||
             prev[2] != this->ctx.secondary[2] ||
