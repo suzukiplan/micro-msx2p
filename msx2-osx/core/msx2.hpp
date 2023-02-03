@@ -57,6 +57,15 @@ public:
             ((MSX2*)arg)->cpu->requestBreak();
         });
         /*
+        cpu->setDebugMessage([](void* arg, const char* msg) {
+            puts(msg);
+        });
+        cpu->addBreakOperand(0xFF, [](void* arg, unsigned char* op, int len) {
+            printf("Detect RST $38 (PC:$%04X)\n", ((MSX2*)arg)->cpu->reg.PC);
+            exit(0);
+        });
+         */
+        /*
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
             printf("Update VDP register #%d = $%02X (PC:$%04X)\n", rn, value, this_->cpu->reg.PC);
@@ -87,6 +96,14 @@ public:
             printf("WRSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X E=$%02X\n", a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl, e);
         });
          */
+        /*
+        // CALSLT
+        this->cpu->addBreakPoint(0x000C, [](void* arg) {
+            unsigned char a = (((MSX2*)arg)->cpu->reg.IY & 0xFF00) >> 8;
+            unsigned short hl = ((MSX2*)arg)->cpu->reg.IX;
+            printf("CALSLT: isExpand=%s, pri=%d, sec=%d, IX=$%04X\n", a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl);
+        });
+         */
 
         // CALL命令をページ3にRAMを割り当てていない状態で実行した時に落とす
         this->cpu->addBreakOperand(0xCD, [](void* arg, unsigned char* op, int size) {
@@ -94,7 +111,9 @@ public:
             int sec3 = ((MSX2*)arg)->mmu.ctx.secondary[3];
             auto data = &((MSX2*)arg)->mmu.slots[pri3][sec3].data[7];
             if (!data->isRAM) {
-                puts("invalid call");
+                printf("invalid call (PC:$%04X, SP:$%04X)\n"
+                       , ((MSX2*)arg)->cpu->reg.PC
+                       , ((MSX2*)arg)->cpu->reg.SP);
                 exit(-1);
             }
         });

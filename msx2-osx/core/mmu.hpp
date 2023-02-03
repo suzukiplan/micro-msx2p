@@ -92,13 +92,13 @@ class MMU
         return result;
     }
 
-    inline void dumpPageLayout(const char* msg) {
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
+    inline void dumpPageLayout(const char* msg, unsigned char value) {
         auto page0 = slots[ctx.primary[0]][ctx.secondary[0]];
         auto page1 = slots[ctx.primary[1]][ctx.secondary[1]];
         auto page2 = slots[ctx.primary[2]][ctx.secondary[2]];
         auto page3 = slots[ctx.primary[3]][ctx.secondary[3]];
-        printf("Pages #0:%d-%d(%s), #1:%d-%d(%s), #2:%d-%d(%s), #3:%d-%d(%s) <%s>\n"
+        printf("Pages #0:%d-%d(%s), #1:%d-%d(%s), #2:%d-%d(%s), #3:%d-%d(%s) <%s:$%02X>\n"
                , ctx.primary[0], ctx.secondary[0]
                , page0.data[0].label[0] ? page0.data[0].label : "n/a"
                , ctx.primary[1], ctx.secondary[1]
@@ -107,13 +107,14 @@ class MMU
                , page2.data[4].label[0] ? page2.data[4].label : "n/a"
                , ctx.primary[3], ctx.secondary[3]
                , page3.data[6].label[0] ? page3.data[6].label : "n/a"
-               , msg);
-#endif
+               , msg, value);
     }
+#endif
 
     inline void updatePrimary(unsigned char value)
     {
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
+        unsigned char value_ = value;
         unsigned char prev[4];
         memcpy(prev, this->ctx.primary, 4);
 #endif
@@ -126,7 +127,7 @@ class MMU
             prev[1] != this->ctx.primary[1] ||
             prev[2] != this->ctx.primary[2] ||
             prev[3] != this->ctx.primary[3]) {
-            dumpPageLayout("updatePrimary");
+            dumpPageLayout("updatePrimary", value_);
         }
 #endif
     }
@@ -154,6 +155,7 @@ class MMU
     inline void updateSecondary(unsigned char value)
     {
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
+        unsigned char value_ = value;
         unsigned char prev[4];
         memcpy(prev, this->ctx.secondary, 4);
 #endif
@@ -166,7 +168,7 @@ class MMU
             prev[1] != this->ctx.secondary[1] ||
             prev[2] != this->ctx.secondary[2] ||
             prev[3] != this->ctx.secondary[3]) {
-            dumpPageLayout("updateSecondary");
+            dumpPageLayout("updateSecondary", value_);
         }
 #endif
     }
