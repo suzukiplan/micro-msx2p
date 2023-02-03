@@ -32,24 +32,32 @@
     emu_init_cbios(biosMain.bytes, biosMain.length,
                    biosLogo.bytes, biosLogo.length,
                    biosSub.bytes, biosSub.length);
-#elif 1
+#elif 0
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2" ofType:@"ROM"]];
     NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2EXT" ofType:@"ROM"]];
     NSData* biosDisk = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DISK" ofType:@"ROM"]];
     NSData* biosFm = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FMBIOS" ofType:@"ROM"]];
+    NSData* biosKnj = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJDRV" ofType:@"ROM"]];
+    NSData* biosFont = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJFNT16" ofType:@"ROM"]];
     emu_init_bios(biosMain.bytes, biosMain.length,
                   biosExt.bytes, biosExt.length,
                   biosDisk.bytes, biosDisk.length,
-                  biosFm.bytes, biosFm.length);
+                  biosFm.bytes, biosFm.length,
+                  biosKnj.bytes, biosKnj.length,
+                  biosFont.bytes, biosFont.length);
 #else
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2P" ofType:@"ROM"]];
     NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2PEXT" ofType:@"ROM"]];
     NSData* biosDisk = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DISK" ofType:@"ROM"]];
     NSData* biosFm = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FMBIOS" ofType:@"ROM"]];
+    NSData* biosKnj = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJDRV" ofType:@"ROM"]];
+    NSData* biosFont = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJFNT16" ofType:@"ROM"]];
     emu_init_bios(biosMain.bytes, biosMain.length,
                   biosExt.bytes, biosExt.length,
                   biosDisk.bytes, biosDisk.length,
-                  biosFm.bytes, biosFm.length);
+                  biosFm.bytes, biosFm.length,
+                  biosKnj.bytes, biosKnj.length,
+                  biosFont.bytes, biosFont.length);
 #endif
     
 #if 0

@@ -12,8 +12,10 @@ struct BIOS {
     unsigned char main[0x8000];
     unsigned char logo[0x4000];
     unsigned char ext[0x4000];
+    unsigned char knj[0x8000];
     unsigned char disk[0x4000];
     unsigned char fm[0x4000];
+    unsigned char font[0x40000];
 };
 static struct BIOS bios;
 static MSX2 msx2(0);
@@ -23,7 +25,9 @@ static unsigned char ram[0x10000];
 extern "C" void emu_init_bios(const void* main, size_t mainSize,
                               const void* ext, size_t extSize,
                               const void* disk, size_t diskSize,
-                              const void* fm, size_t fmSize)
+                              const void* fm, size_t fmSize,
+                              const void* knj, size_t knjSize,
+                              const void* font, size_t fontSize)
 {
     msx2.setupSecondaryExist(false, false, false, true);
     if (main && 0x8000 == mainSize) {
@@ -35,6 +39,10 @@ extern "C" void emu_init_bios(const void* main, size_t mainSize,
         memcpy(bios.ext, ext, 0x4000);
         msx2.setup(3, 0, 0, false, bios.ext, 0x4000, "SUB");
     }
+    if (knj && 0x8000 == knjSize) {
+        memcpy(bios.knj, knj, 0x8000);
+        msx2.setup(3, 0, 2, false, bios.knj, 0x8000, "KNJ");
+    }
     if (disk && 0x4000 <= diskSize) {
         memcpy(bios.disk, disk, 0x4000);
         msx2.setup(3, 1, 2, false, bios.disk, 0x4000, "DISK");
@@ -42,6 +50,9 @@ extern "C" void emu_init_bios(const void* main, size_t mainSize,
     if (fm && 0x4000 <= fmSize) {
         memcpy(bios.fm, fm, 0x4000);
         msx2.setup(3, 2, 2, false, bios.fm, 0x4000, "FM");
+    }
+    if (font && 0 < fontSize) {
+        msx2.loadFont(font, fontSize);
     }
     emu_reset();
 }

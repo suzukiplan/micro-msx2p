@@ -35,6 +35,7 @@
 		7407A1D429834DB500D59AA5 /* cbios_sub.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_sub.rom; sourceTree = "<group>"; };
 		741A1E052988DB8C001AE497 /* msx2def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msx2def.h; sourceTree = "<group>"; };
 		741A1E0C298B77E5001AE497 /* clock.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = clock.hpp; sourceTree = "<group>"; };
+		741A1E0D298D2CA5001AE497 /* kanji.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kanji.hpp; sourceTree = "<group>"; };
 		748D22A7297E652600B504AF /* msx2-osx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "msx2-osx.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		748D22AA297E652600B504AF /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		748D22AB297E652600B504AF /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -130,6 +131,7 @@
 				741A1E052988DB8C001AE497 /* msx2def.h */,
 				748D22BF297E670500B504AF /* vdp.hpp */,
 				748D22C1297E675000B504AF /* z80.hpp */,
+				741A1E0D298D2CA5001AE497 /* kanji.hpp */,
 			);
 			path = core;
 			sourceTree = "<group>";

@@ -135,7 +135,7 @@ class MMU
     inline void updateSegment(int page, unsigned char value)
     {
         printf("update segment: page %d = %d\n", page, value);
-        this->ctx.segment[page] = value; // TODO: segment not supported
+        this->ctx.segment[page] = value;
     }
 
     inline unsigned char getSecondary()
@@ -179,6 +179,9 @@ class MMU
             return this->getSecondary();
         }
         int page = (addr & 0b1100000000000000) >> 14;
+        int segment = this->ctx.segment[page];
+        addr &= 0x3FFF;
+        addr |= segment << 14;
         int pri = this->ctx.primary[page];
         //int sec = 3 == pri ? this->ctx.secondary[page] : 0;
         //int sec = this->ctx.secondary[page];
@@ -197,6 +200,9 @@ class MMU
             return;
         }
         int page = (addr & 0b1100000000000000) >> 14;
+        int segment = this->ctx.segment[page];
+        addr &= 0x3FFF;
+        addr |= segment << 14;
         int pri = this->ctx.primary[page];
         int sec = this->secondaryExist[pri] ? this->ctx.secondary[page] : 0;
         //int sec = this->ctx.secondary[page];

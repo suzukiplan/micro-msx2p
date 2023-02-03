@@ -20,7 +20,9 @@ extern unsigned char emu_keycode;
 void emu_init_bios(const void* main, size_t mainSize,
                    const void* ext, size_t extSize,
                    const void* disk, size_t diskSize,
-                   const void* fm, size_t fmSize);
+                   const void* fm, size_t fmSize,
+                   const void* knj, size_t knjSize,
+                   const void* font, size_t fontSize);
 void emu_init_cbios(const void* main, size_t mainSize,
                     const void* logo, size_t logoSize,
                     const void* sub, size_t subSize);

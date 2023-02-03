@@ -6,6 +6,7 @@
 #include "mmu.hpp"
 #include "msx2def.h"
 #include "clock.hpp"
+#include "kanji.hpp"
 
 class MSX2 {
 private:
@@ -34,6 +35,7 @@ public:
     VDP vdp;
     AY8910 psg;
     Clock clock;
+    Kanji kanji;
     
     struct Context {
         unsigned char io[256];
@@ -188,8 +190,13 @@ public:
         this->vdp.reset();
         this->psg.reset(27);
         this->clock.reset();
+        this->kanji.reset();
     }
-    
+
+    void loadFont(const void* font, size_t fontSize) {
+        this->kanji.loadFont(font, fontSize);
+    }
+
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
         this->mmu.setupSecondaryExist(page0, page1, page2, page3);
     }
@@ -276,7 +283,8 @@ public:
             case 0xCD: return 0x00; // MSX interface
             case 0xCE: return 0x00; // MSX interface
             case 0xCF: return 0x00; // MSX interface
-            case 0xD9: return 0x00; // kanji (toshiba)
+            case 0xD9: return this->kanji.inPortD9(); // kanji
+            case 0xDB: return this->kanji.inPortDB(); // kanji
             case 0xF7: return 0x00; // AV control
             default: printf("ignore an unknown input port $%02X\n", port);
         }
@@ -318,8 +326,10 @@ public:
             case 0xB9: break; // light pen
             case 0xBA: break; // light pen
             case 0xBB: break; // light pen
-            case 0xD8: break; // kanji (toshiba)
-            case 0xD9: break; // kanji (toshiba)
+            case 0xD8: this->kanji.outPortD8(value); break;
+            case 0xD9: this->kanji.outPortD9(value); break;
+            case 0xDA: this->kanji.outPortDA(value); break;
+            case 0xDB: this->kanji.outPortDB(value); break;
             case 0xF5: break; // System Control
             case 0xF7: { // AV controll
 #if 1
