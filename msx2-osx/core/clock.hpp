@@ -1,8 +1,8 @@
-#ifndef INCLUDE_RTC_HPP
-#define INCLUDE_RTC_HPP
+#ifndef INCLUDE_CLOCK_HPP
+#define INCLUDE_CLOCK_HPP
 #include <time.h>
 
-class RTC {
+class Clock {
 private:
     const unsigned char mask[4][16] = {
         {0xf, 0x7, 0xf, 0x7, 0xf, 0x3, 0x7, 0xf, 0x3, 0xf, 0x1, 0xf, 0xf, 0xf, 0xf, 0xf},
@@ -114,7 +114,7 @@ public:
         unsigned char block[4][16];
     } ctx;
     
-    RTC() {
+    Clock() {
         reset();
     }
 
@@ -177,4 +177,4 @@ public:
     }
 };
 
-#endif // INCLUDE_RTC_HPP
+#endif // INCLUDE_CLOCK_HPP

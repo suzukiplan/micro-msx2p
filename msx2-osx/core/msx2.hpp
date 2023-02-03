@@ -5,7 +5,7 @@
 #include "ay8910.hpp"
 #include "mmu.hpp"
 #include "msx2def.h"
-#include "rtc.hpp"
+#include "clock.hpp"
 
 class MSX2 {
 private:
@@ -33,7 +33,7 @@ public:
     MMU mmu;
     VDP vdp;
     AY8910 psg;
-    RTC rtc;
+    Clock clock;
     
     struct Context {
         unsigned char io[256];
@@ -168,7 +168,7 @@ public:
         this->mmu.reset();
         this->vdp.reset();
         this->psg.reset(27);
-        this->rtc.reset();
+        this->clock.reset();
     }
     
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
@@ -204,11 +204,11 @@ public:
             this->vdp.ctx.bobo -= CPU_CLOCK;
             this->vdp.tick();
         }
-        // Asynchronous with RTC
-        this->rtc.ctx.bobo += cpuClocks;
-        while (CPU_CLOCK <= this->rtc.ctx.bobo) {
-            this->rtc.ctx.bobo -= CPU_CLOCK;
-            this->rtc.tick();
+        // Asynchronous with Clock IC
+        this->clock.ctx.bobo += cpuClocks;
+        while (CPU_CLOCK <= this->clock.ctx.bobo) {
+            this->clock.ctx.bobo -= CPU_CLOCK;
+            this->clock.tick();
         }
     }
     
@@ -242,7 +242,7 @@ public:
                 return ~result;
             }
             case 0xAA: break;
-            case 0xB5: return this->rtc.inPort();
+            case 0xB5: return this->clock.inPort();
             case 0xB8: return 0x00; // light pen
             case 0xB9: return 0x00; // light pen
             case 0xBA: return 0x00; // light pen
@@ -293,8 +293,8 @@ public:
                 }
                 break;
             }
-            case 0xB4: this->rtc.outPort0(value); break;
-            case 0xB5: this->rtc.outPort1(value); break;
+            case 0xB4: this->clock.outPort0(value); break;
+            case 0xB5: this->clock.outPort1(value); break;
             case 0xB8: break; // light pen
             case 0xB9: break; // light pen
             case 0xBA: break; // light pen
