@@ -241,11 +241,11 @@ public:
     inline unsigned char inPort(unsigned char port) {
         switch (port) {
             case 0x81: return 0x00; // 8251 status command
-            case 0x88: return this->vdp.readPort0();
+            case 0x88: return this->vdp.inPort98();
+            case 0x89: return this->vdp.inPort99();
             case 0x90: return 0x00; // printer
-            case 0x98: return this->vdp.readPort0();
-            case 0x89: return this->vdp.readPort1();
-            case 0x99: return this->vdp.readPort1();
+            case 0x98: return this->vdp.inPort98();
+            case 0x99: return this->vdp.inPort99();
             case 0xA2: return this->psg.read();
             case 0xA8: return this->mmu.getPrimary();
             case 0xA9: {
@@ -285,6 +285,7 @@ public:
             case 0xCF: return 0x00; // MSX interface
             case 0xD9: return this->kanji.inPortD9(); // kanji
             case 0xDB: return this->kanji.inPortDB(); // kanji
+            case 0xF4: return this->vdp.inPortF4();
             case 0xF7: return 0x00; // AV control
             default: printf("ignore an unknown input port $%02X\n", port);
         }
@@ -295,16 +296,16 @@ public:
         this->ctx.io[port] = value;
         switch (port) {
             case 0x81: break; // 8251 status command
-            case 0x88: this->vdp.writePort0(value); break;
-            case 0x98: this->vdp.writePort0(value); break;
-            case 0x89: this->vdp.writePort1(value); break;
+            case 0x88: this->vdp.outPort98(value); break;
+            case 0x89: this->vdp.outPort99(value); break;
+            case 0x8A: this->vdp.outPort9A(value); break;
+            case 0x8B: this->vdp.outPort9B(value); break;
             case 0x90: break; // printer
             case 0x91: break; // printer
-            case 0x99: this->vdp.writePort1(value); break;
-            case 0x8A: this->vdp.writePort2(value); break;
-            case 0x9A: this->vdp.writePort2(value); break;
-            case 0x8B: this->vdp.writePort3(value); break;
-            case 0x9B: this->vdp.writePort3(value); break;
+            case 0x98: this->vdp.outPort98(value); break;
+            case 0x99: this->vdp.outPort99(value); break;
+            case 0x9A: this->vdp.outPort9A(value); break;
+            case 0x9B: this->vdp.outPort9B(value); break;
             case 0xA0: this->psg.latch(value); break;
             case 0xA1: this->psg.write(value); break;
             case 0xA8: this->mmu.updatePrimary(value); break;
@@ -330,6 +331,8 @@ public:
             case 0xD9: this->kanji.outPortD9(value); break;
             case 0xDA: this->kanji.outPortDA(value); break;
             case 0xDB: this->kanji.outPortDB(value); break;
+            case 0xF3: this->vdp.outPortF3(value); break;
+            case 0xF4: this->vdp.outPortF4(value); break;
             case 0xF5: break; // System Control
             case 0xF7: { // AV controll
 #if 1

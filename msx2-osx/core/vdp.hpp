@@ -40,6 +40,7 @@ class VDP
         unsigned char commandL;
         unsigned char reverseVdpR9Bit4;
         unsigned char reverseVdpR9Bit5;
+        unsigned char hardwareResetFlag;
         unsigned short commandDX;
         unsigned short commandDY;
         unsigned short commandNX;
@@ -136,6 +137,10 @@ class VDP
     inline bool isEnabledInterrupt2() { return ctx.reg[0] & 0b00100000 ? true : false; }
     inline bool isEnabledMouse() { return ctx.reg[8] & 0b10000000 ? true : false; }
     inline bool isEnabledLightPen() { return ctx.reg[8] & 0b01000000 ? true : false; }
+    inline bool isMaskLeft8px() { return ctx.reg[27] && (ctx.reg[25] & 0b00000010) ? true : false; }
+    inline bool getSP2() { return ctx.reg[25] & 0b00000001; }
+    inline int getOnTime() { return (ctx.reg[13] & 0xF0) >> 4; }
+    inline int getOffTime() { return ctx.reg[13] & 0x0F; }
 
     inline int getAddressMask() {
         switch (this->getScreenMode()) {
@@ -157,10 +162,10 @@ class VDP
     }
 
     inline unsigned short getBackdropColor() {
-        if (this->getScreenMode() == 0b00111) {
-            return convertColor_8bit_to_16bit(ctx.reg[7]);
-        } else {
-            return palette[ctx.reg[7] & 0b00001111];
+        switch (this->getScreenMode()) {
+            case 0b00111: return convertColor_8bit_to_16bit(ctx.reg[7]);
+            case 0b00100: return palette[ctx.reg[7] & 0b00000011];
+            default: return palette[ctx.reg[7] & 0b00001111];
         }
     }
 
@@ -343,7 +348,7 @@ class VDP
         }
     }
 
-    inline unsigned char readPort0()
+    inline unsigned char inPort98()
     {
         if (debug.vramReadListener) {
             debug.vramReadListener(debug.arg, this->ctx.addr, this->ctx.readBuffer);
@@ -354,13 +359,17 @@ class VDP
         return result;
     }
 
-    inline unsigned char readPort1()
+    inline unsigned char inPort99()
     {
         int sn = this->ctx.reg[15] & 0b00001111;
         unsigned char result = this->ctx.stat[sn];
         switch (sn) {
             case 0: this->ctx.stat[sn] &= 0b01011111; break;
-            case 1: this->ctx.stat[sn] &= 0b11111110; break;
+            case 1:
+                this->ctx.stat[sn] &= 0b11111110;
+                result &= 0b11000001;
+                result |= 0b00000100;
+                break;
             case 2: result |= 0b10001100; break;
             case 5:
                 this->ctx.stat[3] = 0;
@@ -378,7 +387,7 @@ class VDP
         return result;
     }
 
-    inline void writePort0(unsigned char value)
+    inline void outPort98(unsigned char value)
     {
         this->ctx.addr &= this->getAddressMask();
         this->ctx.readBuffer = value;
@@ -391,7 +400,7 @@ class VDP
         this->ctx.latch1 = 0;
     }
 
-    inline void writePort1(unsigned char value)
+    inline void outPort99(unsigned char value)
     {
         this->ctx.latch1 &= 1;
         this->ctx.tmpAddr[this->ctx.latch1++] = value;
@@ -408,7 +417,7 @@ class VDP
         }
     }
 
-    inline void writePort2(unsigned char value)
+    inline void outPort9A(unsigned char value)
     {
         this->ctx.latch2 &= 1;
         int pn = this->ctx.reg[16] & 0b00001111;
@@ -424,7 +433,7 @@ class VDP
         }
     }
 
-    inline void writePort3(unsigned char value)
+    inline void outPort9B(unsigned char value)
     {
         // Indirect access to registers through R#17 (Control Register Pointer)
         this->updateRegister(this->ctx.reg[17] & 0b00111111, value);
@@ -434,7 +443,37 @@ class VDP
         }
     }
 
-  private:
+    inline void outPortF3(unsigned char value) {
+        /*
+         b0    M3
+         b1    M4
+         b2    M5
+         b3    M2
+         b4    M1
+         b5    TP
+         b6    YUV ... not support yet
+         b7    YAE ... not support yet
+         */
+        // update M3/M4/M5
+        this->ctx.reg[0] &= 0b11110001;
+        this->ctx.reg[0] |= (value & 0b00000111) << 1;
+        // update M2/M1
+        this->ctx.reg[1] &= 0b11100111;
+        this->ctx.reg[1] |= value & 0b00011000;
+        // update TP
+        this->ctx.reg[8] &= 0b11011111;
+        this->ctx.reg[8] |= value & 0b00100000;
+    }
+
+    inline void outPortF4(unsigned char value) {
+        this->ctx.hardwareResetFlag = value;
+    }
+
+    inline unsigned char inPortF4() {
+        return this->ctx.hardwareResetFlag;
+    }
+
+private:
     inline int getLineNumber()
     {
         int mode = this->getScreenMode();
@@ -550,6 +589,8 @@ class VDP
         bool spriteMag = this->isSpriteMag();
         unsigned short backdropColor = this->getBackdropColor();
         unsigned short textColor = this->getTextColor();
+        int onTime = this->getOnTime();
+        int offTime = this->getOffTime();
 #endif
         bool previousInterrupt = this->isEnabledInterrupt0();
         this->ctx.reg[rn] = value;
@@ -608,6 +649,12 @@ class VDP
         if (textColor != this->getTextColor()) {
             printf("Change Text Color: $%04X -> $%04X\n", textColor, this->getTextColor());
         }
+        if (onTime != getOnTime()) {
+            printf("OnTime changed: %d -> %d\n", onTime, getOnTime());
+        }
+        if (offTime != getOffTime()) {
+            printf("OffTime changed: %d -> %d\n", offTime, getOffTime());
+        }
 #endif
     }
 
@@ -649,6 +696,12 @@ class VDP
                         puts("UNSUPPORTED SCREEN MODE!");
                         exit(-1);
                         return;
+                }
+                if (this->isMaskLeft8px()) {
+                    auto borderColor = this->getBackdropColor();
+                    for (int i = 0; i < 16; i++) {
+                        renderPosition[i] = borderColor;
+                    }
                 }
             } else return;
         } else {
@@ -765,16 +818,40 @@ class VDP
 
     inline void renderScanlineModeG5(int lineNumber, unsigned short* renderPosition)
     {
-        int curD = 0;
-        int curP = lineNumber * 128 + 128 * this->ctx.reg[23];
-        curP += this->getNameTableAddress();
-        for (int i = 0; i < 128; i++) {
-            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[curP] & 0xC0) >> 6);
-            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[curP] & 0x30) >> 4);
-            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[curP] & 0x0C) >> 2);
-            this->renderPixel1(&renderPosition[curD++], this->ctx.ram[curP++] & 0x03);
+        int curD = (this->ctx.reg[27] & 0b00000111) << 1;
+        int addr = lineNumber * 128 + 128 * this->ctx.reg[23];
+        addr &= 0x7FFF;
+        addr += this->getNameTableAddress();
+        int sp2 = this->getSP2();
+        int x = this->ctx.reg[26];
+        if (sp2) {
+            x &= 0b00111111;
+            if (x < 32) {
+                addr |= 0x8000;
+            } else {
+                addr &= 0x17FFF;
+            }
+        } else {
+            x &= 0b00011111;
         }
-        //renderSpritesMode2(lineNumber, renderPosition);
+        x <<= 2;
+        for (int i = 0; i < 128; i++) {
+            addr &= 0x1FFFF;
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0xC0) >> 6);
+            if (512 <= curD) break;
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0x30) >> 4);
+            if (512 <= curD) break;
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0x0C) >> 2);
+            if (512 <= curD) break;
+            this->renderPixel1(&renderPosition[curD++], this->ctx.ram[addr + x] & 0x03);
+            if (512 <= curD) break;
+            x++;
+            x &= 0x7F;
+            if (0 == x && sp2) {
+                addr ^= 0x8000;
+            }
+        }
+        renderSpritesMode2(lineNumber, renderPosition);
     }
 
     inline unsigned short convertColor_8bit_to_16bit(unsigned char c)
@@ -1006,6 +1083,7 @@ class VDP
         bool si = this->ctx.reg[1] & 0b00000010 ? true : false;
         bool mag = this->ctx.reg[1] & 0b00000001 ? true : false;
         int sa = this->ctx.reg[10];
+        unsigned char colMask = this->getScreenMode() == 0b00100 ? 3 : 15;
         sa &= 0b00000011;
         sa <<= 8;
         sa |= this->ctx.reg[5];
@@ -1044,7 +1122,7 @@ class VDP
                         x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
                         bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
                         bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
-                        int col = this->ctx.ram[ct] & 0b00001111;
+                        int col = this->ctx.ram[ct] & colMask;
                         for (int j = 0; j < 16; j++, x++) {
                             if (wlog[x] && !ic) {
                                 this->setCollision(x, y);
@@ -1103,7 +1181,7 @@ class VDP
                         x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
                         bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
                         bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
-                        int col = this->ctx.ram[ct] & 0b00001111;
+                        int col = this->ctx.ram[ct] & colMask;
                         for (int j = 0; j < 16; j++, x++) {
                             if (wlog[x] && !ic) {
                                 this->setCollision(x, y);
@@ -1144,7 +1222,7 @@ class VDP
                         x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
                         bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
                         bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
-                        int col = this->ctx.ram[ct] & 0b00001111;
+                        int col = this->ctx.ram[ct] & colMask;
                         for (int j = 0; j < 8; j++, x++) {
                             if (wlog[x] && !ic) {
                                 this->setCollision(x, y);
@@ -1203,7 +1281,7 @@ class VDP
                         x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
                         bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
                         bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
-                        int col = this->ctx.ram[ct] & 0b00001111;
+                        int col = this->ctx.ram[ct] & colMask;
                         for (int j = 0; j < 8; j++, x++) {
                             if (wlog[x] && !ic) {
                                 this->setCollision(x, y);
