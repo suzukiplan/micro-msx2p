@@ -141,6 +141,7 @@ class VDP
     inline bool getSP2() { return ctx.reg[25] & 0b00000001; }
     inline int getOnTime() { return (ctx.reg[13] & 0xF0) >> 4; }
     inline int getOffTime() { return ctx.reg[13] & 0x0F; }
+    inline int getSyncMode() { return (ctx.reg[9] & 0b00110000) >> 4; }
 
     inline int getAddressMask() {
         switch (this->getScreenMode()) {
@@ -591,6 +592,8 @@ private:
         unsigned short textColor = this->getTextColor();
         int onTime = this->getOnTime();
         int offTime = this->getOffTime();
+        int syncMode = this->getSyncMode();
+        int lineNumber = getLineNumber();
 #endif
         bool previousInterrupt = this->isEnabledInterrupt0();
         this->ctx.reg[rn] = value;
@@ -654,6 +657,12 @@ private:
         }
         if (offTime != getOffTime()) {
             printf("OffTime changed: %d -> %d\n", offTime, getOffTime());
+        }
+        if (syncMode != getSyncMode()) {
+            printf("SyncMode changed: %d -> %d\n", syncMode, getSyncMode());
+        }
+        if (lineNumber != getLineNumber()) {
+            printf("LineNumber changed: %d -> %d\n", lineNumber, getLineNumber());
         }
 #endif
     }

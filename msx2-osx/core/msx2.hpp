@@ -59,8 +59,10 @@ public:
             ((MSX2*)arg)->cpu->requestBreak();
         });
         /*
-        cpu->setDebugMessage([](void* arg, const char* msg) {
-            puts(msg);
+        cpu->addBreakPoint(0x7A97, [](void* arg) {
+            ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
+                puts(msg);
+            });
         });
         cpu->addBreakOperand(0xFF, [](void* arg, unsigned char* op, int len) {
             printf("Detect RST $38 (PC:$%04X)\n", ((MSX2*)arg)->cpu->reg.PC);
