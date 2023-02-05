@@ -2,6 +2,7 @@
 #define INCLUDE_VDP_HPP
 
 #include <string.h>
+//#define COMMAND_DEBUG
 
 class VDP
 {
@@ -719,7 +720,7 @@ private:
                         this->renderScanlineModeG7(lineNumber, renderPosition);
                         break;
                     default:
-                        puts("UNSUPPORTED SCREEN MODE!");
+                        printf("UNSUPPORTED SCREEN MODE! (%d)\n", this->getScreenMode());
                         exit(-1);
                         return;
                 }
@@ -853,9 +854,9 @@ private:
         if (sp2) {
             x &= 0b00111111;
             if (x < 32) {
-                addr |= 0x8000;
-            } else {
                 addr &= 0x17FFF;
+            } else {
+                addr |= 0x8000;
             }
         } else {
             x &= 0b00011111;
@@ -1503,8 +1504,8 @@ private:
         int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
-        int addr = this->getNameTableAddress() + mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
-#if 0
+        int addr = mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
+#ifdef COMMAND_DEBUG
         printf("ExecuteCommand<HMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.reg[44], getScreenMode());
 #endif
         this->ctx.ram[addr & 0x1FFFF] = this->ctx.reg[44];
@@ -1516,7 +1517,7 @@ private:
             this->ctx.commandDY += diy;
             this->ctx.commandNY--;
             if (this->ctx.commandNY <= 0) {
-#if 0
+#ifdef COMMAND_DEBUG
                 puts("End HMMC");
 #endif
                 this->ctx.command = 0;
@@ -1554,8 +1555,8 @@ private:
         int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
-        int addr = this->getNameTableAddress() + mxd + dx / dpb + dy * lineBytes;
-#if 0
+        int addr = mxd + dx / dpb + dy * lineBytes;
+#ifdef COMMAND_DEBUG
         printf("ExecuteCommand<HMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, CLR=$%02X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addr, clr, getScreenMode());
 #endif
         while (0 < ny) {
@@ -1671,11 +1672,11 @@ private:
         int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
-        int addr = this->getNameTableAddress() + mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
+        int addr = mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
         int dst = this->ctx.reg[44];
         if (2 == dst) dst &= 0x0F;
         else if (4 == dst) dst &= 0b11;
-#if 0
+#ifdef COMMAND_DEBUG
         printf("ExecuteCommand<LMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X, LO=%X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, dst, ctx.commandL, getScreenMode());
 #endif
         renderLogicalPixel(addr, dpb, ctx.commandDX, dst, ctx.commandL);
@@ -1687,7 +1688,7 @@ private:
             this->ctx.commandDY += diy;
             this->ctx.commandNY--;
             if (this->ctx.commandNY <= 0) {
-#if 0
+#ifdef COMMAND_DEBUG
                 puts("End LMMC");
 #endif
                 this->ctx.command = 0;
@@ -1731,11 +1732,11 @@ private:
             case 0b00111: break; // GRAPHIC7
             default: return;
         }
-        int mxd = this->getNameTableAddress() + (this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0);
+        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
         int m = this->ctx.reg[45] & 0b00000001;
-#if 0
+#ifdef COMMAND_DEBUG
         printf("ExecuteCommand<LINE>: DX=%d, DY=%d, Maj=%d, Min=%d, DIX=%d, DIY=%d, MXD=$%05X, MAJ=%s, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, maj, min, dix, diy, mxd, m ? "Y" : "X", clr, ctx.commandL, getScreenMode());
 #endif
 
@@ -1769,44 +1770,6 @@ private:
     {
         puts("execute SRCH (not implemented yet");
         exit(-1);
-        /*
-        int ex, ey, dpb;
-        getEdge(&ex, &ey, &dpb);
-        int sx = this->getSourceX();
-        int sy = this->getSourceY();
-        unsigned char sc = this->ctx.reg[44];
-        switch (dpb) {
-            case 2: sc &= 0b00001111; break;
-            case 4: sc &= 0b00000011; break;
-        }
-        int dix = this->ctx.reg[45] & 0b000000100 ? -1 : 1;
-        bool eq = this->ctx.reg[45] & 0b000000010 ? true : false;
-        for (int ox = 0; 0 <= sx + ox && sx + ox < ex; ox += dix) {
-            if (sc == this->getLogicalPixel(sx, sy, ox, 0, dpb)) {
-                if (!eq) {
-                    // found
-                    this->ctx.command = 0;
-                    this->ctx.stat[2] &= 0b11111110;
-                    this->ctx.stat[2] |= 0b00010000;
-                    this->ctx.stat[8] = (sx + ox) & 0xFF;
-                    this->ctx.stat[9] = ((sx + ox) & 0xFF00) >> 8;
-                    return;
-                }
-            } else {
-                if (eq) {
-                    // found
-                    this->ctx.command = 0;
-                    this->ctx.stat[2] &= 0b11111110;
-                    this->ctx.stat[2] |= 0b00010000;
-                    this->ctx.stat[8] = (sx + ox) & 0xFF;
-                    this->ctx.stat[9] = ((sx + ox) & 0xFF00) >> 8;
-                    return;
-                }
-            }
-        }
-        this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b11101110;
-         */
     }
 
     inline void executeCommandPSET()
@@ -1823,8 +1786,8 @@ private:
             case 0b00111: break; // GRAPHIC7
             default: return;
         }
-        int mxd = this->getNameTableAddress() + (this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0);
-#if 0
+        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
+#ifdef COMMAND_DEBUG
         printf("ExecuteCommand<PSET>: DX=%d, DY=%d, MXD=$%05X, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, mxd, clr, ctx.commandL, getScreenMode());
 #endif
         this->renderLogicalPixel((mxd + dx / dpb + dy * lineBytes) & 0x1FFFF, dpb, dx, clr, ctx.commandL);
@@ -1836,15 +1799,6 @@ private:
     {
         puts("execute POINT (not implemented yet");
         exit(-1);
-        /*
-        int ex, ey, dpb;
-        getEdge(&ex, &ey, &dpb);
-        int sx = this->getSourceX();
-        int sy = this->getSourceY();
-        this->ctx.stat[7] = this->getLogicalPixel(sx, sy, 0, 0, dpb);
-        this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b11111110;
-         */
     }
 };
 

@@ -72,7 +72,15 @@ public:
         /*
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
-            printf("Update VDP register #%d = $%02X (PC:$%04X)\n", rn, value, this_->cpu->reg.PC);
+            printf("Update VDP register #%d = $%02X (PC:$%04X,bobo:%d)\n", rn, value
+                   , this_->cpu->reg.PC
+                   , this_->vdp.ctx.bobo
+                   );
+            if (0x7BB2 == this_->cpu->reg.PC && -279193 ==this_->vdp.ctx.bobo) {
+                ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
+                    puts(msg);
+                });
+            }
         });
          */
 
