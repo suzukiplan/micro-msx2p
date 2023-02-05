@@ -390,7 +390,8 @@ class VDP
 
     inline void outPort98(unsigned char value)
     {
-        this->ctx.addr &= this->getAddressMask();
+        int addressMask = this->getAddressMask();
+        this->ctx.addr &= addressMask;
         this->ctx.readBuffer = value;
         //printf("VRAM[$%05X] = $%02X\n", this->ctx.addr, value);
         this->ctx.ram[this->ctx.addr] = this->ctx.readBuffer;
@@ -398,6 +399,9 @@ class VDP
             this->debug.vramWriteListener(this->debug.arg, this->ctx.addr, this->ctx.readBuffer);
         }
         this->ctx.addr++;
+        if (0x1FFFF == addressMask) {
+            this->updateRegister14FromAddress();
+        }
         this->ctx.latch1 = 0;
     }
 
@@ -566,9 +570,22 @@ private:
 
     inline void readVideoMemory()
     {
-        this->ctx.addr &= this->getAddressMask();
+        int addressMask = this->getAddressMask();
+        this->ctx.addr &= addressMask;
         this->ctx.readBuffer = this->ctx.ram[this->ctx.addr & 0x1FFFF];
         this->ctx.addr++;
+        if (0x1FFFF == addressMask) {
+            this->updateRegister14FromAddress();
+        }
+    }
+
+    inline void updateRegister14FromAddress() {
+#if 1
+        if (this->ctx.reg[14] != ((this->ctx.addr >> 13) & 7)) {
+            printf("update R#14: %d -> %d\n", this->ctx.reg[14], (this->ctx.addr >> 13) & 7);
+        }
+#endif
+        this->ctx.reg[14] = (this->ctx.addr >> 13) & 7;
     }
 
     inline void updateRegister(int rn, unsigned char value)
