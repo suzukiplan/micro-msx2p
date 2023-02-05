@@ -78,6 +78,40 @@ extern "C" void emu_init_cbios(const void* main, size_t mainSize,
     emu_reset();
 }
 
+extern "C" void emu_init_bios_tm1p(const void* tm1pbios,
+                                   const void* tm1pext,
+                                   const void* tm1pkdr,
+                                   const void* tm1pdesk1,
+                                   const void* tm1pdesk2)
+{
+    /*
+     0 0 0 4 20 "Machines/MSX2+ - Toshiba FS-TM1+\tm1pbios.rom" ""
+     3 0 0 8 23 "" ""
+     3 1 0 2 20 "Machines/MSX2+ - Toshiba FS-TM1+\tm1pext.rom" ""
+     3 1 2 4 42 "Machines/MSX2+ - Toshiba FS-TM1+\tm1pkdr.rom" ""
+     3 2 2 4 42 "Machines/MSX2+ - Toshiba FS-TM1+\tm1pdesk1.rom" ""
+     3 3 2 4 42 "Machines/MSX2+ - Toshiba FS-TM1+\tm1pdesk2.rom" ""
+     */
+    static unsigned char tm1pbios_[0x8000];
+    static unsigned char tm1pext_[0x4000];
+    static unsigned char tm1pkdr_[0x8000];
+    static unsigned char tm1pdesk1_[0x8000];
+    static unsigned char tm1pdesk2_[0x8000];
+    memcpy(tm1pbios_, tm1pbios, sizeof(tm1pbios_));
+    memcpy(tm1pext_, tm1pext, sizeof(tm1pext_));
+    memcpy(tm1pkdr_, tm1pkdr, sizeof(tm1pkdr_));
+    memcpy(tm1pdesk1_, tm1pdesk1, sizeof(tm1pdesk1_));
+    memcpy(tm1pdesk2_, tm1pdesk2, sizeof(tm1pdesk2_));
+    msx2.setupSecondaryExist(false, false, false, true);
+    msx2.setup(0, 0, 0, false, tm1pbios_, sizeof(tm1pbios_), "MAIN");
+    msx2.setup(3, 3, 0, true, ram, sizeof(ram), "RAM");
+    msx2.setup(3, 2, 0, false, tm1pext_, sizeof(tm1pext_), "SUB");
+    msx2.setup(3, 2, 2, false, tm1pkdr_, sizeof(tm1pkdr_), "KNJ");
+    msx2.setup(3, 1, 2, false, tm1pdesk1_, sizeof(tm1pdesk1_), "DSK1");
+    msx2.setup(3, 0, 2, false, tm1pdesk2_, sizeof(tm1pdesk2_), "DSK2");
+    emu_reset();
+}
+
 void emu_loadRom(const void* rom_, size_t romSize)
 {
     if (rom) free(rom);

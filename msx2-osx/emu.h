@@ -26,6 +26,11 @@ void emu_init_bios(const void* main, size_t mainSize,
 void emu_init_cbios(const void* main, size_t mainSize,
                     const void* logo, size_t logoSize,
                     const void* sub, size_t subSize);
+void emu_init_bios_tm1p(const void* tm1pbios,
+                        const void* tm1pext,
+                        const void* tm1pkdr,
+                        const void* tm1pdesk1,
+                        const void* tm1pdesk2);
 void emu_reset(void);
 void emu_loadRom(const void* rom, size_t romSize);
 void emu_vsync(void);
