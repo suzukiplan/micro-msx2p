@@ -580,7 +580,7 @@ private:
     }
 
     inline void updateRegister14FromAddress() {
-#if 1
+#if 0
         if (this->ctx.reg[14] != ((this->ctx.addr >> 13) & 7)) {
             printf("update R#14: %d -> %d\n", this->ctx.reg[14], (this->ctx.addr >> 13) & 7);
         }
@@ -1346,13 +1346,15 @@ private:
                 case 0b1101: this->executeCommandHMMM(); break;
                 case 0b1100: this->executeCommandHMMV(); break;
                 case 0b1011: this->executeCommandLMMC(true); break;
-                case 0b1010: break;
                 case 0b1001: this->executeCommandLMMM(); break;
                 case 0b1000: this->executeCommandLMMV(); break;
                 case 0b0111: this->executeCommandLINE(); break;
                 case 0b0110: this->executeCommandSRCH(); break;
                 case 0b0101: this->executeCommandPSET(); break;
                 case 0b0100: this->executeCommandPOINT(); break;
+                default:
+                    printf("UNKNOWN COMMAND: %d\n", cm);
+                    exit(-1);
             }
         } else {
             this->ctx.stat[2] &= 0b11111110;
