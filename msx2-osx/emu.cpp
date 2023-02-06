@@ -82,7 +82,9 @@ extern "C" void emu_init_bios_tm1p(const void* tm1pbios,
                                    const void* tm1pext,
                                    const void* tm1pkdr,
                                    const void* tm1pdesk1,
-                                   const void* tm1pdesk2)
+                                   const void* tm1pdesk2,
+                                   const void* font,
+                                   size_t fontSize)
 {
     /*
      0 0 0 4 20 "Machines/MSX2+ - Toshiba FS-TM1+\tm1pbios.rom" ""
@@ -104,11 +106,12 @@ extern "C" void emu_init_bios_tm1p(const void* tm1pbios,
     memcpy(tm1pdesk2_, tm1pdesk2, sizeof(tm1pdesk2_));
     msx2.setupSecondaryExist(false, false, false, true);
     msx2.setup(0, 0, 0, false, tm1pbios_, sizeof(tm1pbios_), "MAIN");
-    msx2.setup(3, 3, 0, true, ram, sizeof(ram), "RAM");
-    msx2.setup(3, 2, 0, false, tm1pext_, sizeof(tm1pext_), "SUB");
-    msx2.setup(3, 2, 2, false, tm1pkdr_, sizeof(tm1pkdr_), "KNJ");
-    msx2.setup(3, 1, 2, false, tm1pdesk1_, sizeof(tm1pdesk1_), "DSK1");
-    msx2.setup(3, 0, 2, false, tm1pdesk2_, sizeof(tm1pdesk2_), "DSK2");
+    msx2.setup(3, 0, 0, true, ram, sizeof(ram), "RAM");
+    msx2.setup(3, 1, 0, false, tm1pext_, sizeof(tm1pext_), "SUB");
+    msx2.setup(3, 1, 2, false, tm1pkdr_, sizeof(tm1pkdr_), "KNJ");
+    msx2.setup(3, 2, 2, false, tm1pdesk1_, sizeof(tm1pdesk1_), "DSK1");
+    msx2.setup(3, 3, 2, false, tm1pdesk2_, sizeof(tm1pdesk2_), "DSK2");
+    msx2.loadFont(font, fontSize);
     emu_reset();
 }
 

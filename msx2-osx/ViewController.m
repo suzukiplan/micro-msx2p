@@ -45,7 +45,7 @@
                   biosFm.bytes, biosFm.length,
                   biosKnj.bytes, biosKnj.length,
                   biosFont.bytes, biosFont.length);
-#elif 0
+#elif 1
     /*
      void emu_init_bios_tm1p(const void* tm1pbios,
                              const void* tm1pext,
@@ -58,11 +58,13 @@
     NSData* tm1pkdr = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"tm1pkdr" ofType:@"rom"]];
     NSData* tm1pdesk1 = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"tm1pdesk1" ofType:@"rom"]];
     NSData* tm1pdesk2 = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"tm1pdesk2" ofType:@"rom"]];
+    NSData* font = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJFNT16" ofType:@"ROM"]];
     emu_init_bios_tm1p(tm1pbios.bytes,
                        tm1pext.bytes,
                        tm1pkdr.bytes,
                        tm1pdesk1.bytes,
-                       tm1pdesk2.bytes);
+                       tm1pdesk2.bytes,
+                       font.bytes, font.length);
 #else
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2P" ofType:@"ROM"]];
     NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2PEXT" ofType:@"ROM"]];
