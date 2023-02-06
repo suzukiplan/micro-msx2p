@@ -84,12 +84,10 @@ class MMU
 
     inline unsigned char getPrimary()
     {
-        unsigned char result = 0;
-        for (int i = 0; i < 4; i++) {
-            result <<= 2;
-            result |= this->ctx.primary[3 - i] & 0b11;
-        }
-        return result;
+        return ((this->ctx.primary[3] << 6) |
+                (this->ctx.primary[2] << 4) |
+                (this->ctx.primary[1] << 2) |
+                this->ctx.primary[0]);
     }
 
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
@@ -140,16 +138,10 @@ class MMU
 
     inline unsigned char getSecondary()
     {
-        unsigned char result = 0;
-        for (int i = 0; i < 4; i++) {
-            result <<= 2;
-            if (this->secondaryExist[this->ctx.primary[3 - i]]) {
-                result |= (0b11 ^ this->ctx.secondary[3 - i]) & 0b11;
-            } else {
-                result |= this->ctx.secondary[3 - i] & 0b11;
-            }
-        }
-        return result;
+        return 0xFF ^ ((this->ctx.secondary[3] << 6) |
+                       (this->ctx.secondary[2] << 4) |
+                       (this->ctx.secondary[1] << 2) |
+                       this->ctx.secondary[0]);
     }
 
     inline void updateSecondary(unsigned char value)
@@ -180,8 +172,6 @@ class MMU
         }
         int page = (addr & 0b1100000000000000) >> 14;
         int pri = this->ctx.primary[page];
-        //int sec = 3 == pri ? this->ctx.secondary[page] : 0;
-        //int sec = this->ctx.secondary[page];
         int sec = this->secondaryExist[pri] ? this->ctx.secondary[page] : 0;
         int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
@@ -191,7 +181,6 @@ class MMU
 
     inline void write(unsigned short addr, unsigned char value)
     {
-        //printf("write memory $%04X <- $%02X\n", addr, value);
         if (addr == 0xFFFF) {
             this->updateSecondary(value);
             return;
@@ -199,35 +188,11 @@ class MMU
         int page = (addr & 0b1100000000000000) >> 14;
         int pri = this->ctx.primary[page];
         int sec = this->secondaryExist[pri] ? this->ctx.secondary[page] : 0;
-        //int sec = this->ctx.secondary[page];
         int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
         auto data = &s->data[idx];
         if (data->isRAM && data->ptr) {
             data->ptr[addr & 0x1FFF] = value;
-#if 0
-            if (0xFAAC == addr) {
-                bool kana = value & 0x80 ? true : false;
-                bool mask = value & 0x08 ? false : true;
-                int vsize = ((value & 0x06) >> 1) * 64;
-                if (0 == vsize) vsize = 16;
-                bool conv = value & 0x01 ? true : false;
-                printf("Update MODE($%04X) = $%02X (Kana:%s, Mask:%s, VRAM:%dKB, Conv:%s)\n", addr, value, kana ? "Yes": "No", mask ? "Yes" : "No", vsize, conv ? "Yes" : "No");
-                
-            }
-            else if (0xFCC1 <= addr && addr <= 0xFCC1 + 4) {
-                printf("Update EXPTBL($%04X) = $%02X\n", addr, value);
-            }
-            else if (0xFCC5 <= addr && addr <= 0xFCC5 + 4) {
-                printf("Update SLTTBL($%04X) = $%02X\n", addr, value);
-            }
-            else if (0xFCC9 <= addr && addr <= 0xFCC9 + 64) {
-                printf("Update SLTATR($%04X) = $%02X\n", addr, value);
-            }
-            else if (0xFD09 <= addr && addr <= 0xFD09 + 128) {
-                printf("Update SLTWRK($%04X) = $%02X\n", addr, value);
-            }
-#endif
         } else if (data->isCartridge) {
             switch (this->cartridge.romType) {
                 case MSX2_ROM_TYPE_NORMAL:
