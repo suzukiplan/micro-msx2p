@@ -143,7 +143,7 @@ class MMU
         unsigned char result = 0;
         for (int i = 0; i < 4; i++) {
             result <<= 2;
-            if (this->secondaryExist[3 - i]) {
+            if (this->secondaryExist[this->ctx.primary[3 - i]]) {
                 result |= (0b11 ^ this->ctx.secondary[3 - i]) & 0b11;
             } else {
                 result |= this->ctx.secondary[3 - i] & 0b11;
