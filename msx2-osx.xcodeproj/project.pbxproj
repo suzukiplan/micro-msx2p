@@ -14,6 +14,21 @@
 		741A1E15298FCEDB001AE497 /* tm1pdesk2.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E10298FCEDB001AE497 /* tm1pdesk2.rom */; };
 		741A1E16298FCEDB001AE497 /* tm1pext.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E11298FCEDB001AE497 /* tm1pext.rom */; };
 		741A1E17298FCEDB001AE497 /* tm1pdesk1.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E12298FCEDB001AE497 /* tm1pdesk1.rom */; };
+		741A1E1E2991C885001AE497 /* FSA1WSX_MSX2PMUS.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E182991C885001AE497 /* FSA1WSX_MSX2PMUS.ROM */; };
+		741A1E1F2991C885001AE497 /* FSA1WSX_DISK.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E192991C885001AE497 /* FSA1WSX_DISK.ROM */; };
+		741A1E202991C885001AE497 /* FSA1WSX_MSX2PEXT.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E1A2991C885001AE497 /* FSA1WSX_MSX2PEXT.ROM */; };
+		741A1E212991C885001AE497 /* FSA1WSX_KANJI.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E1B2991C885001AE497 /* FSA1WSX_KANJI.ROM */; };
+		741A1E222991C885001AE497 /* FSA1WSX_MSX2P.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E1C2991C885001AE497 /* FSA1WSX_MSX2P.ROM */; };
+		741A1E232991C885001AE497 /* FSA1WSX_MSXKANJI.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E1D2991C885001AE497 /* FSA1WSX_MSXKANJI.ROM */; };
+		741A1E2D2991F219001AE497 /* a1wskfn.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E242991F217001AE497 /* a1wskfn.rom */; };
+		741A1E2E2991F219001AE497 /* a1wsdisk.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E252991F217001AE497 /* a1wsdisk.rom */; };
+		741A1E2F2991F219001AE497 /* a1wsdsk2.dsk in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E262991F217001AE497 /* a1wsdsk2.dsk */; };
+		741A1E302991F219001AE497 /* a1wsmus.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E272991F218001AE497 /* a1wsmus.rom */; };
+		741A1E312991F219001AE497 /* a1wskdr.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E282991F218001AE497 /* a1wskdr.rom */; };
+		741A1E322991F219001AE497 /* a1wsdsk1.dsk in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E292991F218001AE497 /* a1wsdsk1.dsk */; };
+		741A1E332991F219001AE497 /* a1wsext.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E2A2991F218001AE497 /* a1wsext.rom */; };
+		741A1E342991F219001AE497 /* a1wsbios.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E2B2991F219001AE497 /* a1wsbios.rom */; };
+		741A1E352991F219001AE497 /* a1wsfirm.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E2C2991F219001AE497 /* a1wsfirm.rom */; };
 		748D22AC297E652600B504AF /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 748D22AB297E652600B504AF /* AppDelegate.m */; };
 		748D22AF297E652600B504AF /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 748D22AE297E652600B504AF /* ViewController.m */; };
 		748D22B1297E652800B504AF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 748D22B0297E652800B504AF /* Assets.xcassets */; };
@@ -46,6 +61,21 @@
 		741A1E10298FCEDB001AE497 /* tm1pdesk2.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = tm1pdesk2.rom; sourceTree = "<group>"; };
 		741A1E11298FCEDB001AE497 /* tm1pext.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = tm1pext.rom; sourceTree = "<group>"; };
 		741A1E12298FCEDB001AE497 /* tm1pdesk1.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = tm1pdesk1.rom; sourceTree = "<group>"; };
+		741A1E182991C885001AE497 /* FSA1WSX_MSX2PMUS.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = FSA1WSX_MSX2PMUS.ROM; sourceTree = "<group>"; };
+		741A1E192991C885001AE497 /* FSA1WSX_DISK.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = FSA1WSX_DISK.ROM; sourceTree = "<group>"; };
+		741A1E1A2991C885001AE497 /* FSA1WSX_MSX2PEXT.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = FSA1WSX_MSX2PEXT.ROM; sourceTree = "<group>"; };
+		741A1E1B2991C885001AE497 /* FSA1WSX_KANJI.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = FSA1WSX_KANJI.ROM; sourceTree = "<group>"; };
+		741A1E1C2991C885001AE497 /* FSA1WSX_MSX2P.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = FSA1WSX_MSX2P.ROM; sourceTree = "<group>"; };
+		741A1E1D2991C885001AE497 /* FSA1WSX_MSXKANJI.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = FSA1WSX_MSXKANJI.ROM; sourceTree = "<group>"; };
+		741A1E242991F217001AE497 /* a1wskfn.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wskfn.rom; sourceTree = "<group>"; };
+		741A1E252991F217001AE497 /* a1wsdisk.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsdisk.rom; sourceTree = "<group>"; };
+		741A1E262991F217001AE497 /* a1wsdsk2.dsk */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsdsk2.dsk; sourceTree = "<group>"; };
+		741A1E272991F218001AE497 /* a1wsmus.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsmus.rom; sourceTree = "<group>"; };
+		741A1E282991F218001AE497 /* a1wskdr.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wskdr.rom; sourceTree = "<group>"; };
+		741A1E292991F218001AE497 /* a1wsdsk1.dsk */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsdsk1.dsk; sourceTree = "<group>"; };
+		741A1E2A2991F218001AE497 /* a1wsext.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsext.rom; sourceTree = "<group>"; };
+		741A1E2B2991F219001AE497 /* a1wsbios.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsbios.rom; sourceTree = "<group>"; };
+		741A1E2C2991F219001AE497 /* a1wsfirm.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsfirm.rom; sourceTree = "<group>"; };
 		748D22A7297E652600B504AF /* msx2-osx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "msx2-osx.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		748D22AA297E652600B504AF /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		748D22AB297E652600B504AF /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -167,6 +197,21 @@
 				748D22D3297E7E2D00B504AF /* MSX2P.ROM */,
 				748D22CF297E7E2D00B504AF /* MSX2PEXT.ROM */,
 				748D22D1297E7E2D00B504AF /* MSXDOS2.ROM */,
+				741A1E192991C885001AE497 /* FSA1WSX_DISK.ROM */,
+				741A1E1B2991C885001AE497 /* FSA1WSX_KANJI.ROM */,
+				741A1E1C2991C885001AE497 /* FSA1WSX_MSX2P.ROM */,
+				741A1E1A2991C885001AE497 /* FSA1WSX_MSX2PEXT.ROM */,
+				741A1E182991C885001AE497 /* FSA1WSX_MSX2PMUS.ROM */,
+				741A1E1D2991C885001AE497 /* FSA1WSX_MSXKANJI.ROM */,
+				741A1E2B2991F219001AE497 /* a1wsbios.rom */,
+				741A1E252991F217001AE497 /* a1wsdisk.rom */,
+				741A1E292991F218001AE497 /* a1wsdsk1.dsk */,
+				741A1E262991F217001AE497 /* a1wsdsk2.dsk */,
+				741A1E2A2991F218001AE497 /* a1wsext.rom */,
+				741A1E2C2991F219001AE497 /* a1wsfirm.rom */,
+				741A1E282991F218001AE497 /* a1wskdr.rom */,
+				741A1E242991F217001AE497 /* a1wskfn.rom */,
+				741A1E272991F218001AE497 /* a1wsmus.rom */,
 			);
 			path = bios;
 			sourceTree = "<group>";
@@ -232,22 +277,37 @@
 				7407A1D629834DB500D59AA5 /* cbios_sub.rom in Resources */,
 				748D22D8297E7E2E00B504AF /* KNJDRV.ROM in Resources */,
 				748D22E5297FB69800B504AF /* cbios_main_msx2_jp.rom in Resources */,
+				741A1E2F2991F219001AE497 /* a1wsdsk2.dsk in Resources */,
+				741A1E332991F219001AE497 /* a1wsext.rom in Resources */,
 				748D22DF297E7E2E00B504AF /* MSX2.ROM in Resources */,
 				748D22DC297E7E2E00B504AF /* KNJFNT16.ROM in Resources */,
+				741A1E212991C885001AE497 /* FSA1WSX_KANJI.ROM in Resources */,
+				741A1E2E2991F219001AE497 /* a1wsdisk.rom in Resources */,
 				748D22DD297E7E2E00B504AF /* MSX2P.ROM in Resources */,
+				741A1E222991C885001AE497 /* FSA1WSX_MSX2P.ROM in Resources */,
+				741A1E322991F219001AE497 /* a1wsdsk1.dsk in Resources */,
+				741A1E352991F219001AE497 /* a1wsfirm.rom in Resources */,
 				741A1E17298FCEDB001AE497 /* tm1pdesk1.rom in Resources */,
 				748D22DA297E7E2E00B504AF /* FMBIOS.ROM in Resources */,
+				741A1E1F2991C885001AE497 /* FSA1WSX_DISK.ROM in Resources */,
 				741A1E14298FCEDB001AE497 /* tm1pbios.rom in Resources */,
+				741A1E342991F219001AE497 /* a1wsbios.rom in Resources */,
 				748D22DE297E7E2E00B504AF /* DISK.ROM in Resources */,
+				741A1E302991F219001AE497 /* a1wsmus.rom in Resources */,
 				7407A1D529834DB500D59AA5 /* cbios_logo_msx2.rom in Resources */,
 				741A1E13298FCEDB001AE497 /* tm1pkdr.rom in Resources */,
+				741A1E202991C885001AE497 /* FSA1WSX_MSX2PEXT.ROM in Resources */,
 				741A1E15298FCEDB001AE497 /* tm1pdesk2.rom in Resources */,
 				748D22DB297E7E2E00B504AF /* MSXDOS2.ROM in Resources */,
 				748D22B1297E652800B504AF /* Assets.xcassets in Resources */,
+				741A1E1E2991C885001AE497 /* FSA1WSX_MSX2PMUS.ROM in Resources */,
 				748D22E0297E7E2E00B504AF /* MSX2EXT.ROM in Resources */,
+				741A1E312991F219001AE497 /* a1wskdr.rom in Resources */,
+				741A1E2D2991F219001AE497 /* a1wskfn.rom in Resources */,
 				748D22D9297E7E2E00B504AF /* MSX2PEXT.ROM in Resources */,
 				748D22B4297E652800B504AF /* Main.storyboard in Resources */,
 				741A1E16298FCEDB001AE497 /* tm1pext.rom in Resources */,
+				741A1E232991C885001AE497 /* FSA1WSX_MSXKANJI.ROM in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

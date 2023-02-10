@@ -61,20 +61,14 @@ extern "C" void emu_init_cbios(const void* main, size_t mainSize,
                                const void* logo, size_t logoSize,
                                const void* sub, size_t subSize)
 {
+    memcpy(bios.main, main, 0x8000);
+    memcpy(bios.ext, sub, 0x4000);
+    memcpy(bios.logo, logo, 0x4000);
     msx2.setupSecondaryExist(false, false, false, true);
-    if (main && 0x8000 == mainSize) {
-        memcpy(bios.main, main, 0x8000);
-        msx2.setup(0, 0, 0, false, bios.main, 0x8000, "MAIN");
-    }
-    if (logo && 0x4000 == logoSize) {
-        memcpy(bios.logo, logo, 0x4000);
-        msx2.setup(0, 0, 4, false, bios.logo, 0x4000, "LOGO");
-    }
-    msx2.setup(3, 0, 0, true, ram, 0x10000, "RAM");
-    if (sub && 0x4000 == subSize) {
-        memcpy(bios.ext, sub, 0x4000);
-        msx2.setup(3, 3, 0, false, bios.ext, 0x4000, "SUB");
-    }
+    msx2.setup(0, 0, 0, false, bios.main, 0x8000, "MAIN");
+    msx2.setup(0, 0, 4, false, bios.logo, 0x4000, "LOGO");
+    msx2.setup(3, 0, 0, false, bios.ext, 0x4000, "SUB");
+    msx2.setup(3, 2, 0, true, ram, 0x10000, "RAM");
     emu_reset();
 }
 
@@ -112,6 +106,42 @@ extern "C" void emu_init_bios_tm1p(const void* tm1pbios,
     msx2.setup(3, 2, 2, false, tm1pdesk1_, sizeof(tm1pdesk1_), "DSK1");
     msx2.setup(3, 3, 2, false, tm1pdesk2_, sizeof(tm1pdesk2_), "DSK2");
     msx2.loadFont(font, fontSize);
+    emu_reset();
+}
+
+void emu_init_bios_fsa1wsx(const void* msx2p,
+                           const void* msx2pext,
+                           const void* msx2pmus,
+                           const void* disk,
+                           const void* msxkanji,
+                           const void* kanji,
+                           const void* firm)
+{
+    static unsigned char msx2p_[0x8000];
+    static unsigned char msx2pext_[0x4000];
+    static unsigned char msx2pmus_[0x4000];
+    static unsigned char disk_[0x4000];
+    static unsigned char msxkanji_[0x8000];
+    static unsigned char kanji_[0x40000];
+    static unsigned char firm_[0x10000];
+
+    memcpy(msx2p_, msx2p, sizeof(msx2p_));
+    memcpy(msx2pext_, msx2pext, sizeof(msx2pext_));
+    memcpy(msx2pmus_, msx2pmus, sizeof(msx2pmus_));
+    memcpy(disk_, disk, sizeof(disk_));
+    memcpy(msxkanji_, msxkanji, sizeof(msxkanji_));
+    memcpy(kanji_, kanji, sizeof(kanji_));
+    memcpy(firm_, firm, sizeof(firm_));
+
+    msx2.setupSecondaryExist(true, false, false, true);
+    msx2.setup(0, 0, 0, false, msx2p_, sizeof(msx2p_), "MAIN");
+    msx2.setup(3, 0, 0, true, ram, sizeof(ram), "RAM");
+    msx2.setup(3, 1, 0, false, msx2pext_, sizeof(msx2pext_), "SUB");
+    msx2.setup(0, 2, 2, false, msx2pmus_, sizeof(msx2pmus_), "MUS");
+    msx2.setup(3, 2, 2, false, disk_, sizeof(disk_), "DISK");
+    msx2.setup(3, 1, 2, false, msxkanji_, sizeof(msxkanji_), "KNJ");
+    msx2.setup(3, 3, 0, false, firm_, sizeof(firm_), "FIRM");
+    msx2.loadFont(kanji_, sizeof(kanji_));
     emu_reset();
 }
 

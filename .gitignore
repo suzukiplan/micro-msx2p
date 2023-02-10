@@ -18,5 +18,8 @@ MSX2PEXT.ROM
 MSXDOS2.ROM
 MSXDOS2P.ROM
 tm1p*.rom
+FSA1WSX*.ROM
+a1ws*.rom
+a1ws*.dsk
 
 .DS_Store

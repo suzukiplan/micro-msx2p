@@ -650,7 +650,7 @@ private:
             printf("Change VDP external video input enabled: %s\n", this->isEnabledExternalVideoInput() ? "ENABLED" : "DISABLED");
         }
         if (ie0 != this->isEnabledInterrupt0()) {
-            printf("Change Enabled Interrupt 0: %s\n", ie0 ? "OFF" : "ON");
+            //printf("Change Enabled Interrupt 0: %s\n", ie0 ? "OFF" : "ON");
         }
         if (ie1 != this->isEnabledInterrupt1()) {
             printf("Change Enabled Interrupt 1: %s\n", ie0 ? "OFF" : "ON");
@@ -833,6 +833,7 @@ private:
     {
         int curD = 0;
         int curP = lineNumber * 128 + 128 * this->ctx.reg[23];
+        curP &= 0x7FFF;
         curP += this->getNameTableAddress();
         for (int i = 0; i < 128; i++) {
             this->renderPixel2(&renderPosition[curD], (this->ctx.ram[curP] & 0xF0) >> 4);
@@ -1534,8 +1535,36 @@ private:
 
     inline void executeCommandHMMM()
     {
-        puts("execute HMMM (not implemented yet");
-        exit(-1);
+        if (!this->isBitmapMode()) {
+            printf("Error: HMMM was executed in invalid screen mode (%d)\n", this->getScreenMode());
+            exit(-1);
+        }
+        int screenWidth = this->getScreenWidth();
+        int dpb = this->getDotPerByteX();
+        int lineBytes = screenWidth / dpb;
+        int sx = (this->ctx.reg[33] & 1) * 256 + this->ctx.reg[32];
+        int sy = (this->ctx.reg[35] & 3) * 256 + this->ctx.reg[34];
+        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+        int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+        int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
+        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
+        int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
+        int addrS = mxd + sx / dpb + sy * lineBytes;
+        int addrD = mxd + dx / dpb + dy * lineBytes;
+#ifdef COMMAND_DEBUG
+        printf("ExecuteCommand<HMMM>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR(S)=$%05X, ADDR(D)=$%05X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addrS, addrD, getScreenMode());
+#endif
+        int base = 0 < dix ? 0 : -nx / dpb;
+        while (0 < ny) {
+            memmove(&ctx.ram[addrD + base], &ctx.ram[addrS + base], nx / dpb);
+            ny--;
+            addrS += diy * lineBytes;
+            addrD += diy * lineBytes;
+        }
+        this->ctx.command = 0;
+        this->ctx.stat[2] &= 0b11111110;
     }
 
     inline void executeCommandHMMV()
@@ -1706,8 +1735,40 @@ private:
 
     inline void executeCommandLMMM()
     {
-        puts("execute LMMM (not implemented yet");
-        exit(-1);
+        if (!this->isBitmapMode()) {
+            printf("Error: LMMM was executed in invalid screen mode (%d)\n", this->getScreenMode());
+            exit(-1);
+        }
+        int screenWidth = this->getScreenWidth();
+        int dpb = this->getDotPerByteX();
+        int lineBytes = screenWidth / dpb;
+        int sx = (this->ctx.reg[33] & 1) * 256 + this->ctx.reg[32];
+        int sy = (this->ctx.reg[35] & 3) * 256 + this->ctx.reg[34];
+        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+        int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+        int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
+        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
+        int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
+        int addrS = mxd + sx / dpb + sy * lineBytes;
+        int addrD = mxd + dx / dpb + dy * lineBytes;
+#ifdef COMMAND_DEBUG
+        printf("ExecuteCommand<LMMM>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR(S)=$%05X, ADDR(D)=$%05X, LO=%d (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addrS, addrD, ctx.commandL, getScreenMode());
+#endif
+        int base = 0 < dix ? 0 : -nx / dpb;
+        while (0 < ny) {
+            for (int i = 0; i < nx / dpb; i++) {
+                for (int j = 0; j < dpb; j++) {
+                    this->renderLogicalPixel(addrD + base + i, dpb, j, ctx.ram[addrS + base + i], ctx.commandL);
+                }
+            }
+            ny--;
+            addrS += diy * lineBytes;
+            addrD += diy * lineBytes;
+        }
+        this->ctx.command = 0;
+        this->ctx.stat[2] &= 0b11111110;
     }
 
     inline void executeCommandLMMV()

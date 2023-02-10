@@ -42,6 +42,10 @@ public:
         unsigned char key;
     } ctx;
 
+    ~MSX2() {
+        delete this->cpu;
+    }
+
     MSX2(int colorMode) {
         this->cpu = new Z80([](void* arg, unsigned short addr) {
             return ((MSX2*)arg)->mmu.read(addr);
@@ -58,17 +62,14 @@ public:
         }, [](void* arg) {
             ((MSX2*)arg)->cpu->requestBreak();
         });
+        //cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); });
         /*
-        cpu->addBreakPoint(0x7A97, [](void* arg) {
-            ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
-                puts(msg);
-            });
-        });
         cpu->addBreakOperand(0xFF, [](void* arg, unsigned char* op, int len) {
             printf("Detect RST $38 (PC:$%04X)\n", ((MSX2*)arg)->cpu->reg.PC);
             exit(0);
         });
          */
+        //cpu->addBreakPoint(0x402E, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); }); });
         /*
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
@@ -76,26 +77,35 @@ public:
                    , this_->cpu->reg.PC
                    , this_->vdp.ctx.bobo
                    );
-            if (0x7BB2 == this_->cpu->reg.PC && -279193 ==this_->vdp.ctx.bobo) {
-                ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
-                    puts(msg);
-                });
-            }
+            //if (0x7BB2 == this_->cpu->reg.PC && -3466181 ==this_->vdp.ctx.bobo) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg);}); }
         });
          */
 
+#if 0
         // RDSLT
         //this->cpu->addBreakPoint(0x23D2, [](void* arg) {
-        /*
         this->cpu->addBreakPoint(0x000C, [](void* arg) {
             unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
+            int pri = a & 0x03;
+            int sec = (a & 0x0C) >> 2;
             unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
             hl <<= 8;
             hl |= ((MSX2*)arg)->cpu->reg.pair.L;
-            printf("RDSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X\n", a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl);
+            unsigned short sp = ((MSX2*)arg)->cpu->reg.SP;
+            unsigned short ret = ((MSX2*)arg)->mmu.read(sp + 1);
+            ret <<= 8;
+            ret |= ((MSX2*)arg)->mmu.read(sp);
+            printf("[%04X] RDSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X\n", ret, a & 0x80 ? "YES" : "NO", pri, sec, hl);
+            //if (3==pri&&0==sec) ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); });
         });
-         */
-
+#endif
+        /*
+        this->cpu->addBreakPoint(0x01FB, [](void* arg) {
+            puts("RDSLT as BASIC SLOT");
+        });
+        this->cpu->addBreakPoint(0x0205, [](void* arg) {
+            puts("RDSLT as EXPAND SLOT");
+        });*/
         // WRSLT
         //this->cpu->addBreakPoint(0x2413, [](void* arg) {
         /*
@@ -116,19 +126,60 @@ public:
             printf("CALSLT: isExpand=%s, pri=%d, sec=%d, IX=$%04X\n", a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl);
         });
          */
-
+        //cpu->addBreakPoint(0x0C4B-3,[](void*arg){puts("0x0C4B");});
+        //cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); });
+        /*this->cpu->addBreakOperand(0xFF,[](void* arg, unsigned char* op, int size) {
+            puts("detect RST $38");
+            exit(-1);
+        });*/
         // CALL命令をページ3にRAMを割り当てていない状態で実行した時に落とす
         this->cpu->addBreakOperand(0xCD, [](void* arg, unsigned char* op, int size) {
             int pri3 = ((MSX2*)arg)->mmu.ctx.primary[3];
             int sec3 = ((MSX2*)arg)->mmu.ctx.secondary[3];
             auto data = &((MSX2*)arg)->mmu.slots[pri3][sec3].data[7];
             if (!data->isRAM) {
-                printf("invalid call (PC:$%04X, SP:$%04X)\n"
+                printf("invalid call $%02X%02X (PC:$%04X, SP:$%04X)\n"
+                       , op[2]
+                       , op[1]
                        , ((MSX2*)arg)->cpu->reg.PC
                        , ((MSX2*)arg)->cpu->reg.SP);
                 exit(-1);
             }
+#if 0
+            if (op[2] == 0x00 && op[1] == 0x0C) {
+                unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
+                unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
+                hl <<= 8;
+                hl |= ((MSX2*)arg)->cpu->reg.pair.L;
+                unsigned short pc = ((MSX2*)arg)->cpu->reg.PC;
+                printf("[%04X] RDSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X\n", pc, a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl);
+            }
+            if (op[2] == 0x00 && op[1] == 0x1C) {
+                unsigned char iyH = (((MSX2*)arg)->cpu->reg.IY) >> 8;
+                unsigned short ix = ((MSX2*)arg)->cpu->reg.IX;
+                unsigned short pc = ((MSX2*)arg)->cpu->reg.PC;
+                printf("[%04X] CALSLT: isExpand=%s, pri=%d, sec=%d, IX=$%04X\n", pc, iyH & 0x80 ? "YES" : "NO", iyH & 0x03, (iyH & 0x0C) >> 2, ix);
+            }
+            if (op[2] == 0x00 && op[1] == 0x24) {
+                unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
+                unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
+                hl <<= 8;
+                hl |= ((MSX2*)arg)->cpu->reg.pair.L;
+                unsigned short pc = ((MSX2*)arg)->cpu->reg.PC;
+                printf("[%04X] ENASLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X\n", pc, a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl);
+            }
+#endif
         });
+#if 0
+        this->cpu->addBreakOperand(0xF7, [](void* arg, unsigned char* op, int size) {
+            auto cpu = ((MSX2*)arg)->cpu;
+            unsigned char s0 = ((MSX2*)arg)->mmu.read(cpu->reg.SP);
+            unsigned char s1 = ((MSX2*)arg)->mmu.read(cpu->reg.SP + 1);
+            unsigned char s2 = ((MSX2*)arg)->mmu.read(cpu->reg.SP + 2);
+            unsigned short pc = ((MSX2*)arg)->cpu->reg.PC;
+            printf("[%04X] CALLF: isExpand=%s, pri=%d, sec=%d, ADDR=$%02X%02X\n", pc, s0 & 0x80 ? "YES" : "NO", s0 & 0x03, (s0 & 0x0C) >> 2, s2, s1);
+        });
+#endif
 
         this->cpu->setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX2*)arg)->consumeClock(cpuClocks);
@@ -277,8 +328,11 @@ public:
                 }
                 return ~result;
             }
-            case 0xAA: break;
-            case 0xB5: return this->clock.inPort();
+            case 0xAA: return 0x00;
+                puts("IN PPI PORT C");
+                exit(-1);
+                break;
+            case 0xB5: return this->clock.inPortB5();
             case 0xB8: return 0x00; // light pen
             case 0xB9: return 0x00; // light pen
             case 0xBA: return 0x00; // light pen
@@ -331,8 +385,8 @@ public:
                 }
                 break;
             }
-            case 0xB4: this->clock.outPort0(value); break;
-            case 0xB5: this->clock.outPort1(value); break;
+            case 0xB4: this->clock.outPortB4(value); break;
+            case 0xB5: this->clock.outPortB5(value); break;
             case 0xB8: break; // light pen
             case 0xB9: break; // light pen
             case 0xBA: break; // light pen
@@ -343,7 +397,21 @@ public:
             case 0xDB: this->kanji.outPortDB(value); break;
             case 0xF3: this->vdp.outPortF3(value); break;
             case 0xF4: this->vdp.outPortF4(value); break;
-            case 0xF5: break; // System Control
+            case 0xF5: {
+#if 1
+                puts("Update System Control:");
+                printf(" - Kanji ROM: %s\n", value & 0b00000001 ? "Yes" : "No");
+                printf(" - Kanji Reserved: %s\n", value & 0b00000010 ? "Yes" : "No");
+                printf(" - MSX Audio: %s\n", value & 0b00000100 ? "Yes" : "No");
+                printf(" - Superimpose: %s\n", value & 0b00001000 ? "Yes" : "No");
+                printf(" - MSX Interface: %s\n", value & 0b00010000 ? "Yes" : "No");
+                printf(" - RS-232C: %s\n", value & 0b00100000 ? "Yes" : "No");
+                printf(" - Light Pen: %s\n", value & 0b01000000 ? "Yes" : "No");
+                printf(" - Clock-IC: %s\n", value & 0b10000000 ? "Yes" : "No");
+                //cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); });
+#endif
+                break; // System Control
+            }
             case 0xF7: { // AV controll
 #if 1
                 bool audioRLMixingON = value & 0b00000001 ? true : false;
@@ -366,10 +434,10 @@ public:
                 this->vdp.ctx.reverseVdpR9Bit5 = value & 0b10000000 ? 1 : 0;
                 break;
             }
-            case 0xFC: this->mmu.updateSegment(3, value); break;
-            case 0xFD: this->mmu.updateSegment(2, value); break;
-            case 0xFE: this->mmu.updateSegment(1, value); break;
-            case 0xFF: this->mmu.updateSegment(0, value); break;
+            case 0xFC: this->mmu.updateSegment(0, value); break;
+            case 0xFD: this->mmu.updateSegment(1, value); break;
+            case 0xFE: this->mmu.updateSegment(2, value); break;
+            case 0xFF: this->mmu.updateSegment(3, value); break;
             default: printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
     }

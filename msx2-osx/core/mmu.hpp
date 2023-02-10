@@ -34,7 +34,8 @@ class MMU
         unsigned char primary[4];
         unsigned char secondary[4];
         unsigned char segment[4];
-        unsigned char reserved[4];
+        unsigned char cpos[2][4]; // cartridge position register (0x2000 * n)
+        unsigned char reserved[12 + 32];
     } ctx;
 
     MMU() {
@@ -51,6 +52,9 @@ class MMU
     void reset()
     {
         memset(&this->ctx, 0, sizeof(this->ctx));
+#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
+        dumpPageLayout("reset", 0);
+#endif
     }
 
     inline int primaryNumber(int page) { return this->ctx.primary[page & 0b11]; }
@@ -74,12 +78,29 @@ class MMU
             if (label) {
                 strncpy(this->slots[pri][sec].data[idx].label, label, 4);
             }
-            this->slots[pri][sec].data[idx].ptr = data;
             this->slots[pri][sec].data[idx].isRAM = isRAM;
+            this->slots[pri][sec].data[idx].isCartridge = NULL != label && 0 == strcmp(label, "CART");
+            if (!this->slots[pri][sec].data[idx].isCartridge) {
+                this->slots[pri][sec].data[idx].ptr = data;
+            }
             size -= 0x2000;
             data += 0x2000;
             idx++;
         } while (0 < size);
+        updateCartridgePosition();
+    }
+
+    inline void updateCartridgePosition() {
+        for (int i = 1; i < 3; i++) {
+            for (int j = 2; j < 6; j += 2) {
+                if (this->slots[i][0].data[j].isCartridge) {
+                    for (int k = 0; k < 2; k++) {
+                        //printf("this->slots[%d][0].data[%d].ptr=ROM[%05X]\n",i,j+k,this->ctx.cpos[i - 1][j - 2 + k] * 0x2000);
+                        this->slots[i][0].data[j + k].ptr = &this->cartridge.ptr[this->ctx.cpos[i - 1][j - 2 + k] * 0x2000];
+                    }
+                }
+            }
+        }
     }
 
     inline unsigned char getPrimary()
@@ -92,19 +113,25 @@ class MMU
 
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
     inline void dumpPageLayout(const char* msg, unsigned char value) {
-        auto page0 = slots[ctx.primary[0]][ctx.secondary[0]];
-        auto page1 = slots[ctx.primary[1]][ctx.secondary[1]];
-        auto page2 = slots[ctx.primary[2]][ctx.secondary[2]];
-        auto page3 = slots[ctx.primary[3]][ctx.secondary[3]];
+        auto pri = getPrimary();
+        auto sec = getSecondary() ^ 0xFF;
+        int p[4];
+        int s[4];
+        for (int i = 0; i < 4; i++) {
+            p[i] = pri & 0b11;
+            s[i] = sec & 0b11;
+            pri >>= 2;
+            sec >>= 2;
+        }
+        auto page0 = slots[p[0]][s[0]];
+        auto page1 = slots[p[1]][s[1]];
+        auto page2 = slots[p[2]][s[2]];
+        auto page3 = slots[p[3]][s[3]];
         printf("Pages #0:%d-%d(%s), #1:%d-%d(%s), #2:%d-%d(%s), #3:%d-%d(%s) <%s:$%02X>\n"
-               , ctx.primary[0], ctx.secondary[0]
-               , page0.data[0].label[0] ? page0.data[0].label : "n/a"
-               , ctx.primary[1], ctx.secondary[1]
-               , page1.data[2].label[0] ? page1.data[2].label : "n/a"
-               , ctx.primary[2], ctx.secondary[2]
-               , page2.data[4].label[0] ? page2.data[4].label : "n/a"
-               , ctx.primary[3], ctx.secondary[3]
-               , page3.data[6].label[0] ? page3.data[6].label : "n/a"
+               , p[0], s[0], page0.data[0].label[0] ? page0.data[0].label : "n/a"
+               , p[1], s[1], page1.data[2].label[0] ? page1.data[2].label : "n/a"
+               , p[2], s[2], page2.data[4].label[0] ? page2.data[4].label : "n/a"
+               , p[3], s[3], page3.data[6].label[0] ? page3.data[6].label : "n/a"
                , msg, value);
     }
 #endif
@@ -138,10 +165,15 @@ class MMU
 
     inline unsigned char getSecondary()
     {
-        return 0xFF ^ ((this->ctx.secondary[3] << 6) |
-                       (this->ctx.secondary[2] << 4) |
-                       (this->ctx.secondary[1] << 2) |
-                       this->ctx.secondary[0]);
+        unsigned char sec[4];
+        for (int i = 0; i < 4; i++) {
+            if (this->secondaryExist[this->ctx.primary[i]]) {
+                sec[i] = this->ctx.secondary[i];
+            } else {
+                sec[i] = 0;
+            }
+        }
+        return 0xFF ^ ((sec[3] << 6) | (sec[2] << 4) | (sec[1] << 2) | sec[0]);
     }
 
     inline void updateSecondary(unsigned char value)
@@ -195,15 +227,24 @@ class MMU
             data->ptr[addr & 0x1FFF] = value;
         } else if (data->isCartridge) {
             switch (this->cartridge.romType) {
-                case MSX2_ROM_TYPE_NORMAL:
-                    break;
-                case MSX2_ROM_TYPE_ASC8:
-                    break;
-                case MSX2_ROM_TYPE_ASC16:
-                    break;
+                case MSX2_ROM_TYPE_NORMAL: break;
+                case MSX2_ROM_TYPE_ASC8: break;
+                case MSX2_ROM_TYPE_ASC16: this->asc16(pri - 1, addr, value); return;
             }
             puts("DETECT ROM WRITE");
             exit(-1);
+        }
+    }
+
+    inline void asc16(int idx, unsigned short addr, unsigned char value) {
+        if (0x6000 <= addr && addr < 0x6800) {
+            this->ctx.cpos[idx][0] = value * 2;
+            this->ctx.cpos[idx][1] = value * 2 + 1;
+            this->updateCartridgePosition();
+        } else if (0x7000 <= addr && addr < 0x7800) {
+            this->ctx.cpos[idx][2] = value * 2;
+            this->ctx.cpos[idx][3] = value * 2 + 1;
+            this->updateCartridgePosition();
         }
     }
 };

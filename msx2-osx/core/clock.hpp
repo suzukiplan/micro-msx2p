@@ -109,8 +109,10 @@ private:
 public:
     struct Context {
         int bobo;
-        unsigned char reg;
-        unsigned char reserved[3];
+        unsigned char latch;
+        unsigned char mode;
+        unsigned char test;
+        unsigned char reset;
         unsigned char block[4][16];
     } ctx;
     
@@ -163,17 +165,43 @@ public:
         } else this->ctx.block[0][0x0]++;
     }
 
-    unsigned char inPort() {
-        return this->ctx.block[this->ctx.reg >= 0x0D ? 0 : this->ctx.block[0][0xD] & 3][this->ctx.reg];
+    unsigned char inPortB5() {
+        switch (this->ctx.latch) {
+            case 0x0D:
+                return this->ctx.mode | 0xF0;
+            case 0x0E:
+            case 0x0F:
+                return 0xFF;
+            default: {
+                int idx = this->ctx.mode & 0b11;
+                return (this->ctx.block[idx][this->ctx.latch] & this->mask[idx][this->ctx.latch]) | 0xF0;
+            }
+        }
     }
     
-    void outPort0(unsigned char value) {
-        this->ctx.reg = value & 0x0F;
+    void outPortB4(unsigned char value) {
+        this->ctx.latch = value & 0x0F;
     }
 
-    void outPort1(unsigned char value) {
-        int mode = this->ctx.reg >= 0x0D ? 0 : this->ctx.block[0][0xD] & 3;
-        this->ctx.block[mode][this->ctx.reg] = value & this->mask[mode][this->ctx.reg];
+    void outPortB5(unsigned char value) {
+        switch (this->ctx.latch) {
+            case 0x0D:
+                this->ctx.mode = value;
+                return;
+            case 0x0E:
+                this->ctx.test = value;
+                return;
+            case 0x0F:
+                this->ctx.reset = value;
+                if (value & 0b00000001) {
+                    for (int i = 2; i <= 8; i++) {
+                        this->ctx.block[1][i] = 0;
+                    }
+                }
+                return;
+        }
+        int mode = this->ctx.mode & 0b11;
+        this->ctx.block[mode][this->ctx.latch] = value & this->mask[mode][this->ctx.latch];
     }
 };
 

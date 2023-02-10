@@ -33,6 +33,13 @@ void emu_init_bios_tm1p(const void* tm1pbios,
                         const void* tm1pdesk2,
                         const void* font,
                         size_t fontSize);
+void emu_init_bios_fsa1wsx(const void* msx2p,
+                           const void* msx2pext,
+                           const void* msx2pmus,
+                           const void* disk,
+                           const void* msxkanji,
+                           const void* kanji,
+                           const void* firm);
 void emu_reset(void);
 void emu_loadRom(const void* rom, size_t romSize);
 void emu_vsync(void);
