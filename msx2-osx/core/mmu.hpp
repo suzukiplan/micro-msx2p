@@ -87,10 +87,10 @@ class MMU
             data += 0x2000;
             idx++;
         } while (0 < size);
-        updateCartridgePosition();
+        this->bankSwitchover();
     }
 
-    inline void updateCartridgePosition() {
+    inline void bankSwitchover() {
         for (int i = 1; i < 3; i++) {
             for (int j = 2; j < 6; j += 2) {
                 if (this->slots[i][0].data[j].isCartridge) {
@@ -240,11 +240,11 @@ class MMU
         if (0x6000 <= addr && addr < 0x6800) {
             this->ctx.cpos[idx][0] = value * 2;
             this->ctx.cpos[idx][1] = value * 2 + 1;
-            this->updateCartridgePosition();
+            this->bankSwitchover();
         } else if (0x7000 <= addr && addr < 0x7800) {
             this->ctx.cpos[idx][2] = value * 2;
             this->ctx.cpos[idx][3] = value * 2 + 1;
-            this->updateCartridgePosition();
+            this->bankSwitchover();
         }
     }
 };
