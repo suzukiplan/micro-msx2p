@@ -47,6 +47,7 @@ class VDP
         unsigned short commandDY;
         unsigned short commandNX;
         unsigned short commandNY;
+        int commandPending;
     } ctx;
 
     void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value)) {
@@ -346,6 +347,13 @@ class VDP
                     this->ctx.countV -= 262;
                     this->detectBreak(this->arg);
                     break;
+            }
+        }
+        if (this->ctx.commandPending) {
+            this->ctx.commandPending--;
+            if (0 == this->ctx.commandPending) {
+                this->ctx.stat[2] &= 0b11111110;
+                this->ctx.command = 0;
             }
         }
     }
@@ -1558,14 +1566,14 @@ class VDP
         printf("ExecuteCommand<HMMM>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR(S)=$%05X, ADDR(D)=$%05X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addrS, addrD, getScreenMode());
 #endif
         int base = 0 < dix ? 0 : -nx / dpb;
+        this->ctx.commandPending = 1;
         while (0 < ny) {
             memmove(&ctx.ram[addrD + base], &ctx.ram[addrS + base], nx / dpb);
             ny--;
             addrS += diy * lineBytes;
             addrD += diy * lineBytes;
+            this->ctx.commandPending += nx;
         }
-        this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b11111110;
     }
 
     inline void executeCommandHMMV()
@@ -1589,6 +1597,7 @@ class VDP
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<HMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, CLR=$%02X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addr, clr, getScreenMode());
 #endif
+        this->ctx.commandPending = 1;
         while (0 < ny) {
             addr &= 0x1FFFF;
             if (0 < dix) {
@@ -1598,9 +1607,8 @@ class VDP
             }
             addr += lineBytes * diy;
             ny--;
+            this->ctx.commandPending += nx;
         }
-        this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b11111110;
     }
 
     inline void renderLogicalPixel(int addr, int dpb, int dx, int clr, int lo) {
@@ -1758,18 +1766,18 @@ class VDP
         printf("ExecuteCommand<LMMM>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR(S)=$%05X, ADDR(D)=$%05X, LO=%d (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addrS, addrD, ctx.commandL, getScreenMode());
 #endif
         int base = 0 < dix ? 0 : -nx / dpb;
+        this->ctx.commandPending = 1;
         while (0 < ny) {
             for (int i = 0; i < nx / dpb; i++) {
                 for (int j = 0; j < dpb; j++) {
                     this->renderLogicalPixel(addrD + base + i, dpb, j, ctx.ram[addrS + base + i], ctx.commandL);
+                    this->ctx.commandPending++;
                 }
             }
             ny--;
             addrS += diy * lineBytes;
             addrD += diy * lineBytes;
         }
-        this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b11111110;
     }
 
     inline void executeCommandLMMV()
@@ -1804,8 +1812,10 @@ class VDP
 
         const double majF = (double)maj;
         const double minF = (double)min;
+        this->ctx.commandPending = 1;
         while (0 < maj) {
             this->renderLogicalPixel((mxd + dx / dpb + dy * lineBytes) & 0x1FFFF, dpb, dx, clr, ctx.commandL);
+            this->ctx.commandPending++;
             maj--;
             if (m) {
                 dy += diy;
@@ -1824,8 +1834,6 @@ class VDP
                 }
             }
         }
-        this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b11111110;
     }
 
     inline void executeCommandSRCH()
