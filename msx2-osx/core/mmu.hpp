@@ -52,6 +52,11 @@ class MMU
     void reset()
     {
         memset(&this->ctx, 0, sizeof(this->ctx));
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 4; j++) {
+                this->ctx.cpos[i][j] = j;
+            }
+        }
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
         dumpPageLayout("reset", 0);
 #endif
@@ -66,6 +71,22 @@ class MMU
         this->cartridge.size = size;
         this->cartridge.romType = romType;
         setup(pri, sec, idx, false, this->cartridge.ptr, this->cartridge.size < 0x8000 ? 0x4000 : 0x8000, "CART");
+        switch (romType) {
+            case MSX2_ROM_TYPE_NORMAL:
+                for (int i = 0; i < 4; i++) {
+                    this->ctx.cpos[pri - 1][i] = i;
+                }
+                break;
+            case MSX2_ROM_TYPE_ASC8:
+            case MSX2_ROM_TYPE_ASC16:
+                for (int i = 0; i < 4; i++) {
+                    this->ctx.cpos[pri - 1][i] = 0;
+                }
+                break;
+            default:
+                printf("UNKNOWN ROM TYPE: %d\n", romType);
+                exit(-1);
+        }
     }
 
     void setup(int pri, int sec, int idx, bool isRAM, unsigned char* data, int size, const char* label)
@@ -227,7 +248,7 @@ class MMU
             data->ptr[addr & 0x1FFF] = value;
         } else if (data->isCartridge) {
             switch (this->cartridge.romType) {
-                case MSX2_ROM_TYPE_NORMAL: break;
+                case MSX2_ROM_TYPE_NORMAL: return;
                 case MSX2_ROM_TYPE_ASC8: break;
                 case MSX2_ROM_TYPE_ASC16: this->asc16(pri - 1, addr, value); return;
             }
