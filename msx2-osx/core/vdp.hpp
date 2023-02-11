@@ -1097,9 +1097,9 @@ class VDP
             0b00000001};
         bool si = this->ctx.reg[1] & 0b00000010 ? true : false;
         bool mag = this->ctx.reg[1] & 0b00000001 ? true : false;
-        int sa = ((this->ctx.reg[5] & 0b11111100) << 7) | ((this->ctx.reg[11] & 0b00000011) << 15);
+        int sa = (((int)(this->ctx.reg[5] & 0b11111100)) << 7) | ((((int)this->ctx.reg[11] & 0b00000011)) << 15);
         int ct = (sa - 512) & 0x1FFFF;
-        int sg = (this->ctx.reg[6] & 0b00000111) << 11;
+        int sg = ((int)(this->ctx.reg[6] & 0b00111111)) << 11;
         int sn = 0;
         int tsn = 0;
         unsigned char dlog[256];
@@ -1107,7 +1107,7 @@ class VDP
         memset(dlog, 0, sizeof(dlog));
         memset(wlog, 0, sizeof(wlog));
         bool limitOver = false;
-        for (int i = 0; i < 32; i++) {
+        for (int i = 0; i < 32; i++, ct += 16) {
             int cur = sa + i * 4;
             unsigned char y = this->ctx.ram[cur++];
             if (216 == y) break;
@@ -1120,7 +1120,7 @@ class VDP
                     if (y <= lineNumber && lineNumber < y + 32) {
                         sn++;
                         int pixelLine = lineNumber - y;
-                        unsigned char col = this->ctx.ram[ct + i * 16 + pixelLine / 2];
+                        unsigned char col = this->ctx.ram[ct + pixelLine / 2];
                         bool ic = col & 0x20;
                         bool cc = col & 0x40;
                         if (col & 0x80) x -= 32;
@@ -1149,11 +1149,12 @@ class VDP
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
                                     if (cc) {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                        dlog[x] |= col;
+                                        this->renderPixel2S2(&renderPosition[x << 1], dlog[x]);
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
+                                        dlog[x] = col;
                                     }
-                                    dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
@@ -1184,7 +1185,7 @@ class VDP
                     if (y <= lineNumber && lineNumber < y + 16) {
                         sn++;
                         int pixelLine = lineNumber - y;
-                        unsigned char col = this->ctx.ram[ct + i * 16 + pixelLine / 2];
+                        unsigned char col = this->ctx.ram[ct + pixelLine / 2];
                         bool ic = col & 0x20;
                         bool cc = col & 0x40;
                         if (col & 0x80) x -= 32;
@@ -1213,11 +1214,12 @@ class VDP
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
                                     if (cc) {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                        dlog[x] |= col;
+                                        this->renderPixel2S2(&renderPosition[x << 1], dlog[x]);
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
+                                        dlog[x] = col;
                                     }
-                                    dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
@@ -1231,7 +1233,7 @@ class VDP
                     if (y <= lineNumber && lineNumber < y + 16) {
                         sn++;
                         int pixelLine = lineNumber - y;
-                        unsigned char col = this->ctx.ram[ct + i * 16 + pixelLine];
+                        unsigned char col = this->ctx.ram[ct + pixelLine];
                         bool ic = col & 0x20;
                         bool cc = col & 0x40;
                         if (col & 0x80) x -= 32;
@@ -1260,11 +1262,12 @@ class VDP
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     if (cc) {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                        dlog[x] |= col;
+                                        this->renderPixel2S2(&renderPosition[x << 1], dlog[x]);
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
+                                        dlog[x] = col;
                                     }
-                                    dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
@@ -1279,11 +1282,12 @@ class VDP
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     if (cc) {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                        dlog[x] |= col;
+                                        this->renderPixel2S2(&renderPosition[x << 1], dlog[x]);
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
+                                        dlog[x] = col;
                                     }
-                                    dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
@@ -1295,7 +1299,7 @@ class VDP
                     if (y <= lineNumber && lineNumber < y + 8) {
                         sn++;
                         int pixelLine = lineNumber - y;
-                        unsigned char col = this->ctx.ram[ct + i * 16 + pixelLine];
+                        unsigned char col = this->ctx.ram[ct + pixelLine];
                         if (col & 0x80) x -= 32;
                         bool cc = col & 0x40;
                         bool ic = col & 0x20;
@@ -1324,11 +1328,12 @@ class VDP
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     if (cc) {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                        dlog[x] |= col;
+                                        this->renderPixel2S2(&renderPosition[x << 1], dlog[x]);
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
+                                        dlog[x] = col;
                                     }
-                                    dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
