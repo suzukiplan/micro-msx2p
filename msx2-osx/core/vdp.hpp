@@ -145,6 +145,13 @@ class VDP
     inline int getOnTime() { return (ctx.reg[13] & 0xF0) >> 4; }
     inline int getOffTime() { return ctx.reg[13] & 0x0F; }
     inline int getSyncMode() { return (ctx.reg[9] & 0b00110000) >> 4; }
+    inline int getSpriteAttributeTableMode1() { return ((int)(this->ctx.reg[5] & 0b01111111)) << 7; }
+    inline int getSpriteAttributeTableMode2() { return (((int)(this->ctx.reg[5] & 0b11111100)) << 7) | ((((int)this->ctx.reg[11] & 0b00000011)) << 15); }
+    inline int getSpriteColorTable() { return (this->getSpriteAttributeTableMode2() - 512) & 0x1FFFF; }
+    inline int getSpriteGeneratorMode1() { return ((int)(this->ctx.reg[6] & 0b00000111)) << 11; }
+    inline int getSpriteGeneratorMode2() { return ((int)(this->ctx.reg[6] & 0b00111111)) << 11; }
+    inline bool isSprite16px() { return this->ctx.reg[1] & 0b00000010 ? true : false; }
+    inline bool isSprite2x() { return this->ctx.reg[1] & 0b00000001 ? true : false; }
 
     inline int getAddressMask() {
         switch (this->getScreenMode()) {
@@ -883,10 +890,10 @@ class VDP
             0b00000100,
             0b00000010,
             0b00000001};
-        bool si = this->ctx.reg[1] & 0b00000010 ? true : false;
-        bool mag = this->ctx.reg[1] & 0b00000001 ? true : false;
-        int sa = (this->ctx.reg[5] & 0b01111111) << 7;
-        int sg = (this->ctx.reg[6] & 0b00000111) << 11;
+        bool si = this->isSprite16px();
+        bool mag = this->isSprite2x();
+        int sa = this->getSpriteAttributeTableMode1();
+        int sg = this->getSpriteGeneratorMode1();
         int sn = 0;
         int tsn = 0;
         unsigned char dlog[256];
@@ -1095,11 +1102,11 @@ class VDP
             0b00000100,
             0b00000010,
             0b00000001};
-        bool si = this->ctx.reg[1] & 0b00000010 ? true : false;
-        bool mag = this->ctx.reg[1] & 0b00000001 ? true : false;
-        int sa = (((int)(this->ctx.reg[5] & 0b11111100)) << 7) | ((((int)this->ctx.reg[11] & 0b00000011)) << 15);
-        int ct = (sa - 512) & 0x1FFFF;
-        int sg = ((int)(this->ctx.reg[6] & 0b00111111)) << 11;
+        bool si = this->isSprite16px();
+        bool mag = this->isSprite2x();
+        int sa = this->getSpriteAttributeTableMode2();
+        int ct = this->getSpriteColorTable();
+        int sg = this->getSpriteGeneratorMode2();
         int sn = 0;
         int tsn = 0;
         unsigned char dlog[256];
