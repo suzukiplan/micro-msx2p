@@ -325,12 +325,21 @@ class VDP
                 this->renderScanline(y - 24, &renderPosition[13 * 2]);
             }
         }
-        if (27 == x) {
+        if (0 == x) {
             this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
-        } else if (283 == x && this->isIE1() && y == this->ctx.reg[19]) {
-            this->ctx.stat[1] = 1;
-            this->detectInterrupt(this->arg, 1);
+        } else if (283 == x) {
             this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
+            if (this->isIE1()) {
+                int lineNumber = y - 24;
+                if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
+                    lineNumber += this->ctx.reg[23];
+                    lineNumber &= 0xFF;
+                    if (lineNumber == this->ctx.reg[19]) {
+                        this->ctx.stat[1] = 1;
+                        this->detectInterrupt(this->arg, 1);
+                    }
+                }
+            }
         }
         // increment H/V counter
         this->ctx.countH++;

@@ -57,7 +57,8 @@ public:
             return ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
-            //((MSX2*)arg)->cpu->resetDebugMessage();
+            //if (1 == ie) ((MSX2*)arg)->putlog("Detect IE1");
+            ((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
         }, [](void* arg) {
             ((MSX2*)arg)->cpu->requestBreak();
@@ -80,8 +81,8 @@ public:
             int patternGeneratorAddsress = this_->vdp.getPatternGeneratorAddress();
             int nameTableAddress = this_->vdp.getNameTableAddress();
             int colorTableAddress = this_->vdp.getColorTableAddress();
-            //bool ie0 = this_->vdp.isEI0();
-            //bool ie1 = this_->vdp.isEI1();
+            //bool ie0 = this_->vdp.isIE0();
+            bool ie1 = this_->vdp.isIE1();
             int spriteSize = this_->vdp.getSpriteSize();
             bool spriteMag = this_->vdp.isSpriteMag();
             unsigned short backdropColor = this_->vdp.getBackdropColor();
@@ -114,13 +115,13 @@ public:
                 this_->putlog("Change VDP external video input enabled: %s", this_->vdp.isEnabledExternalVideoInput() ? "ENABLED" : "DISABLED");
             }
             /*
-            if (ie0 != this_->vdp.isEI0()) {
+            if (ie0 != this_->vdp.isIE0()) {
                 this_->putlog("Change EI0: %s", ie0 ? "OFF" : "ON");
             }
-            if (ie1 != this_->vdp.isEI1()) {
+             */
+            if (ie1 != this_->vdp.isIE1()) {
                 this_->putlog("Change EI1: %s", ie1 ? "OFF" : "ON");
             }
-             */
             if (ie1Line != this_->vdp.ctx.reg[19]) {
                 this_->putlog("Change IE1 Line: %d -> %d", ie1Line, this_->vdp.ctx.reg[19]);
             }
