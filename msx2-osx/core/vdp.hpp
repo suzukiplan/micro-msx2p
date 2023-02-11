@@ -20,6 +20,7 @@ class VDP
     } debug;
 
   public:
+    bool renderLimitOverSprites = true;
     unsigned short display[568 * 240];
     unsigned short palette[16];
     unsigned short paletteG7[16];
@@ -133,9 +134,9 @@ class VDP
     inline bool isSpriteMag() { return ctx.reg[1] & 0b00000001 ? true : false; }
     inline bool isEnabledExternalVideoInput() { return ctx.reg[0] & 0b00000001 ? true : false; }
     inline bool isEnabledScreen() { return ctx.reg[1] & 0b01000000 ? true : false; }
-    inline bool isEnabledInterrupt0() { return ctx.reg[1] & 0b00100000 ? true : false; }
-    inline bool isEnabledInterrupt1() { return ctx.reg[0] & 0b00010000 ? true : false; }
-    inline bool isEnabledInterrupt2() { return ctx.reg[0] & 0b00100000 ? true : false; }
+    inline bool isIE0() { return ctx.reg[1] & 0b00100000 ? true : false; }
+    inline bool isIE1() { return ctx.reg[0] & 0b00010000 ? true : false; }
+    inline bool isIE2() { return ctx.reg[0] & 0b00100000 ? true : false; }
     inline bool isEnabledMouse() { return ctx.reg[8] & 0b10000000 ? true : false; }
     inline bool isEnabledLightPen() { return ctx.reg[8] & 0b01000000 ? true : false; }
     inline bool isMaskLeft8px() { return ctx.reg[27] && (ctx.reg[25] & 0b00000010) ? true : false; }
@@ -323,22 +324,21 @@ class VDP
                 this->renderScanline(y - 24, &renderPosition[13 * 2]);
             }
         }
+        if (27 == x) {
+            this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
+        } else if (283 == x && this->isIE1() && y == this->ctx.reg[19]) {
+            this->ctx.stat[1] = 1;
+            this->detectInterrupt(this->arg, 1);
+            this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
+        }
         // increment H/V counter
         this->ctx.countH++;
-        if (37 == this->ctx.countH) {
-            this->ctx.stat[2] &= 0b11011111; // reset HR flag
-            if (this->isEnabledInterrupt1()) {
-                this->ctx.stat[1] |= this->ctx.countV == this->ctx.reg[19] ? 0x01 : 0x00;
-                this->detectInterrupt(this->arg, 1);
-            }
-        } else if (293 == this->ctx.countH) {
-            this->ctx.stat[2] |= 0b00100000; // set HR flag
-        } else if (342 == this->ctx.countH) {
+        if (342 == this->ctx.countH) {
             this->ctx.countH -= 342;
             switch (++this->ctx.countV) {
                 case 251:
                     this->ctx.stat[0] |= 0x80;
-                    if (this->isEnabledInterrupt0()) {
+                    if (this->isIE0()) {
                         this->detectInterrupt(this->arg, 0);
                     }
                     break;
@@ -366,13 +366,19 @@ class VDP
         int sn = this->ctx.reg[15] & 0b00001111;
         unsigned char result = this->ctx.stat[sn];
         switch (sn) {
-            case 0: this->ctx.stat[sn] &= 0b01011111; break;
+            case 0:
+                this->ctx.stat[sn] &= 0b01011111;
+                break;
             case 1:
-                this->ctx.stat[sn] &= 0b11111110;
+                if (this->isIE1()) {
+                    this->ctx.stat[1] &= 0b11111110;
+                }
                 result &= 0b11000001;
                 result |= 0b00000100;
                 break;
-            case 2: result |= 0b10001100; break;
+            case 2:
+                result |= 0b10001100;
+                break;
             case 5:
                 this->ctx.stat[3] = 0;
                 this->ctx.stat[4] = 0;
@@ -479,7 +485,6 @@ class VDP
         return this->ctx.hardwareResetFlag;
     }
 
-private:
     inline int getLineNumber()
     {
         int mode = this->getScreenMode();
@@ -591,31 +596,12 @@ private:
 
     inline void updateRegister(int rn, unsigned char value)
     {
+        bool previousInterrupt = this->isIE0();
         if (debug.registerUpdateListener) {
             debug.registerUpdateListener(debug.arg, rn, value);
         }
-#if 1
-        int screenMode = this->getScreenMode();
-        bool screen = this->isEnabledScreen();
-        bool externalVideoInput = this->isEnabledExternalVideoInput();
-        int patternGeneratorAddsress = this->getPatternGeneratorAddress();
-        int nameTableAddress = this->getNameTableAddress();
-        int colorTableAddress = this->getColorTableAddress();
-        bool ie0 = this->isEnabledInterrupt0();
-        bool ie1 = this->isEnabledInterrupt1();
-        bool ie2 = this->isEnabledInterrupt2();
-        int spriteSize = this->getSpriteSize();
-        bool spriteMag = this->isSpriteMag();
-        unsigned short backdropColor = this->getBackdropColor();
-        unsigned short textColor = this->getTextColor();
-        int onTime = this->getOnTime();
-        int offTime = this->getOffTime();
-        int syncMode = this->getSyncMode();
-        int lineNumber = getLineNumber();
-#endif
-        bool previousInterrupt = this->isEnabledInterrupt0();
         this->ctx.reg[rn] = value;
-        if (!previousInterrupt && this->isEnabledInterrupt0() && this->ctx.stat[0] & 0x80) {
+        if (!previousInterrupt && this->isIE0() && this->ctx.stat[0] & 0x80) {
             this->detectInterrupt(this->arg, 0);
         }
         if (44 == rn && this->ctx.command) {
@@ -630,59 +616,6 @@ private:
         } else if (8 == rn) {
             this->ctx.reg[8] &= 0b00111111; // force disable mouse & light-pen
         }
-#if 1
-        if (screen != this->isEnabledScreen()) {
-            printf("Change VDP screen enabled: %s\n", this->isEnabledScreen() ? "ENABLED" : "DISABLED");
-        }
-        if (screenMode != this->getScreenMode()) {
-            printf("Screen Mode Changed: %d -> %d\n", screenMode, this->getScreenMode());
-        }
-        if (patternGeneratorAddsress != this->getPatternGeneratorAddress()) {
-            printf("Pattern Generator Address: $%04X -> $%04X\n", patternGeneratorAddsress, this->getPatternGeneratorAddress());
-        }
-        if (nameTableAddress != this->getNameTableAddress()) {
-            printf("Name Table Address: $%04X -> $%04X\n", nameTableAddress, this->getNameTableAddress());
-        }
-        if (colorTableAddress != this->getColorTableAddress()) {
-            printf("Color Table Address: $%04X -> $%04X\n", colorTableAddress, this->getColorTableAddress());
-        }
-        if (externalVideoInput != this->isEnabledExternalVideoInput()) {
-            printf("Change VDP external video input enabled: %s\n", this->isEnabledExternalVideoInput() ? "ENABLED" : "DISABLED");
-        }
-        if (ie0 != this->isEnabledInterrupt0()) {
-            //printf("Change Enabled Interrupt 0: %s\n", ie0 ? "OFF" : "ON");
-        }
-        if (ie1 != this->isEnabledInterrupt1()) {
-            printf("Change Enabled Interrupt 1: %s\n", ie0 ? "OFF" : "ON");
-        }
-        if (ie2 != this->isEnabledInterrupt2()) {
-            printf("Change Enabled Interrupt 2: %s\n", ie0 ? "OFF" : "ON");
-        }
-        if (spriteSize != this->getSpriteSize()) {
-            printf("Change Sprite Size: %d -> %d\n", spriteSize, this->getSpriteSize());
-        }
-        if (spriteMag != this->isSpriteMag()) {
-            printf("Change Sprite MAG mode: %s\n", spriteMag ? "OFF" : "ON");
-        }
-        if (backdropColor != this->getBackdropColor()) {
-            printf("Change Backdrop Color: $%04X -> $%04X\n", backdropColor, this->getBackdropColor());
-        }
-        if (textColor != this->getTextColor()) {
-            printf("Change Text Color: $%04X -> $%04X\n", textColor, this->getTextColor());
-        }
-        if (onTime != getOnTime()) {
-            printf("OnTime changed: %d -> %d\n", onTime, getOnTime());
-        }
-        if (offTime != getOffTime()) {
-            printf("OffTime changed: %d -> %d\n", offTime, getOffTime());
-        }
-        if (syncMode != getSyncMode()) {
-            printf("SyncMode changed: %d -> %d\n", syncMode, getSyncMode());
-        }
-        if (lineNumber != getLineNumber()) {
-            printf("LineNumber changed: %d -> %d\n", lineNumber, getLineNumber());
-        }
-#endif
     }
 
     inline void renderScanline(int lineNumber, unsigned short* renderPosition)
@@ -743,6 +676,18 @@ private:
 
     inline void renderPixel2(unsigned short* renderPosition, int paletteNumber) {
         if (0 == (this->ctx.reg[8] & 0b00100000) && !paletteNumber) return;
+        *renderPosition = this->palette[paletteNumber];
+        *(renderPosition + 1) = this->palette[paletteNumber];
+    }
+
+    inline void renderPixel2S1(unsigned short* renderPosition, int paletteNumber) {
+        if (!paletteNumber) return;
+        *renderPosition = this->palette[paletteNumber];
+        *(renderPosition + 1) = this->palette[paletteNumber];
+    }
+
+    inline void renderPixel2S2(unsigned short* renderPosition, int paletteNumber) {
+        if (!paletteNumber || this->ctx.reg[8] & 0b0000010) return;
         *renderPosition = this->palette[paletteNumber];
         *(renderPosition + 1) = this->palette[paletteNumber];
     }
@@ -832,9 +777,7 @@ private:
     inline void renderScanlineModeG4(int lineNumber, unsigned short* renderPosition)
     {
         int curD = 0;
-        int curP = lineNumber * 128 + 128 * this->ctx.reg[23];
-        curP &= 0x7FFF;
-        curP += this->getNameTableAddress();
+        int curP = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 128 + this->getNameTableAddress();
         for (int i = 0; i < 128; i++) {
             this->renderPixel2(&renderPosition[curD], (this->ctx.ram[curP] & 0xF0) >> 4);
             curD += 2;
@@ -847,9 +790,7 @@ private:
     inline void renderScanlineModeG5(int lineNumber, unsigned short* renderPosition)
     {
         int curD = (this->ctx.reg[27] & 0b00000111) << 1;
-        int addr = lineNumber * 128 + 128 * this->ctx.reg[23];
-        addr &= 0x7FFF;
-        addr += this->getNameTableAddress();
+        int addr = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 128 + this->getNameTableAddress();
         int sp2 = this->getSP2();
         int x = this->ctx.reg[26];
         if (sp2) {
@@ -904,7 +845,7 @@ private:
     inline void renderScanlineModeG7(int lineNumber, unsigned short* renderPosition)
     {
         int curD = 0;
-        int curP = lineNumber * 256 + 256 * this->ctx.reg[23];
+        int curP = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 256;
         curP += this->getNameTableAddress();
         for (int i = 0; i < 256; i++) {
             renderPosition[curD] = convertColor_8bit_to_16bit(this->ctx.ram[curP++]);
@@ -930,15 +871,17 @@ private:
         int sa = (this->ctx.reg[5] & 0b01111111) << 7;
         int sg = (this->ctx.reg[6] & 0b00000111) << 11;
         int sn = 0;
+        int tsn = 0;
         unsigned char dlog[256];
         unsigned char wlog[256];
         memset(dlog, 0, sizeof(dlog));
         memset(wlog, 0, sizeof(wlog));
+        bool limitOver = false;
         for (int i = 0; i < 32; i++) {
             int cur = sa + i * 4;
             unsigned char y = this->ctx.ram[cur++];
             if (208 == y) break;
-            unsigned char x = this->ctx.ram[cur++];
+            int x = this->ctx.ram[cur++];
             unsigned char ptn = this->ctx.ram[cur++];
             unsigned char col = this->ctx.ram[cur++];
             if (col & 0x80) x -= 32;
@@ -949,66 +892,86 @@ private:
                     // 16x16 x 2
                     if (y <= lineNumber && lineNumber < y + 32) {
                         sn++;
-                        if (5 <= sn) {
+                        if (!col) tsn++;
+                        if (5 == sn) {
                             this->ctx.stat[0] &= 0b11100000;
                             this->ctx.stat[0] |= 0b01000000 | i;
-                            break;
-                        } else {
+                            if (!this->renderLimitOverSprites) {
+                                break;
+                            } else {
+                                if (4 <= tsn) break;
+                                limitOver = true;
+                            }
+                        } else if (sn < 5) {
                             this->ctx.stat[0] &= 0b11100000;
                             this->ctx.stat[0] |= i;
                         }
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
-                        for (int j = 0; j < 16; j++, x++) {
-                            if (wlog[x]) {
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 16; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
+                                    this->renderPixel2S1(&renderPosition[x << 1], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
+                            overflow = x == 0xFF;
                         }
                         cur += 16;
-                        for (int j = 0; j < 16; j++, x++) {
-                            if (wlog[x]) {
+                        for (int j = 0; !overflow && j < 16; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
+                                    this->renderPixel2S1(&renderPosition[x << 1], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
-                        }
+                            overflow = x == 0xFF;
+                       }
                     }
                 } else {
                     // 8x8 x 2
                     if (y <= lineNumber && lineNumber < y + 16) {
                         sn++;
-                        if (5 <= sn) {
+                        if (!col) tsn++;
+                        if (5 == sn) {
                             this->ctx.stat[0] &= 0b11100000;
                             this->ctx.stat[0] |= 0b01000000 | i;
-                            break;
-                        } else {
+                            if (!this->renderLimitOverSprites) {
+                                break;
+                            } else {
+                                if (4 <= tsn) break;
+                                limitOver = true;
+                            }
+                        } else if (sn < 5) {
                             this->ctx.stat[0] &= 0b11100000;
                             this->ctx.stat[0] |= i;
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
-                        for (int j = 0; j < 16; j++, x++) {
-                            if (wlog[x]) {
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 16; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
+                                    this->renderPixel2S1(&renderPosition[x << 1], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
+                            overflow = x == 0xFF;
                         }
                     }
                 }
@@ -1017,66 +980,342 @@ private:
                     // 16x16 x 1
                     if (y <= lineNumber && lineNumber < y + 16) {
                         sn++;
-                        if (5 <= sn) {
+                        if (!col) tsn++;
+                        if (5 == sn) {
                             this->ctx.stat[0] &= 0b11100000;
                             this->ctx.stat[0] |= 0b01000000 | i;
-                            break;
-                        } else {
+                            if (!this->renderLimitOverSprites) {
+                                break;
+                            } else {
+                                if (4 <= tsn) break;
+                                limitOver = true;
+                            }
+                        } else if (sn < 5) {
                             this->ctx.stat[0] &= 0b11100000;
                             this->ctx.stat[0] |= i;
                         }
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
-                        for (int j = 0; j < 8; j++, x++) {
-                            if (wlog[x]) {
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 8; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
+                                    this->renderPixel2S1(&renderPosition[x << 1], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
+                            overflow = x == 0xFF;
                         }
                         cur += 16;
-                        for (int j = 0; j < 8; j++, x++) {
-                            if (wlog[x]) {
+                        for (int j = 0; !overflow && j < 8; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
+                                    this->renderPixel2S1(&renderPosition[x << 1], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
+                            overflow = x == 0xFF;
                         }
                     }
                 } else {
                     // 8x8 x 1
                     if (y <= lineNumber && lineNumber < y + 8) {
                         sn++;
-                        if (5 <= sn) {
+                        if (!col) tsn++;
+                        if (5 == sn) {
                             this->ctx.stat[0] &= 0b11100000;
                             this->ctx.stat[0] |= 0b01000000 | i;
-                            break;
-                        } else {
+                            if (!this->renderLimitOverSprites) {
+                                break;
+                            } else {
+                                if (4 <= tsn) break;
+                                limitOver = true;
+                            }
+                        } else if (sn < 5) {
                             this->ctx.stat[0] &= 0b11100000;
                             this->ctx.stat[0] |= i;
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
-                        for (int j = 0; j < 8; j++, x++) {
-                            if (wlog[x]) {
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 8; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
+                                    this->renderPixel2S1(&renderPosition[x << 1], col);
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
+                            overflow = x == 0xFF;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    inline void renderSpritesMode2(int lineNumber, unsigned short* renderPosition)
+    {
+        static const unsigned char bit[8] = {
+            0b10000000,
+            0b01000000,
+            0b00100000,
+            0b00010000,
+            0b00001000,
+            0b00000100,
+            0b00000010,
+            0b00000001};
+        bool si = this->ctx.reg[1] & 0b00000010 ? true : false;
+        bool mag = this->ctx.reg[1] & 0b00000001 ? true : false;
+        int sa = ((this->ctx.reg[5] & 0b11111100) << 7) | ((this->ctx.reg[11] & 0b00000011) << 15);
+        int ct = (sa - 512) & 0x1FFFF;
+        int sg = (this->ctx.reg[6] & 0b00000111) << 11;
+        int sn = 0;
+        int tsn = 0;
+        unsigned char dlog[256];
+        unsigned char wlog[256];
+        memset(dlog, 0, sizeof(dlog));
+        memset(wlog, 0, sizeof(wlog));
+        bool limitOver = false;
+        for (int i = 0; i < 32; i++) {
+            int cur = sa + i * 4;
+            unsigned char y = this->ctx.ram[cur++];
+            if (216 == y) break;
+            int x = this->ctx.ram[cur++];
+            unsigned char ptn = this->ctx.ram[cur++];
+            y++;
+            if (mag) {
+                if (si) {
+                    // 16x16 x 2
+                    if (y <= lineNumber && lineNumber < y + 32) {
+                        sn++;
+                        int pixelLine = lineNumber - y;
+                        unsigned char col = this->ctx.ram[ct + i * 16 + pixelLine / 2];
+                        bool ic = col & 0x20;
+                        bool cc = col & 0x40;
+                        if (col & 0x80) x -= 32;
+                        col &= 0x0F;
+                        if (!col) tsn++;
+                        if (9 == sn) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
+                            if (!this->renderLimitOverSprites) {
+                                break;
+                            } else {
+                                if (8 <= tsn) break;
+                                limitOver = true;
+                            }
+                        } else if (sn < 9) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
+                        }
+                        cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 16; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver && !ic) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j / 2]) {
+                                    if (cc) {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                    } else {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col);
+                                    }
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                            overflow = x == 0xFF;
+                        }
+                        cur += 16;
+                        for (int j = 0; !overflow && j < 16; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j / 2]) {
+                                    if (cc) {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                    } else {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col);
+                                    }
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                            overflow = x == 0xFF;
+                       }
+                    }
+                } else {
+                    // 8x8 x 2
+                    if (y <= lineNumber && lineNumber < y + 16) {
+                        sn++;
+                        int pixelLine = lineNumber - y;
+                        unsigned char col = this->ctx.ram[ct + i * 16 + pixelLine / 2];
+                        bool ic = col & 0x20;
+                        bool cc = col & 0x40;
+                        if (col & 0x80) x -= 32;
+                        col &= 0x0F;
+                        if (!col) tsn++;
+                        if (9 == sn) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
+                            if (!this->renderLimitOverSprites) {
+                                break;
+                            } else {
+                                if (8 <= tsn) break;
+                                limitOver = true;
+                            }
+                        } else if (sn < 9) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
+                        }
+                        cur = sg + ptn * 8 + lineNumber % 8;
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 16; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver && !ic) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j / 2]) {
+                                    if (cc) {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                    } else {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col);
+                                    }
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                            overflow = x == 0xFF;
+                        }
+                    }
+                }
+            } else {
+                if (si) {
+                    // 16x16 x 1
+                    if (y <= lineNumber && lineNumber < y + 16) {
+                        sn++;
+                        int pixelLine = lineNumber - y;
+                        unsigned char col = this->ctx.ram[ct + i * 16 + pixelLine];
+                        bool ic = col & 0x20;
+                        bool cc = col & 0x40;
+                        if (col & 0x80) x -= 32;
+                        col &= 0x0F;
+                        if (!col) tsn++;
+                        if (9 == sn) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
+                            if (!this->renderLimitOverSprites) {
+                                break;
+                            } else {
+                                if (8 <= tsn) break;
+                                limitOver = true;
+                            }
+                        } else if (sn < 9) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
+                        }
+                        cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 8; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver && !ic) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j]) {
+                                    if (cc) {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                    } else {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col);
+                                    }
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                            overflow = x == 0xFF;
+                        }
+                        cur += 16;
+                        for (int j = 0; !overflow && j < 8; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j]) {
+                                    if (cc) {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                    } else {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col);
+                                    }
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                            overflow = x == 0xFF;
+                        }
+                    }
+                } else {
+                    // 8x8 x 1
+                    if (y <= lineNumber && lineNumber < y + 8) {
+                        sn++;
+                        int pixelLine = lineNumber - y;
+                        unsigned char col = this->ctx.ram[ct + i * 16 + pixelLine];
+                        if (col & 0x80) x -= 32;
+                        bool cc = col & 0x40;
+                        bool ic = col & 0x20;
+                        col &= 0x0F;
+                        if (!col) tsn++;
+                        if (9 == sn) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
+                            if (!this->renderLimitOverSprites) {
+                                break;
+                            } else {
+                                if (8 <= tsn) break;
+                                limitOver = true;
+                            }
+                        } else if (sn < 9) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
+                        }
+                        cur = sg + ptn * 8 + lineNumber % 8;
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 8; j++, x++) {
+                            if (x < 0) continue;
+                            if (wlog[x] && !limitOver && !ic) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j]) {
+                                    if (cc) {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                    } else {
+                                        this->renderPixel2S2(&renderPosition[x << 1], col);
+                                    }
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                            overflow = x == 0xFF;
                         }
                     }
                 }
@@ -1094,244 +1333,6 @@ private:
             this->ctx.stat[4] = (x & 0x0100) >> 8;
             this->ctx.stat[5] = y & 0xFF;
             this->ctx.stat[6] = (y & 0x0300) >> 8;
-        }
-    }
-
-    inline void renderSpritesMode2(int lineNumber, unsigned short* renderPosition)
-    {
-        static const unsigned char bit[8] = {
-            0b10000000,
-            0b01000000,
-            0b00100000,
-            0b00010000,
-            0b00001000,
-            0b00000100,
-            0b00000010,
-            0b00000001};
-        bool si = this->ctx.reg[1] & 0b00000010 ? true : false;
-        bool mag = this->ctx.reg[1] & 0b00000001 ? true : false;
-        int sa = this->ctx.reg[10];
-        unsigned char colMask = this->getScreenMode() == 0b00100 ? 3 : 15;
-        sa &= 0b00000011;
-        sa <<= 8;
-        sa |= this->ctx.reg[5];
-        sa &= 0b11111000;
-        sa |= 0b00000100;
-        sa <<= 7;
-        int sg = this->ctx.reg[6] << 11;
-        int sn = 0;
-        unsigned char dlog[256];
-        unsigned char wlog[256];
-        memset(dlog, 0, sizeof(dlog));
-        memset(wlog, 0, sizeof(wlog));
-        for (int i = 0; i < 32; i++) {
-            int cur = sa + i * 4;
-            unsigned char y = this->ctx.ram[cur++];
-            if (216 == y) break;
-            unsigned char x = this->ctx.ram[cur++];
-            unsigned char ptn = this->ctx.ram[cur++];
-            y++;
-            if (mag) {
-                if (si) {
-                    // 16x16 x 2
-                    if (y <= lineNumber && lineNumber < y + 32) {
-                        sn++;
-                        if (9 <= sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
-                            break;
-                        } else {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
-                        }
-                        int pixelLine = lineNumber - y;
-                        cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
-                        int ct = sg + 0x80 + (ptn & 252) * 16 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
-                        x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
-                        bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
-                        bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
-                        int col = this->ctx.ram[ct] & colMask;
-                        for (int j = 0; j < 16; j++, x++) {
-                            if (wlog[x] && !ic) {
-                                this->setCollision(x, y);
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            } else if (cc) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    col |= dlog[x];
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                        }
-                        cur += 16;
-                        for (int j = 0; j < 16; j++, x++) {
-                            if (wlog[x] && !ic) {
-                                this->setCollision(x, y);
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            } else if (cc) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    col |= dlog[x];
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // 8x8 x 2
-                    if (y <= lineNumber && lineNumber < y + 16) {
-                        sn++;
-                        if (9 <= sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
-                            break;
-                        } else {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
-                        }
-                        int pixelLine = lineNumber - y;
-                        cur = sg + ptn * 8 + lineNumber % 8;
-                        int ct = sg + 0x80 + ptn * 16 + pixelLine % 16 / 2;
-                        x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
-                        bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
-                        bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
-                        int col = this->ctx.ram[ct] & colMask;
-                        for (int j = 0; j < 16; j++, x++) {
-                            if (wlog[x] && !ic) {
-                                this->setCollision(x, y);
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            } else if (cc) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    col |= dlog[x];
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                if (si) {
-                    // 16x16 x 1
-                    if (y <= lineNumber && lineNumber < y + 16) {
-                        sn++;
-                        if (9 <= sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
-                            break;
-                        } else {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
-                        }
-                        int pixelLine = lineNumber - y;
-                        cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
-                        int ct = sg + 0x80 + (ptn & 252) * 16 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
-                        x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
-                        bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
-                        bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
-                        int col = this->ctx.ram[ct] & colMask;
-                        for (int j = 0; j < 8; j++, x++) {
-                            if (wlog[x] && !ic) {
-                                this->setCollision(x, y);
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            } else if (cc) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    col |= dlog[x];
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                        }
-                        cur += 16;
-                        for (int j = 0; j < 8; j++, x++) {
-                            if (wlog[x] && !ic) {
-                                this->setCollision(x, y);
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            } else if (cc) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    col |= dlog[x];
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // 8x8 x 1
-                    if (y <= lineNumber && lineNumber < y + 8) {
-                        sn++;
-                        if (9 <= sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
-                            break;
-                        } else {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
-                        }
-                        int pixelLine = lineNumber - y;
-                        cur = sg + ptn * 8 + lineNumber % 8;
-                        int ct = sg + 0x80 + ptn * 16 + pixelLine % 8;
-                        x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
-                        bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
-                        bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
-                        int col = this->ctx.ram[ct] & colMask;
-                        for (int j = 0; j < 8; j++, x++) {
-                            if (wlog[x] && !ic) {
-                                this->setCollision(x, y);
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            } else if (cc) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    col |= dlog[x];
-                                    this->renderPixel2(&renderPosition[x * 2], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 
