@@ -93,6 +93,7 @@ public:
             int lineNumber = this_->vdp.getLineNumber();
             int ie1Line = this_->vdp.ctx.reg[19];
             int scrollV = this_->vdp.ctx.reg[23];
+            bool spriteDisplay = this_->vdp.isSpriteDisplay();
 
             this_->vdp.ctx.reg[rn] = value;
 
@@ -151,6 +152,9 @@ public:
             }
             if (scrollV != this_->vdp.ctx.reg[23]) {
                 this_->putlog("Virtical Scroll changed: %d -> %d", scrollV, this_->vdp.ctx.reg[23]);
+            }
+            if (spriteDisplay != this_->vdp.isSpriteDisplay()) {
+                this_->putlog("Change Sprite Display: %s", spriteDisplay ? "OFF" : "ON");
             }
         });
         this->cpu->addBreakPoint(0, [](void* arg) {

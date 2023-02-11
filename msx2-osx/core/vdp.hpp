@@ -152,6 +152,7 @@ class VDP
     inline int getSpriteGeneratorMode2() { return ((int)(this->ctx.reg[6] & 0b00111111)) << 11; }
     inline bool isSprite16px() { return this->ctx.reg[1] & 0b00000010 ? true : false; }
     inline bool isSprite2x() { return this->ctx.reg[1] & 0b00000001 ? true : false; }
+    inline bool isSpriteDisplay() { return this->ctx.reg[8] & 0b00000010 ? false : true; }
 
     inline int getAddressMask() {
         switch (this->getScreenMode()) {
@@ -711,7 +712,7 @@ class VDP
     }
 
     inline void renderPixel2S2(unsigned short* renderPosition, int paletteNumber) {
-        if (!paletteNumber || this->ctx.reg[8] & 0b0000010) return;
+        if (!paletteNumber || !this->isSpriteDisplay()) return;
         *renderPosition = this->palette[paletteNumber];
         *(renderPosition + 1) = this->palette[paletteNumber];
     }
