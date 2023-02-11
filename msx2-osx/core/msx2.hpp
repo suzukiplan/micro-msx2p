@@ -57,7 +57,7 @@ public:
             return ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
-            ((MSX2*)arg)->cpu->resetDebugMessage();
+            //((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
         }, [](void* arg) {
             ((MSX2*)arg)->cpu->requestBreak();
@@ -70,17 +70,91 @@ public:
         });
          */
         //cpu->addBreakPoint(0x402E, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); }); });
-        /*
+
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
-            printf("Update VDP register #%d = $%02X (PC:$%04X,bobo:%d)\n", rn, value
-                   , this_->cpu->reg.PC
-                   , this_->vdp.ctx.bobo
-                   );
-            //if (0x7BB2 == this_->cpu->reg.PC && -3466181 ==this_->vdp.ctx.bobo) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg);}); }
-        });
-         */
+            //printf("Update VDP register #%d = $%02X (PC:$%04X,bobo:%d)\n", rn, value, this_->cpu->reg.PC, this_->vdp.ctx.bobo);
+            int screenMode = this_->vdp.getScreenMode();
+            bool screen = this_->vdp.isEnabledScreen();
+            bool externalVideoInput = this_->vdp.isEnabledExternalVideoInput();
+            int patternGeneratorAddsress = this_->vdp.getPatternGeneratorAddress();
+            int nameTableAddress = this_->vdp.getNameTableAddress();
+            int colorTableAddress = this_->vdp.getColorTableAddress();
+            //bool ie0 = this_->vdp.isEI0();
+            //bool ie1 = this_->vdp.isEI1();
+            int spriteSize = this_->vdp.getSpriteSize();
+            bool spriteMag = this_->vdp.isSpriteMag();
+            unsigned short backdropColor = this_->vdp.getBackdropColor();
+            unsigned short textColor = this_->vdp.getTextColor();
+            int onTime = this_->vdp.getOnTime();
+            int offTime = this_->vdp.getOffTime();
+            int syncMode = this_->vdp.getSyncMode();
+            int lineNumber = this_->vdp.getLineNumber();
+            int ie1Line = this_->vdp.ctx.reg[19];
+            int scrollV = this_->vdp.ctx.reg[23];
 
+            this_->vdp.ctx.reg[rn] = value;
+
+            if (screen != this_->vdp.isEnabledScreen()) {
+                this_->putlog("Change VDP screen enabled: %s", this_->vdp.isEnabledScreen() ? "ENABLED" : "DISABLED");
+            }
+            if (screenMode != this_->vdp.getScreenMode()) {
+                this_->putlog("Screen Mode Changed: %d -> %d", screenMode, this_->vdp.getScreenMode());
+            }
+            if (patternGeneratorAddsress != this_->vdp.getPatternGeneratorAddress()) {
+                this_->putlog("Pattern Generator Address: $%04X -> $%04X", patternGeneratorAddsress, this_->vdp.getPatternGeneratorAddress());
+            }
+            if (nameTableAddress != this_->vdp.getNameTableAddress()) {
+                this_->putlog("Name Table Address: $%04X -> $%04X", nameTableAddress, this_->vdp.getNameTableAddress());
+            }
+            if (colorTableAddress != this_->vdp.getColorTableAddress()) {
+                this_->putlog("Color Table Address: $%04X -> $%04X", colorTableAddress, this_->vdp.getColorTableAddress());
+            }
+            if (externalVideoInput != this_->vdp.isEnabledExternalVideoInput()) {
+                this_->putlog("Change VDP external video input enabled: %s", this_->vdp.isEnabledExternalVideoInput() ? "ENABLED" : "DISABLED");
+            }
+            /*
+            if (ie0 != this_->vdp.isEI0()) {
+                this_->putlog("Change EI0: %s", ie0 ? "OFF" : "ON");
+            }
+            if (ie1 != this_->vdp.isEI1()) {
+                this_->putlog("Change EI1: %s", ie1 ? "OFF" : "ON");
+            }
+             */
+            if (ie1Line != this_->vdp.ctx.reg[19]) {
+                this_->putlog("Change IE1 Line: %d -> %d", ie1Line, this_->vdp.ctx.reg[19]);
+            }
+            if (spriteSize != this_->vdp.getSpriteSize()) {
+                this_->putlog("Change Sprite Size: %d -> %d", spriteSize, this_->vdp.getSpriteSize());
+            }
+            if (spriteMag != this_->vdp.isSpriteMag()) {
+                this_->putlog("Change Sprite MAG mode: %s", spriteMag ? "OFF" : "ON");
+            }
+            if (backdropColor != this_->vdp.getBackdropColor()) {
+                this_->putlog("Change Backdrop Color: $%04X -> $%04X", backdropColor, this_->vdp.getBackdropColor());
+            }
+            if (textColor != this_->vdp.getTextColor()) {
+                this_->putlog("Change Text Color: $%04X -> $%04X", textColor, this_->vdp.getTextColor());
+            }
+            if (onTime != this_->vdp.getOnTime()) {
+                this_->putlog("OnTime changed: %d -> %d", onTime, this_->vdp.getOnTime());
+            }
+            if (offTime != this_->vdp.getOffTime()) {
+                this_->putlog("OffTime changed: %d -> %d", offTime, this_->vdp.getOffTime());
+            }
+            if (syncMode != this_->vdp.getSyncMode()) {
+                this_->putlog("SyncMode changed: %d -> %d", syncMode, this_->vdp.getSyncMode());
+            }
+            if (lineNumber != this_->vdp.getLineNumber()) {
+                this_->putlog("LineNumber changed: %d -> %d", lineNumber, this_->vdp.getLineNumber());
+            }
+            if (scrollV != this_->vdp.ctx.reg[23]) {
+                this_->putlog("Virtical Scroll changed: %d -> %d", scrollV, this_->vdp.ctx.reg[23]);
+            }
+        });
+        this->cpu->addBreakPoint(0, [](void* arg) {
+            puts("RESET!");
+        });
 #if 0
         // RDSLT
         //this->cpu->addBreakPoint(0x23D2, [](void* arg) {
@@ -138,11 +212,7 @@ public:
             int sec3 = ((MSX2*)arg)->mmu.ctx.secondary[3];
             auto data = &((MSX2*)arg)->mmu.slots[pri3][sec3].data[7];
             if (!data->isRAM) {
-                printf("invalid call $%02X%02X (PC:$%04X, SP:$%04X)\n"
-                       , op[2]
-                       , op[1]
-                       , ((MSX2*)arg)->cpu->reg.PC
-                       , ((MSX2*)arg)->cpu->reg.SP);
+                ((MSX2*)arg)->putlog("invalid call $%02X%02X", op[2], op[1]);
                 exit(-1);
             }
 #if 0
@@ -252,6 +322,17 @@ public:
         this->psg.reset(27);
         this->clock.reset();
         this->kanji.reset();
+    }
+
+    void putlog(const char* fmt, ...) {
+        char buf[256];
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(buf, sizeof(buf), fmt, args);
+        va_end(args);
+        auto now = time(nullptr);
+        auto t = localtime(&now);
+        printf("%02d:%02d:%02d [%04X] V:%03d %s\n", t->tm_hour, t->tm_min, t->tm_sec, this->cpu->reg.PC, this->vdp.ctx.countV, buf);
     }
 
     void loadFont(const void* font, size_t fontSize) {
