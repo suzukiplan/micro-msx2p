@@ -218,6 +218,15 @@ class MMU
 #endif
     }
 
+    struct DataBlock8KB* getDataBlock(unsigned short addr) {
+        int page = (addr & 0b1100000000000000) >> 14;
+        int pri = this->ctx.primary[page];
+        int sec = this->secondaryExist[pri] ? this->ctx.secondary[page] : 0;
+        int idx = addr / 0x2000;
+        auto s = &this->slots[pri][sec];
+        return &s->data[idx];
+    }
+
     inline unsigned char read(unsigned short addr)
     {
         if (addr == 0xFFFF) {

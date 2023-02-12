@@ -57,7 +57,7 @@ public:
             return ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
-            //if (1 == ie) ((MSX2*)arg)->putlog("Detect IE1");
+            if (1 == ie) ((MSX2*)arg)->putlog("Detect IE1 (R#19=%d, R#23=%d)", ((MSX2*)arg)->vdp.ctx.reg[19], ((MSX2*)arg)->vdp.ctx.reg[23]);
             ((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
         }, [](void* arg) {
@@ -337,7 +337,15 @@ public:
         va_end(args);
         auto now = time(nullptr);
         auto t = localtime(&now);
-        printf("%02d:%02d:%02d [%04X] V:%03d %s\n", t->tm_hour, t->tm_min, t->tm_sec, this->cpu->reg.PC, this->vdp.ctx.countV, buf);
+        char addr[256];
+        auto db = this->mmu.getDataBlock(this->cpu->reg.PC);
+        if (db->isCartridge) {
+            int romAddr = (int)(db->ptr - this->mmu.cartridge.ptr);
+            snprintf(addr, sizeof(addr), "[%04X:%X+%04X]", this->cpu->reg.PC, romAddr, this->cpu->reg.PC & 0x1FFF);
+        } else {
+            snprintf(addr, sizeof(addr), "[%04X]", this->cpu->reg.PC);
+        }
+        printf("%02d:%02d:%02d %s V:%03d %s\n", t->tm_hour, t->tm_min, t->tm_sec, addr, this->vdp.ctx.countV, buf);
     }
 
     void loadFont(const void* font, size_t fontSize) {
