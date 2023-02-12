@@ -68,7 +68,7 @@ extern "C" void emu_init_cbios(const void* main, size_t mainSize,
     msx2.setup(0, 0, 0, false, bios.main, 0x8000, "MAIN");
     msx2.setup(0, 0, 4, false, bios.logo, 0x4000, "LOGO");
     msx2.setup(3, 0, 0, false, bios.ext, 0x4000, "SUB");
-    msx2.setup(3, 2, 0, true, ram, 0x10000, "RAM");
+    msx2.setup(3, 3, 0, true, ram, 0x10000, "RAM");
     emu_reset();
 }
 
