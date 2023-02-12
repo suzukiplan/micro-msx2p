@@ -249,12 +249,22 @@ class MMU
         } else if (data->isCartridge) {
             switch (this->cartridge.romType) {
                 case MSX2_ROM_TYPE_NORMAL: return;
-                case MSX2_ROM_TYPE_ASC8: break;
+                case MSX2_ROM_TYPE_ASC8: this->asc8(pri - 1, addr, value); return;
                 case MSX2_ROM_TYPE_ASC16: this->asc16(pri - 1, addr, value); return;
             }
             puts("DETECT ROM WRITE");
             exit(-1);
         }
+    }
+
+    inline void asc8(int idx, unsigned short addr, unsigned char value) {
+        switch (addr & 0x7800) {
+            case 0x6000: this->ctx.cpos[idx][0] = value; break;
+            case 0x6800: this->ctx.cpos[idx][1] = value; break;
+            case 0x7000: this->ctx.cpos[idx][2] = value; break;
+            case 0x7800: this->ctx.cpos[idx][3] = value; break;
+        }
+        this->bankSwitchover();
     }
 
     inline void asc16(int idx, unsigned short addr, unsigned char value) {
