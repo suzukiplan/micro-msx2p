@@ -161,13 +161,36 @@ class VDP
     inline int getOnTime() { return (ctx.reg[13] & 0xF0) >> 4; }
     inline int getOffTime() { return ctx.reg[13] & 0x0F; }
     inline int getSyncMode() { return (ctx.reg[9] & 0b00110000) >> 4; }
-    inline int getSpriteAttributeTableMode1() { return ((int)(this->ctx.reg[5] & 0b01111111)) << 7; }
-    inline int getSpriteAttributeTableMode2() { return this->getSpriteColorTable() | 0x200; }
-    inline int getSpriteColorTable() {  return (((int)(this->ctx.reg[5] & 0b11111000)) << 7) | ((((int)this->ctx.reg[11] & 0b00000011)) << 15); }
-    inline int getSpriteGeneratorTable() { return ((int)(this->ctx.reg[6] & 0b00111111)) << 11; }
     inline bool isSprite16px() { return this->ctx.reg[1] & 0b00000010 ? true : false; }
     inline bool isSprite2x() { return this->ctx.reg[1] & 0b00000001 ? true : false; }
     inline bool isSpriteDisplay() { return this->ctx.reg[8] & 0b00000010 ? false : true; }
+
+    inline int getSpriteAttributeTableMode1() {
+        int addr = this->ctx.reg[11] & 0b00000011;
+        addr <<= 15;
+        addr |= (this->ctx.reg[5] & 0b11111100) << 7;
+        return addr;
+    }
+
+    inline int getSpriteAttributeTableMode2() {
+        int addr = this->ctx.reg[11] & 0b00000011;
+        addr <<= 15;
+        addr |= ((this->ctx.reg[5] & 0b11111100) | 0b00000100) << 7;
+        return addr;
+    }
+
+    inline int getSpriteColorTable() {
+        int addr = this->getSpriteAttributeTableMode2();
+        addr -= 512;
+        addr &= 0x1FFFF;
+        return addr;
+    }
+
+    inline int getSpriteGeneratorTable() {
+        int addr = this->ctx.reg[6] & 0b00111111;
+        addr <<= 11;
+        return addr;
+    }
 
     inline int getAddressMask() {
         switch (this->getScreenMode()) {
@@ -1123,6 +1146,7 @@ class VDP
         int sg = this->getSpriteGeneratorTable();
         int sn = 0;
         int tsn = 0;
+        unsigned char paletteMask = this->getScreenMode() == 0b00100 ? 0x03 : 0x0F;
         unsigned char dlog[256];
         unsigned char wlog[256];
         memset(dlog, 0, sizeof(dlog));
@@ -1145,7 +1169,7 @@ class VDP
                         bool ic = col & 0x20;
                         bool cc = col & 0x40;
                         if (col & 0x80) x -= 32;
-                        col &= 0x0F;
+                        col &= paletteMask;
                         if (!col) tsn++;
                         if (9 == sn) {
                             this->ctx.stat[0] &= 0b11100000;
@@ -1210,7 +1234,7 @@ class VDP
                         bool ic = col & 0x20;
                         bool cc = col & 0x40;
                         if (col & 0x80) x -= 32;
-                        col &= 0x0F;
+                        col &= paletteMask;
                         if (!col) tsn++;
                         if (9 == sn) {
                             this->ctx.stat[0] &= 0b11100000;
@@ -1258,7 +1282,7 @@ class VDP
                         bool ic = col & 0x20;
                         bool cc = col & 0x40;
                         if (col & 0x80) x -= 32;
-                        col &= 0x0F;
+                        col &= paletteMask;
                         if (!col) tsn++;
                         if (9 == sn) {
                             this->ctx.stat[0] &= 0b11100000;
@@ -1324,7 +1348,7 @@ class VDP
                         if (col & 0x80) x -= 32;
                         bool cc = col & 0x40;
                         bool ic = col & 0x20;
-                        col &= 0x0F;
+                        col &= paletteMask;
                         if (!col) tsn++;
                         if (9 == sn) {
                             this->ctx.stat[0] &= 0b11100000;
@@ -1550,10 +1574,9 @@ class VDP
             this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
             this->ctx.commandNY = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
         }
-        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
-        int addr = mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
+        int addr = this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<HMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.reg[44], getScreenMode());
 #endif
@@ -1596,13 +1619,12 @@ class VDP
         int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
         int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
         int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
-        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
-        int addrS = mxd + sx / dpb + sy * lineBytes;
-        int addrD = mxd + dx / dpb + dy * lineBytes;
+        int addrS = sx / dpb + sy * lineBytes;
+        int addrD = dx / dpb + dy * lineBytes;
 #ifdef COMMAND_DEBUG
-        printf("ExecuteCommand<HMMM>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR(S)=$%05X, ADDR(D)=$%05X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addrS, addrD, getScreenMode());
+        printf("ExecuteCommand<HMMM>: SX=%d, SY=%d, DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR(S)=$%05X, ADDR(D)=$%05X (SCREEN: %d)\n", sx, sy, dx, dy, nx, ny, dix, diy, addrS, addrD, getScreenMode());
 #endif
         int base = 0 < dix ? 0 : -nx / dpb;
         this->incrementCommandPending(1);
@@ -1629,10 +1651,9 @@ class VDP
         int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
         int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
         unsigned char clr = this->ctx.reg[44];
-        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
-        int addr = mxd + dx / dpb + dy * lineBytes;
+        int addr = dx / dpb + dy * lineBytes;
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<HMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, CLR=$%02X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addr, clr, getScreenMode());
 #endif
@@ -1746,10 +1767,9 @@ class VDP
             this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
             this->ctx.commandNY = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
         }
-        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
-        int addr = mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
+        int addr = this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
         int dst = this->ctx.reg[44];
         if (2 == dpb) dst &= 0x0F;
         else if (4 == dpb) dst &= 0b11;
@@ -1796,11 +1816,10 @@ class VDP
         int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
         int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
         int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
-        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
-        int addrS = mxd + sx / dpb + sy * lineBytes;
-        int addrD = mxd + dx / dpb + dy * lineBytes;
+        int addrS = sx / dpb + sy * lineBytes;
+        int addrD = dx / dpb + dy * lineBytes;
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<LMMM>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR(S)=$%05X, ADDR(D)=$%05X, LO=%d (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addrS, addrD, ctx.commandL, getScreenMode());
 #endif
@@ -1855,19 +1874,18 @@ class VDP
             case 0b00111: break; // GRAPHIC7
             default: return;
         }
-        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
         int m = this->ctx.reg[45] & 0b00000001;
 #ifdef COMMAND_DEBUG
-        printf("ExecuteCommand<LINE>: DX=%d, DY=%d, Maj=%d, Min=%d, DIX=%d, DIY=%d, MXD=$%05X, MAJ=%s, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, maj, min, dix, diy, mxd, m ? "Y" : "X", clr, ctx.commandL, getScreenMode());
+        printf("ExecuteCommand<LINE>: DX=%d, DY=%d, Maj=%d, Min=%d, DIX=%d, DIY=%d, MAJ=%s, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, maj, min, dix, diy, m ? "Y" : "X", clr, ctx.commandL, getScreenMode());
 #endif
 
         const double majF = (double)maj;
         const double minF = (double)min;
         this->incrementCommandPending(1);
         while (0 < maj) {
-            this->renderLogicalPixel((mxd + dx / dpb + dy * lineBytes) & 0x1FFFF, dpb, dx, clr, ctx.commandL);
+            this->renderLogicalPixel((dx / dpb + dy * lineBytes) & 0x1FFFF, dpb, dx, clr, ctx.commandL);
             this->incrementCommandPending(1);
             maj--;
             if (m) {
@@ -1909,11 +1927,10 @@ class VDP
             case 0b00111: break; // GRAPHIC7
             default: return;
         }
-        int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
 #ifdef COMMAND_DEBUG
-        printf("ExecuteCommand<PSET>: DX=%d, DY=%d, MXD=$%05X, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, mxd, clr, ctx.commandL, getScreenMode());
+        printf("ExecuteCommand<PSET>: DX=%d, DY=%d, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, clr, ctx.commandL, getScreenMode());
 #endif
-        this->renderLogicalPixel((mxd + dx / dpb + dy * lineBytes) & 0x1FFFF, dpb, dx, clr, ctx.commandL);
+        this->renderLogicalPixel((dx / dpb + dy * lineBytes) & 0x1FFFF, dpb, dx, clr, ctx.commandL);
         this->incrementCommandPending(1);
     }
 
