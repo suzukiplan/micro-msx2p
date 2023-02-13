@@ -57,7 +57,7 @@ public:
             return ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
-            if (1 == ie) ((MSX2*)arg)->putlog("Detect IE1 (R#19=%d, R#23=%d)", ((MSX2*)arg)->vdp.ctx.reg[19], ((MSX2*)arg)->vdp.ctx.reg[23]);
+            //if (1 == ie) ((MSX2*)arg)->putlog("Detect IE1 (R#19=%d, R#23=%d)", ((MSX2*)arg)->vdp.ctx.reg[19], ((MSX2*)arg)->vdp.ctx.reg[23]);
             ((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
         }, [](void* arg) {
@@ -76,13 +76,14 @@ public:
             ((MSX2*)arg)->putlog("update VRAM address: $%X", addr);
         });
         this->vdp.setVramWriteListener(this, [](void* arg, int addr, unsigned char value) {
-            ((MSX2*)arg)->putlog("VRAM[%X] = $%02X", addr, value);
+            ((MSX2*)arg)->putlog("VRAM[%X] = $%02X (%s)", addr, value, ((MSX2*)arg)->vdp.where(addr));
         });
-         */
+        */
         //cpu->addBreakPoint(0x46fb, [](void* arg) { ((MSX2*)arg)->putlog("0x46fb passed"); });
         //cpu->addBreakPoint(0x46fb, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); }); });
         //cpu->addBreakPoint(0x4720, [](void* arg) { ((MSX2*)arg)->cpu->resetDebugMessage(); });
 
+#if 0
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
             //printf("Update VDP register #%d = $%02X (PC:$%04X,bobo:%d)\n", rn, value, this_->cpu->reg.PC, this_->vdp.ctx.bobo);
@@ -105,7 +106,7 @@ public:
             int ie1Line = this_->vdp.ctx.reg[19];
             int scrollV = this_->vdp.ctx.reg[23];
             bool spriteDisplay = this_->vdp.isSpriteDisplay();
-            int sa = this_->vdp.getSpriteAttributeTableMode2();
+            int sa = this_->vdp.getSpriteAttributeTable();
             int sg = this_->vdp.getSpriteGeneratorTable();
             unsigned char r14 = this_->vdp.ctx.reg[14];
 
@@ -123,8 +124,8 @@ public:
             if (nameTableAddress != this_->vdp.getNameTableAddress()) {
                 this_->putlog("Name Table Address: $%04X -> $%04X", nameTableAddress, this_->vdp.getNameTableAddress());
             }
-            if (sa != this_->vdp.getSpriteAttributeTableMode2()) {
-                this_->putlog("Sprite Attribute Table Address: $%04X -> $%04X", sa, this_->vdp.getSpriteAttributeTableMode2());
+            if (sa != this_->vdp.getSpriteAttributeTable()) {
+                this_->putlog("Sprite Attribute Table Address: $%04X -> $%04X", sa, this_->vdp.getSpriteAttributeTable());
             }
             if (sg != this_->vdp.getSpriteGeneratorTable()) {
                 this_->putlog("Sprite Generator Table Address: $%04X -> $%04X", sg, this_->vdp.getSpriteGeneratorTable());
@@ -180,6 +181,8 @@ public:
                 this_->putlog("Change Sprite Display: %s", spriteDisplay ? "OFF" : "ON");
             }
         });
+#endif
+
         this->cpu->addBreakPoint(0, [](void* arg) {
             puts("RESET!");
         });

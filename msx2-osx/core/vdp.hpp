@@ -171,24 +171,17 @@ class VDP
     inline bool isSprite2x() { return this->ctx.reg[1] & 0b00000001 ? true : false; }
     inline bool isSpriteDisplay() { return this->ctx.reg[8] & 0b00000010 ? false : true; }
 
-    inline int getSpriteAttributeTableMode1() {
+    inline int getSpriteAttributeTable() {
         int addr = this->ctx.reg[11] & 0b00000011;
         addr <<= 15;
         addr |= (this->ctx.reg[5] & 0b11111100) << 7;
         return addr;
     }
 
-    inline int getSpriteAttributeTableMode2() {
+    inline int getSpriteColorTable() {
         int addr = this->ctx.reg[11] & 0b00000011;
         addr <<= 15;
-        addr |= ((this->ctx.reg[5] & 0b11111100) | 0b00000100) << 7;
-        return addr;
-    }
-
-    inline int getSpriteColorTable() {
-        int addr = this->getSpriteAttributeTableMode2();
-        addr -= 512;
-        addr &= 0x1FFFF;
+        addr |= (this->ctx.reg[5] & 0b11111000) << 7;
         return addr;
     }
 
@@ -219,9 +212,9 @@ class VDP
 
     inline unsigned short getBackdropColor() {
         switch (this->getScreenMode()) {
-            case 0b00111: return convertColor_8bit_to_16bit(ctx.reg[7]);
-            case 0b00100: return palette[ctx.reg[7] & 0b00000011];
-            default: return palette[ctx.reg[7] & 0b00001111];
+            case 0b00111: return this->convertColor_8bit_to_16bit(this->ctx.reg[7]);
+            case 0b00100: return this->palette[this->ctx.reg[7] & 0b00000011];
+            default: return this->palette[this->ctx.reg[7] & 0b00001111];
         }
     }
 
@@ -229,7 +222,7 @@ class VDP
         if (this->getScreenMode() == 0b00111) {
             return 0;
         } else {
-            return palette[(ctx.reg[7] & 0b11110000) >> 4];
+            return this->palette[(this->ctx.reg[7] & 0b11110000) >> 4];
         }
     }
  
@@ -465,18 +458,12 @@ class VDP
 
     inline void outPort98(unsigned char value)
     {
-        int addressMask = this->getAddressMask();
-        this->ctx.addr &= addressMask;
         this->ctx.readBuffer = value;
-        //printf("VRAM[$%05X] = $%02X\n", this->ctx.addr, value);
         this->ctx.ram[this->ctx.addr] = this->ctx.readBuffer;
         if (this->debug.vramWriteListener) {
             this->debug.vramWriteListener(this->debug.arg, this->ctx.addr, this->ctx.readBuffer);
         }
-        this->ctx.addr++;
-        if (0x1FFFF == addressMask) {
-            this->updateRegister14FromAddress();
-        }
+        this->incrementAddress();
         this->ctx.latch1 = 0;
     }
 
@@ -614,10 +601,16 @@ class VDP
             "NameTable",
             "PatternGenerator",
             "ColorTable",
+            "SpriteGenerator",
+            "SpriteAttributeTable",
+            "SpriteColorTable",
         };
         int nt = this->getNameTableAddress();
         int pg = this->getPatternGeneratorAddress();
         int ct = this->getColorTableAddress();
+        int sg = this->getSpriteGeneratorTable();
+        int sa = this->getSpriteAttributeTable();
+        int sc = this->getSpriteColorTable();
         if (nt <= addr && addr < nt + this->getNameTableSize()) {
             return answer[1];
         }
@@ -626,6 +619,15 @@ class VDP
         }
         if (ct <= addr && addr < ct + this->getColorTableSize()) {
             return answer[3];
+        }
+        if (sg <= addr && addr < sg + 8 * 256) {
+            return answer[4];
+        }
+        if (sa <= addr && addr < sa + 4 * 32) {
+            return answer[5];
+        }
+        if (sc <= addr && addr < sc + 512) {
+            return answer[6];
         }
         return answer[0];
     }
@@ -643,17 +645,23 @@ class VDP
 
     inline void readVideoMemory()
     {
-        int addressMask = this->getAddressMask();
-        this->ctx.addr &= addressMask;
         this->ctx.readBuffer = this->ctx.ram[this->ctx.addr];
-        this->ctx.addr++;
-        if (0x1FFFF == addressMask) {
-            this->updateRegister14FromAddress();
-        }
+        this->incrementAddress();
     }
 
-    inline void updateRegister14FromAddress() {
-        this->ctx.reg[14] = (this->ctx.addr >> 14) & 0b00000111;
+    inline void incrementAddress() {
+        int mask = this->getAddressMask();
+        this->ctx.addr++;
+        this->ctx.addr &= mask;
+        if (0x1FFFF == mask) {
+            unsigned char r14 = (this->ctx.addr >> 14) & 0b00000111;
+            if (r14 != this->ctx.reg[14]) {
+                if (debug.registerUpdateListener) {
+                    debug.registerUpdateListener(debug.arg, 14, r14);
+                }
+                this->ctx.reg[14] = r14;
+            }
+        }
     }
 
     inline void updateRegister(int rn, unsigned char value)
@@ -673,6 +681,10 @@ class VDP
             }
         } else if (46 == rn) {
             this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
+        } else if (14 == rn) {
+            this->ctx.reg[14] &= 0b00000111;
+            this->ctx.addr &= 0x3FFF;
+            this->ctx.addr |= this->ctx.reg[14] << 14;
         } else if (16 == rn) {
             this->ctx.latch2 = 0;
         } else if (8 == rn) {
@@ -930,7 +942,7 @@ class VDP
             0b00000001};
         bool si = this->isSprite16px();
         bool mag = this->isSprite2x();
-        int sa = this->getSpriteAttributeTableMode1();
+        int sa = this->getSpriteAttributeTable();
         int sg = this->getSpriteGeneratorTable();
         int sn = 0;
         int tsn = 0;
@@ -1142,7 +1154,7 @@ class VDP
             0b00000001};
         bool si = this->isSprite16px();
         bool mag = this->isSprite2x();
-        int sa = this->getSpriteAttributeTableMode2();
+        int sa = this->getSpriteAttributeTable();
         int ct = this->getSpriteColorTable();
         int sg = this->getSpriteGeneratorTable();
         int sn = 0;
@@ -1159,7 +1171,7 @@ class VDP
             if (216 == y) break;
             int x = this->ctx.ram[cur++];
             unsigned char ptn = this->ctx.ram[cur++];
-            y += 1 + this->ctx.reg[23];
+            y += 1 - this->ctx.reg[23];
             if (mag) {
                 if (si) {
                     // 16x16 x 2

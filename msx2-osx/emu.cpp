@@ -214,8 +214,8 @@ extern "C" void emu_dumpVideoMemory()
     dump("PatternNameTable", vram, vdp->getNameTableAddress(), vdp->getNameTableSize());
     dump("PatternGeneratorTable", vram, vdp->getPatternGeneratorAddress(), vdp->getPatternGeneratorSize());
     dump("ColorTable", vram, vdp->getColorTableAddress(), vdp->getColorTableSize());
-    dump("SpriteAttributeTabel", vram, vdp->getSpriteAttributeTableMode2(), 4 * 32);
-    dump("SpriteColorTable", vram, vdp->getSpriteAttributeTableMode2() - 512, 512);
+    dump("SpriteAttributeTabel", vram, vdp->getSpriteAttributeTable(), 4 * 32);
+    dump("SpriteColorTable", vram, vdp->getSpriteColorTable(), 512);
     dump("SpriteGenerator", vram, vdp->getSpriteGeneratorTable(), 8 * 256);
 }
 
