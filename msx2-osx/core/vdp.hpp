@@ -162,10 +162,9 @@ class VDP
     inline int getOffTime() { return ctx.reg[13] & 0x0F; }
     inline int getSyncMode() { return (ctx.reg[9] & 0b00110000) >> 4; }
     inline int getSpriteAttributeTableMode1() { return ((int)(this->ctx.reg[5] & 0b01111111)) << 7; }
-    inline int getSpriteAttributeTableMode2() { return (((int)(this->ctx.reg[5] & 0b11111100)) << 7) | ((((int)this->ctx.reg[11] & 0b00000011)) << 15); }
-    inline int getSpriteColorTable() { return (this->getSpriteAttributeTableMode2() - 512) & 0x1FFFF; }
-    inline int getSpriteGeneratorMode1() { return ((int)(this->ctx.reg[6] & 0b00000111)) << 11; }
-    inline int getSpriteGeneratorMode2() { return ((int)(this->ctx.reg[6] & 0b00111111)) << 11; }
+    inline int getSpriteAttributeTableMode2() { return this->getSpriteColorTable() | 0x200; }
+    inline int getSpriteColorTable() {  return (((int)(this->ctx.reg[5] & 0b11111000)) << 7) | ((((int)this->ctx.reg[11] & 0b00000011)) << 15); }
+    inline int getSpriteGeneratorTable() { return ((int)(this->ctx.reg[6] & 0b00111111)) << 11; }
     inline bool isSprite16px() { return this->ctx.reg[1] & 0b00000010 ? true : false; }
     inline bool isSprite2x() { return this->ctx.reg[1] & 0b00000001 ? true : false; }
     inline bool isSpriteDisplay() { return this->ctx.reg[8] & 0b00000010 ? false : true; }
@@ -347,14 +346,13 @@ class VDP
             }
             if (283 == x) {
                 this->renderScanline(y - 24, &renderPosition[13 * 2]);
+                this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
             }
         }
         if (0 == x) {
             this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
-        } else if (283 == x) {
-            this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
             if (this->isIE1()) {
-                int lineNumber = y - 24;
+                int lineNumber = y - 25;
                 if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
                     lineNumber += this->ctx.reg[23];
                     lineNumber &= 0xFF;
@@ -611,7 +609,6 @@ class VDP
         unsigned int ha = this->ctx.reg[14] & 0b00000111;
         ha <<= 14;
         this->ctx.addr += ha;
-        this->ctx.addr += this->ctx.reg[45] & 0b01000000 ? 0x10000 : 0;
         //printf("update VRAM address: $%05X (%s)\n", this->ctx.addr, this->where(this->ctx.addr));
     }
 
@@ -619,7 +616,7 @@ class VDP
     {
         int addressMask = this->getAddressMask();
         this->ctx.addr &= addressMask;
-        this->ctx.readBuffer = this->ctx.ram[this->ctx.addr & 0x1FFFF];
+        this->ctx.readBuffer = this->ctx.ram[this->ctx.addr];
         this->ctx.addr++;
         if (0x1FFFF == addressMask) {
             this->updateRegister14FromAddress();
@@ -910,7 +907,7 @@ class VDP
         bool si = this->isSprite16px();
         bool mag = this->isSprite2x();
         int sa = this->getSpriteAttributeTableMode1();
-        int sg = this->getSpriteGeneratorMode1();
+        int sg = this->getSpriteGeneratorTable();
         int sn = 0;
         int tsn = 0;
         unsigned char dlog[256];
@@ -927,7 +924,7 @@ class VDP
             unsigned char col = this->ctx.ram[cur++];
             if (col & 0x80) x -= 32;
             col &= 0b00001111;
-            y++;
+            y += 1 + this->ctx.reg[23];
             if (mag) {
                 if (si) {
                     // 16x16 x 2
@@ -1123,7 +1120,7 @@ class VDP
         bool mag = this->isSprite2x();
         int sa = this->getSpriteAttributeTableMode2();
         int ct = this->getSpriteColorTable();
-        int sg = this->getSpriteGeneratorMode2();
+        int sg = this->getSpriteGeneratorTable();
         int sn = 0;
         int tsn = 0;
         unsigned char dlog[256];
@@ -1137,7 +1134,7 @@ class VDP
             if (216 == y) break;
             int x = this->ctx.ram[cur++];
             unsigned char ptn = this->ctx.ram[cur++];
-            y++;
+            y += 1 + this->ctx.reg[23];
             if (mag) {
                 if (si) {
                     // 16x16 x 2
@@ -1601,7 +1598,7 @@ class VDP
         int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
         int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
+        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
         int addrS = mxd + sx / dpb + sy * lineBytes;
         int addrD = mxd + dx / dpb + dy * lineBytes;
 #ifdef COMMAND_DEBUG
@@ -1634,7 +1631,7 @@ class VDP
         unsigned char clr = this->ctx.reg[44];
         int mxd = this->ctx.reg[45] & 0b00100000 ? 0x10000 : 0;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
+        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
         int addr = mxd + dx / dpb + dy * lineBytes;
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<HMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, CLR=$%02X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addr, clr, getScreenMode());
@@ -1643,7 +1640,7 @@ class VDP
         while (0 < ny) {
             addr &= 0x1FFFF;
             if (0 < dix) {
-                memset(&this->ctx.ram[addr], clr, nx);
+                memset(&this->ctx.ram[addr], clr, nx / dpb);
             } else {
                 memset(&this->ctx.ram[addr + nx / dpb], clr, nx);
             }
@@ -1754,8 +1751,8 @@ class VDP
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
         int addr = mxd + this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
         int dst = this->ctx.reg[44];
-        if (2 == dst) dst &= 0x0F;
-        else if (4 == dst) dst &= 0b11;
+        if (2 == dpb) dst &= 0x0F;
+        else if (4 == dpb) dst &= 0b11;
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<LMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X, LO=%X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, dst, ctx.commandL, getScreenMode());
 #endif
@@ -1811,9 +1808,23 @@ class VDP
         this->incrementCommandPending(1);
         while (0 < ny) {
             for (int i = 0; i < nx / dpb; i++) {
-                for (int j = 0; j < dpb; j++) {
-                    this->renderLogicalPixel(addrD + base + i, dpb, j, ctx.ram[addrS + base + i], ctx.commandL);
-                    this->incrementCommandPending(1);
+                switch (dpb) {
+                    case 1:
+                        this->renderLogicalPixel(addrD + base + i, dpb, 0, ctx.ram[addrS + base + i], ctx.commandL);
+                        this->incrementCommandPending(1);
+                        break;
+                    case 2:
+                        this->renderLogicalPixel(addrD + base + i, dpb, 0, (ctx.ram[addrS + base + i] & 0xF0) >> 4, ctx.commandL);
+                        this->renderLogicalPixel(addrD + base + i, dpb, 1, ctx.ram[addrS + base + i] & 0x0F, ctx.commandL);
+                        this->incrementCommandPending(2);
+                        break;
+                    case 4:
+                        this->renderLogicalPixel(addrD + base + i, dpb, 0, (ctx.ram[addrS + base + i] & 0xC0) >> 6, ctx.commandL);
+                        this->renderLogicalPixel(addrD + base + i, dpb, 1, (ctx.ram[addrS + base + i] & 0x30) >> 4, ctx.commandL);
+                        this->renderLogicalPixel(addrD + base + i, dpb, 2, (ctx.ram[addrS + base + i] & 0x0C) >> 2, ctx.commandL);
+                        this->renderLogicalPixel(addrD + base + i, dpb, 3, ctx.ram[addrS + base + i] & 0x03, ctx.commandL);
+                        this->incrementCommandPending(4);
+                        break;
                 }
             }
             ny--;
