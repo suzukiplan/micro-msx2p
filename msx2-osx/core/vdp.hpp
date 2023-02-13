@@ -14,6 +14,7 @@ class VDP
 
     struct DebugTool {
         void (*registerUpdateListener)(void* arg, int number, unsigned char value);
+        void (*vramAddrChangedListener)(void* arg, int addr);
         void (*vramReadListener)(void* arg, int addr, unsigned char value);
         void (*vramWriteListener)(void* arg, int addr, unsigned char value);
         void* arg;
@@ -53,6 +54,11 @@ class VDP
     void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value)) {
         debug.arg = arg;
         debug.registerUpdateListener = listener;
+    }
+
+    void setVramAddrChangedListener(void* arg, void (*listener)(void* arg, int addr)) {
+        debug.arg = arg;
+        debug.vramAddrChangedListener = listener;
     }
 
     void setVramReadListener(void* arg, void (*listener)(void* arg, int addr, unsigned char value)) {
@@ -629,10 +635,10 @@ class VDP
         this->ctx.addr = this->ctx.tmpAddr[1] & 0b00111111;
         this->ctx.addr <<= 8;
         this->ctx.addr |= this->ctx.tmpAddr[0];
-        unsigned int ha = this->ctx.reg[14] & 0b00000111;
-        ha <<= 14;
-        this->ctx.addr += ha;
-        //printf("update VRAM address: $%05X (%s)\n", this->ctx.addr, this->where(this->ctx.addr));
+        this->ctx.addr |= ((int)(this->ctx.reg[14] & 0b00000111)) << 14;
+        if (this->debug.vramAddrChangedListener) {
+            this->debug.vramAddrChangedListener(this->debug.arg, this->ctx.addr);
+        }
     }
 
     inline void readVideoMemory()

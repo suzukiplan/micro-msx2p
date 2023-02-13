@@ -72,6 +72,9 @@ public:
          */
         //cpu->addBreakPoint(0x402E, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); }); });
 
+        this->vdp.setVramAddrChangedListener(this, [](void* arg, int addr) {
+            ((MSX2*)arg)->putlog("update VRAM address: $%X", addr);
+        });
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
             //printf("Update VDP register #%d = $%02X (PC:$%04X,bobo:%d)\n", rn, value, this_->cpu->reg.PC, this_->vdp.ctx.bobo);
