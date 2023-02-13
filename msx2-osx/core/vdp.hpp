@@ -1162,8 +1162,10 @@ class VDP
         unsigned char paletteMask = this->getScreenMode() == 0b00100 ? 0x03 : 0x0F;
         unsigned char dlog[256];
         unsigned char wlog[256];
+        unsigned char clog[256];
         memset(dlog, 0, sizeof(dlog));
         memset(wlog, 0, sizeof(wlog));
+        memset(clog, 0, sizeof(clog));
         bool limitOver = false;
         for (int i = 0; i < 32; i++, ct += 16) {
             int cur = sa + i * 4;
@@ -1204,14 +1206,15 @@ class VDP
                             if (wlog[x] && !limitOver && !ic) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
-                            if (0 == dlog[x]) {
+                            if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
                                     if (cc) {
-                                        dlog[x] |= col;
-                                        this->renderPixel2S2(&renderPosition[x << 1], dlog[x]);
+                                        clog[x] |= col;
+                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
                                         dlog[x] = col;
+                                        clog[x] = col;
                                     }
                                     wlog[x] = 1;
                                 }
@@ -1224,14 +1227,16 @@ class VDP
                             if (wlog[x] && !limitOver) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
-                            if (0 == dlog[x]) {
+                            if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
                                     if (cc) {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col | dlog[x]);
+                                        clog[x] |= col;
+                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
+                                        dlog[x] = col;
+                                        clog[x] = col;
                                     }
-                                    dlog[x] = col;
                                     wlog[x] = 1;
                                 }
                             }
@@ -1269,14 +1274,15 @@ class VDP
                             if (wlog[x] && !limitOver && !ic) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
-                            if (0 == dlog[x]) {
+                            if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
                                     if (cc) {
-                                        dlog[x] |= col;
-                                        this->renderPixel2S2(&renderPosition[x << 1], dlog[x]);
+                                        clog[x] |= col;
+                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
                                         dlog[x] = col;
+                                        clog[x] = col;
                                     }
                                     wlog[x] = 1;
                                 }
@@ -1317,14 +1323,15 @@ class VDP
                             if (wlog[x] && !limitOver && !ic) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
-                            if (0 == dlog[x]) {
+                            if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     if (cc) {
-                                        dlog[x] |= col;
-                                        this->renderPixel2S2(&renderPosition[x << 1], dlog[x]);
+                                        clog[x] |= col;
+                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
                                         dlog[x] = col;
+                                        clog[x] = col;
                                     }
                                     wlog[x] = 1;
                                 }
@@ -1337,14 +1344,15 @@ class VDP
                             if (wlog[x] && !limitOver) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
-                            if (0 == dlog[x]) {
+                            if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     if (cc) {
-                                        dlog[x] |= col;
-                                        this->renderPixel2S2(&renderPosition[x << 1], dlog[x]);
+                                        clog[x] |= col;
+                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
                                         dlog[x] = col;
+                                        clog[x] = col;
                                     }
                                     wlog[x] = 1;
                                 }
@@ -1383,14 +1391,15 @@ class VDP
                             if (wlog[x] && !limitOver && !ic) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
-                            if (0 == dlog[x]) {
+                            if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     if (cc) {
-                                        dlog[x] |= col;
-                                        this->renderPixel2S2(&renderPosition[x << 1], dlog[x]);
+                                        clog[x] |= col;
+                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
                                         dlog[x] = col;
+                                        clog[x] = col;
                                     }
                                     wlog[x] = 1;
                                 }
