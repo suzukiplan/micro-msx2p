@@ -94,6 +94,8 @@ public:
             int ie1Line = this_->vdp.ctx.reg[19];
             int scrollV = this_->vdp.ctx.reg[23];
             bool spriteDisplay = this_->vdp.isSpriteDisplay();
+            int sa = this_->vdp.getSpriteAttributeTableMode2();
+            int sg = this_->vdp.getSpriteGeneratorTable();
 
             this_->vdp.ctx.reg[rn] = value;
 
@@ -108,6 +110,12 @@ public:
             }
             if (nameTableAddress != this_->vdp.getNameTableAddress()) {
                 this_->putlog("Name Table Address: $%04X -> $%04X", nameTableAddress, this_->vdp.getNameTableAddress());
+            }
+            if (sa != this_->vdp.getSpriteAttributeTableMode2()) {
+                this_->putlog("Sprite Attribute Table Address: $%04X -> $%04X", sa, this_->vdp.getSpriteAttributeTableMode2());
+            }
+            if (sg != this_->vdp.getSpriteGeneratorTable()) {
+                this_->putlog("Sprite Generator Table Address: $%04X -> $%04X", sg, this_->vdp.getSpriteGeneratorTable());
             }
             if (colorTableAddress != this_->vdp.getColorTableAddress()) {
                 this_->putlog("Color Table Address: $%04X -> $%04X", colorTableAddress, this_->vdp.getColorTableAddress());
