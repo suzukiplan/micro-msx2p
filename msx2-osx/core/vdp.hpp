@@ -653,12 +653,7 @@ class VDP
     }
 
     inline void updateRegister14FromAddress() {
-#if 0
-        if (this->ctx.reg[14] != ((this->ctx.addr >> 13) & 7)) {
-            printf("update R#14: %d -> %d\n", this->ctx.reg[14], (this->ctx.addr >> 13) & 7);
-        }
-#endif
-        this->ctx.reg[14] = (this->ctx.addr >> 13) & 7;
+        this->ctx.reg[14] = (this->ctx.addr >> 14) & 0b00000111;
     }
 
     inline void updateRegister(int rn, unsigned char value)

@@ -71,10 +71,18 @@ public:
         });
          */
         //cpu->addBreakPoint(0x402E, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); }); });
-
+        /*
         this->vdp.setVramAddrChangedListener(this, [](void* arg, int addr) {
             ((MSX2*)arg)->putlog("update VRAM address: $%X", addr);
         });
+        this->vdp.setVramWriteListener(this, [](void* arg, int addr, unsigned char value) {
+            ((MSX2*)arg)->putlog("VRAM[%X] = $%02X", addr, value);
+        });
+         */
+        //cpu->addBreakPoint(0x46fb, [](void* arg) { ((MSX2*)arg)->putlog("0x46fb passed"); });
+        //cpu->addBreakPoint(0x46fb, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); }); });
+        //cpu->addBreakPoint(0x4720, [](void* arg) { ((MSX2*)arg)->cpu->resetDebugMessage(); });
+
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
             //printf("Update VDP register #%d = $%02X (PC:$%04X,bobo:%d)\n", rn, value, this_->cpu->reg.PC, this_->vdp.ctx.bobo);
@@ -99,6 +107,7 @@ public:
             bool spriteDisplay = this_->vdp.isSpriteDisplay();
             int sa = this_->vdp.getSpriteAttributeTableMode2();
             int sg = this_->vdp.getSpriteGeneratorTable();
+            unsigned char r14 = this_->vdp.ctx.reg[14];
 
             this_->vdp.ctx.reg[rn] = value;
 
@@ -125,6 +134,9 @@ public:
             }
             if (externalVideoInput != this_->vdp.isEnabledExternalVideoInput()) {
                 this_->putlog("Change VDP external video input enabled: %s", this_->vdp.isEnabledExternalVideoInput() ? "ENABLED" : "DISABLED");
+            }
+            if (r14 != this_->vdp.ctx.reg[14]) {
+                this_->putlog("AddressCounter R#14: $%02X -> $%02X", r14, this_->vdp.ctx.reg[14]);
             }
             /*
             if (ie0 != this_->vdp.isIE0()) {
