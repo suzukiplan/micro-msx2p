@@ -9,7 +9,7 @@
 
 class MMU
 {
-  public:
+public:
     // MSX slots are separated by 16KB, but MegaROMs are separated by 8KB or 16KB, so data blocks are managed by 8KB
     struct DataBlock8KB {
         char label[8];
@@ -17,19 +17,19 @@ class MMU
         bool isRAM;
         bool isCartridge;
     };
-
+    
     struct Slot {
         struct DataBlock8KB data[8];
     } slots[4][4];
-
+    
     bool secondaryExist[4];
-
+    
     struct Cartridge {
         unsigned char* ptr;
         size_t size;
         int romType;
     } cartridge;
-
+    
     struct Context {
         unsigned char primary[4];
         unsigned char secondary[4];
@@ -37,18 +37,18 @@ class MMU
         unsigned char cpos[2][4]; // cartridge position register (0x2000 * n)
         unsigned char reserved[12 + 32];
     } ctx;
-
+    
     MMU() {
         memset(&this->slots, 0, sizeof(this->slots));
     }
-
+    
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
         secondaryExist[0] = page0;
         secondaryExist[1] = page1;
         secondaryExist[2] = page2;
         secondaryExist[3] = page3;
     }
-
+    
     void reset()
     {
         memset(&this->ctx, 0, sizeof(this->ctx));
@@ -61,10 +61,10 @@ class MMU
         dumpPageLayout("reset", 0);
 #endif
     }
-
+    
     inline int primaryNumber(int page) { return this->ctx.primary[page & 0b11]; }
     inline int secondaryNumber(int page) { return this->ctx.secondary[page & 0b11]; }
-
+    
     void setupCartridge(int pri, int sec, int idx, void* data, size_t size, int romType)
     {
         this->cartridge.ptr = (unsigned char*)data;
@@ -79,6 +79,7 @@ class MMU
                 break;
             case MSX2_ROM_TYPE_ASC8:
             case MSX2_ROM_TYPE_ASC16:
+            case MSX2_ROM_TYPE_KONAMI_SCC:
                 for (int i = 0; i < 4; i++) {
                     this->ctx.cpos[pri - 1][i] = 0;
                 }
@@ -88,7 +89,7 @@ class MMU
                 exit(-1);
         }
     }
-
+    
     void setup(int pri, int sec, int idx, bool isRAM, unsigned char* data, int size, const char* label)
     {
         if (label) {
@@ -110,7 +111,7 @@ class MMU
         } while (0 < size);
         this->bankSwitchover();
     }
-
+    
     inline void bankSwitchover() {
         for (int i = 1; i < 3; i++) {
             for (int j = 2; j < 6; j += 2) {
@@ -123,7 +124,7 @@ class MMU
             }
         }
     }
-
+    
     inline unsigned char getPrimary()
     {
         return ((this->ctx.primary[3] << 6) |
@@ -131,7 +132,7 @@ class MMU
                 (this->ctx.primary[1] << 2) |
                 this->ctx.primary[0]);
     }
-
+    
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
     inline void dumpPageLayout(const char* msg, unsigned char value) {
         auto pri = getPrimary();
@@ -156,7 +157,7 @@ class MMU
                , msg, value);
     }
 #endif
-
+    
     inline void updatePrimary(unsigned char value)
     {
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
@@ -177,13 +178,13 @@ class MMU
         }
 #endif
     }
-
+    
     inline void updateSegment(int page, unsigned char value)
     {
         printf("update segment: page %d = %d\n", page, value);
         this->ctx.segment[page] = value;
     }
-
+    
     inline unsigned char getSecondary()
     {
         unsigned char sec[4];
@@ -196,7 +197,7 @@ class MMU
         }
         return 0xFF ^ ((sec[3] << 6) | (sec[2] << 4) | (sec[1] << 2) | sec[0]);
     }
-
+    
     inline void updateSecondary(unsigned char value)
     {
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
@@ -217,7 +218,7 @@ class MMU
         }
 #endif
     }
-
+    
     struct DataBlock8KB* getDataBlock(unsigned short addr) {
         int page = (addr & 0b1100000000000000) >> 14;
         int pri = this->ctx.primary[page];
@@ -226,7 +227,7 @@ class MMU
         auto s = &this->slots[pri][sec];
         return &s->data[idx];
     }
-
+    
     inline unsigned char read(unsigned short addr)
     {
         if (addr == 0xFFFF) {
@@ -238,9 +239,15 @@ class MMU
         int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
         auto ptr = s->data[idx].ptr;
+        if (this->cartridge.romType == MSX2_ROM_TYPE_KONAMI_SCC && s->data[idx].isCartridge) {
+            if (0x9800 <= addr && addr < 0x9880) {
+                // TODO: SCC in
+                return 0x00;
+            }
+        }
         return ptr ? ptr[addr & 0x1FFF] : 0xFF;
     }
-
+    
     inline void write(unsigned short addr, unsigned char value)
     {
         if (addr == 0xFFFF) {
@@ -260,12 +267,13 @@ class MMU
                 case MSX2_ROM_TYPE_NORMAL: return;
                 case MSX2_ROM_TYPE_ASC8: this->asc8(pri - 1, addr, value); return;
                 case MSX2_ROM_TYPE_ASC16: this->asc16(pri - 1, addr, value); return;
+                case MSX2_ROM_TYPE_KONAMI_SCC: this->konamiSCC(pri - 1, addr, value); return;
             }
             puts("DETECT ROM WRITE");
             exit(-1);
         }
     }
-
+    
     inline void asc8(int idx, unsigned short addr, unsigned char value) {
         switch (addr & 0x7800) {
             case 0x6000: this->ctx.cpos[idx][0] = value; break;
@@ -275,7 +283,7 @@ class MMU
         }
         this->bankSwitchover();
     }
-
+    
     inline void asc16(int idx, unsigned short addr, unsigned char value) {
         if (0x6000 <= addr && addr < 0x6800) {
             this->ctx.cpos[idx][0] = value * 2;
@@ -286,6 +294,22 @@ class MMU
             this->ctx.cpos[idx][3] = value * 2 + 1;
             this->bankSwitchover();
         }
+    }
+    
+    inline void konamiSCC(int idx, unsigned short addr, unsigned char value) {
+        switch (addr & 0xF000) {
+            case 0x5000: this->ctx.cpos[idx][0] = value; break;
+            case 0x7000: this->ctx.cpos[idx][1] = value; break;
+            case 0xB000: this->ctx.cpos[idx][3] = value; break;
+            case 0x9000:
+                if (addr < 0x9800) {
+                    this->ctx.cpos[idx][2] = value;
+                } else {
+                    // TODO: SCC out
+                }
+                break;
+        }
+        this->bankSwitchover();
     }
 };
 
