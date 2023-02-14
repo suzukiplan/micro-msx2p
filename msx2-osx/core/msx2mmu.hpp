@@ -1,5 +1,5 @@
-#ifndef INCLUDE_MMU_HPP
-#define INCLUDE_MMU_HPP
+#ifndef INCLUDE_MSX2MMU_HPP
+#define INCLUDE_MSX2MMU_HPP
 
 #include <stdio.h>
 #include <string.h>
@@ -7,7 +7,7 @@
 
 //#define MMU_DEBUG_SHOW_PAGE_LAYOUT
 
-class MMU
+class MSX2MMU
 {
 public:
     // MSX slots are separated by 16KB, but MegaROMs are separated by 8KB or 16KB, so data blocks are managed by 8KB
@@ -38,7 +38,7 @@ public:
         unsigned char reserved[12 + 32];
     } ctx;
     
-    MMU() {
+    MSX2MMU() {
         memset(&this->slots, 0, sizeof(this->slots));
     }
     

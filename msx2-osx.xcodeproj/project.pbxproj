@@ -89,7 +89,7 @@
 		748D22BF297E670500B504AF /* v9958.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = v9958.hpp; sourceTree = "<group>"; };
 		748D22C0297E672F00B504AF /* msx2.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = msx2.hpp; sourceTree = "<group>"; };
 		748D22C1297E675000B504AF /* z80.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = z80.hpp; sourceTree = "<group>"; };
-		748D22C2297E691A00B504AF /* mmu.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = mmu.hpp; sourceTree = "<group>"; };
+		748D22C2297E691A00B504AF /* msx2mmu.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = msx2mmu.hpp; sourceTree = "<group>"; };
 		748D22C3297E758C00B504AF /* VideoView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VideoView.h; sourceTree = "<group>"; };
 		748D22C4297E758C00B504AF /* VideoView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VideoView.m; sourceTree = "<group>"; };
 		748D22C6297E75C800B504AF /* VideoLayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VideoLayer.h; sourceTree = "<group>"; };
@@ -165,11 +165,11 @@
 			isa = PBXGroup;
 			children = (
 				748D22BE297E670500B504AF /* ay8910.hpp */,
-				748D22C2297E691A00B504AF /* mmu.hpp */,
 				748D22C0297E672F00B504AF /* msx2.hpp */,
 				741A1E0C298B77E5001AE497 /* msx2clock.hpp */,
 				741A1E052988DB8C001AE497 /* msx2def.h */,
 				741A1E0D298D2CA5001AE497 /* msx2kanji.hpp */,
+				748D22C2297E691A00B504AF /* msx2mmu.hpp */,
 				748D22BF297E670500B504AF /* v9958.hpp */,
 				748D22C1297E675000B504AF /* z80.hpp */,
 			);

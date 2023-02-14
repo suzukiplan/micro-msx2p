@@ -3,7 +3,7 @@
 #include "z80.hpp"
 #include "v9958.hpp"
 #include "ay8910.hpp"
-#include "mmu.hpp"
+#include "msx2mmu.hpp"
 #include "msx2def.h"
 #include "msx2clock.hpp"
 #include "msx2kanji.hpp"
@@ -31,7 +31,7 @@ private:
 
 public:
     Z80* cpu;
-    MMU mmu;
+    MSX2MMU mmu;
     V9958 vdp;
     AY8910 psg;
     MSX2Clock clock;
