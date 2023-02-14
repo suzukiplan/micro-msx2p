@@ -1,8 +1,8 @@
-#ifndef INCLUDE_CLOCK_HPP
-#define INCLUDE_CLOCK_HPP
+#ifndef INCLUDE_MSX2CLOCK_HPP
+#define INCLUDE_MSX2CLOCK_HPP
 #include <time.h>
 
-class Clock {
+class MSX2Clock {
 private:
     const unsigned char mask[4][16] = {
         {0xf, 0x7, 0xf, 0x7, 0xf, 0x3, 0x7, 0xf, 0x3, 0xf, 0x1, 0xf, 0xf, 0xf, 0xf, 0xf},
@@ -54,7 +54,7 @@ public:
         unsigned char block[4][16];
     } ctx;
     
-    Clock() {
+    MSX2Clock() {
         reset();
     }
 
@@ -94,4 +94,4 @@ public:
     }
 };
 
-#endif // INCLUDE_CLOCK_HPP
+#endif // INCLUDE_MSX2CLOCK_HPP

@@ -5,7 +5,7 @@
 #include "ay8910.hpp"
 #include "mmu.hpp"
 #include "msx2def.h"
-#include "clock.hpp"
+#include "msx2clock.hpp"
 #include "kanji.hpp"
 
 class MSX2 {
@@ -34,7 +34,7 @@ public:
     MMU mmu;
     VDP vdp;
     AY8910 psg;
-    Clock clock;
+    MSX2Clock clock;
     Kanji kanji;
     
     struct Context {
