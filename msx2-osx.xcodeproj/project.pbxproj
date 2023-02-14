@@ -86,7 +86,7 @@
 		748D22B5297E652800B504AF /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		748D22B7297E652800B504AF /* msx2_osx.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = msx2_osx.entitlements; sourceTree = "<group>"; };
 		748D22BE297E670500B504AF /* ay8910.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ay8910.hpp; sourceTree = "<group>"; };
-		748D22BF297E670500B504AF /* vdp.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = vdp.hpp; sourceTree = "<group>"; };
+		748D22BF297E670500B504AF /* v9958.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = v9958.hpp; sourceTree = "<group>"; };
 		748D22C0297E672F00B504AF /* msx2.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = msx2.hpp; sourceTree = "<group>"; };
 		748D22C1297E675000B504AF /* z80.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = z80.hpp; sourceTree = "<group>"; };
 		748D22C2297E691A00B504AF /* mmu.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = mmu.hpp; sourceTree = "<group>"; };
@@ -169,7 +169,7 @@
 				748D22C2297E691A00B504AF /* mmu.hpp */,
 				748D22C0297E672F00B504AF /* msx2.hpp */,
 				741A1E052988DB8C001AE497 /* msx2def.h */,
-				748D22BF297E670500B504AF /* vdp.hpp */,
+				748D22BF297E670500B504AF /* v9958.hpp */,
 				748D22C1297E675000B504AF /* z80.hpp */,
 				741A1E0D298D2CA5001AE497 /* kanji.hpp */,
 			);

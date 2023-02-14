@@ -209,7 +209,7 @@ static void dump(const char* label, unsigned char* vram, int addr, int size)
 extern "C" void emu_dumpVideoMemory()
 {
     unsigned char* vram = msx2.vdp.ctx.ram;
-    VDP* vdp = &msx2.vdp;
+    auto vdp = &msx2.vdp;
     printf("ScreenMode = %d\n", vdp->getScreenMode());
     dump("PatternNameTable", vram, vdp->getNameTableAddress(), vdp->getNameTableSize());
     dump("PatternGeneratorTable", vram, vdp->getPatternGeneratorAddress(), vdp->getPatternGeneratorSize());

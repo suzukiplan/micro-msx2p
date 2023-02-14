@@ -1,10 +1,10 @@
-#ifndef INCLUDE_VDP_HPP
-#define INCLUDE_VDP_HPP
+#ifndef INCLUDE_V9958_HPP
+#define INCLUDE_V9958_HPP
 
 #include <string.h>
 //#define COMMAND_DEBUG
 
-class VDP
+class V9958
 {
   private:
     int colorMode;
@@ -72,7 +72,7 @@ class VDP
         debug.vramWriteListener = listener;
     }
 
-    VDP()
+    V9958()
     {
         memset(palette, 0, sizeof(palette));
         memset(&debug, 0, sizeof(debug));
@@ -1986,4 +1986,4 @@ class VDP
     }
 };
 
-#endif // INCLUDE_VDP_HPP
+#endif // INCLUDE_V9958_HPP

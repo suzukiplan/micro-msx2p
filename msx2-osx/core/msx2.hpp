@@ -1,7 +1,7 @@
 #ifndef INCLUDE_MSX2_HPP
 #define INCLUDE_MSX2_HPP
 #include "z80.hpp"
-#include "vdp.hpp"
+#include "v9958.hpp"
 #include "ay8910.hpp"
 #include "mmu.hpp"
 #include "msx2def.h"
@@ -32,7 +32,7 @@ private:
 public:
     Z80* cpu;
     MMU mmu;
-    VDP vdp;
+    V9958 vdp;
     AY8910 psg;
     MSX2Clock clock;
     Kanji kanji;
