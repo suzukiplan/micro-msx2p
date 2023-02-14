@@ -19,6 +19,7 @@ class VDP
         void (*vramWriteListener)(void* arg, int addr, unsigned char value);
         void* arg;
     } debug;
+    const int adjust[16] = { 0, -1, -2, -3, -4, -5, -6, -7, 1, 2, 3, 4, 5, 6, 7, 8 };
 
   public:
     bool renderLimitOverSprites = true;
@@ -120,10 +121,10 @@ class VDP
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         };
-        memset(display, 0, sizeof(display));
-        memset(&ctx, 0, sizeof(ctx));
-        memcpy(&ctx.stat , stat, sizeof(stat));
-        memcpy(&ctx.reg , reg, sizeof(reg));
+        memset(this->display, 0, sizeof(this->display));
+        memset(&this->ctx, 0, sizeof(this->ctx));
+        memcpy(&this->ctx.stat , stat, sizeof(stat));
+        memcpy(&this->ctx.reg , reg, sizeof(reg));
         for (int i = 0; i < 16; i++) {
             this->ctx.pal[i][0] = 0;
             this->ctx.pal[i][1] = 0;
@@ -170,6 +171,8 @@ class VDP
     inline bool isSprite16px() { return this->ctx.reg[1] & 0b00000010 ? true : false; }
     inline bool isSprite2x() { return this->ctx.reg[1] & 0b00000001 ? true : false; }
     inline bool isSpriteDisplay() { return this->ctx.reg[8] & 0b00000010 ? false : true; }
+    inline int getAdjustX() { return this->adjust[this->ctx.reg[18] & 0x0F]; }
+    inline int getAdjustY() { return this->adjust[(this->ctx.reg[18] & 0xF0) >> 4]; }
 
     inline int getSpriteAttributeTable() {
         int addr = this->ctx.reg[11] & 0b00000011;
@@ -367,7 +370,7 @@ class VDP
                     renderPosition[x2 + 1] = renderPosition[x2];
             }
             if (283 == x) {
-                this->renderScanline(y - 24, &renderPosition[13 * 2]);
+                this->renderScanline(y - 24, &renderPosition[13 * 2 + this->getAdjustX()]);
                 this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
             }
         }
@@ -802,6 +805,9 @@ class VDP
 
     inline void renderScanlineModeG23(int lineNumber, bool isSpriteMode2, unsigned short* renderPosition)
     {
+        int sp2 = this->getSP2();
+        int x = this->ctx.reg[26] & 0b00111111;
+        int cur = this->ctx.reg[27] & 0b00000111;
         int pn = this->getNameTableAddress();
         int ct = this->getColorTableAddress();
         int cmask = this->ctx.reg[3] & 0b01111111;
@@ -813,12 +819,21 @@ class VDP
         pmask |= 0xFF;
         int bd = this->ctx.reg[7] & 0b00001111;
         int pixelLine = lineNumber % 8;
-        unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
-        int cur = 0;
+        unsigned char* nt = &this->ctx.ram[pn + lineNumber / 8 * 32];
         int ci = (lineNumber / 64) * 256;
-        for (int i = 0; i < 32; i++) {
-            unsigned char ptn = this->ctx.ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
-            unsigned char c = this->ctx.ram[ct + ((nam[i] + ci) & cmask) * 8 + pixelLine];
+        for (int i = 0; i < 32; i++, x++) {
+            unsigned char nam;
+            if (sp2) {
+                if (x < 32) {
+                    nam = nt[x];
+                } else {
+                    nam = nt[768 + (x & 0x1F)];
+                }
+            } else {
+                nam = nt[x & 0x1F];
+            }
+            unsigned char ptn = this->ctx.ram[pg + ((nam + ci) & pmask) * 8 + pixelLine];
+            unsigned char c = this->ctx.ram[ct + ((nam + ci) & cmask) * 8 + pixelLine];
             unsigned char cc[2];
             cc[1] = (c & 0xF0) >> 4;
             cc[1] = cc[1] ? cc[1] : bd;
@@ -826,20 +841,28 @@ class VDP
             cc[0] = cc[0] ? cc[0] : bd;
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b10000000) >> 7]);
             cur += 2;
+            if (512 <= cur) break;
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b01000000) >> 6]);
             cur += 2;
+            if (512 <= cur) break;
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00100000) >> 5]);
             cur += 2;
+            if (512 <= cur) break;
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00010000) >> 4]);
             cur += 2;
+            if (512 <= cur) break;
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00001000) >> 3]);
             cur += 2;
+            if (512 <= cur) break;
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00000100) >> 2]);
             cur += 2;
+            if (512 <= cur) break;
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b00000010) >> 1]);
             cur += 2;
+            if (512 <= cur) break;
             this->renderPixel2(&renderPosition[cur], cc[ptn & 0b00000001]);
             cur += 2;
+            if (512 <= cur) break;
         }
         if (isSpriteMode2) {
             renderSpritesMode2(lineNumber, renderPosition);
