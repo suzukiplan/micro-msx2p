@@ -73,20 +73,21 @@ public:
         //cpu->addBreakPoint(0x402E, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); }); });
         /*
         this->vdp.setVramAddrChangedListener(this, [](void* arg, int addr) {
-            ((MSX2*)arg)->putlog("update VRAM address: $%X", addr);
+            ((MSX2*)arg)->putlog("update VRAM address: $%X (%s)", addr, ((MSX2*)arg)->vdp.where(addr));
         });
         this->vdp.setVramWriteListener(this, [](void* arg, int addr, unsigned char value) {
             ((MSX2*)arg)->putlog("VRAM[%X] = $%02X (%s)", addr, value, ((MSX2*)arg)->vdp.where(addr));
         });
-        */
+         */
         //cpu->addBreakPoint(0x46fb, [](void* arg) { ((MSX2*)arg)->putlog("0x46fb passed"); });
         //cpu->addBreakPoint(0x46fb, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); }); });
         //cpu->addBreakPoint(0x4720, [](void* arg) { ((MSX2*)arg)->cpu->resetDebugMessage(); });
-
 #if 0
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
             //printf("Update VDP register #%d = $%02X (PC:$%04X,bobo:%d)\n", rn, value, this_->cpu->reg.PC, this_->vdp.ctx.bobo);
+            int ax = this_->vdp.getAdjustX();
+            int ay = this_->vdp.getAdjustY();
             int screenMode = this_->vdp.getScreenMode();
             bool screen = this_->vdp.isEnabledScreen();
             bool externalVideoInput = this_->vdp.isEnabledExternalVideoInput();
@@ -145,7 +146,7 @@ public:
             }
              */
             if (ie1 != this_->vdp.isIE1()) {
-                this_->putlog("Change EI1: %s", ie1 ? "OFF" : "ON");
+                this_->putlog("Change IE1 enabled: %s", ie1 ? "OFF" : "ON");
             }
             if (ie1Line != this_->vdp.ctx.reg[19]) {
                 this_->putlog("Change IE1 Line: %d -> %d", ie1Line, this_->vdp.ctx.reg[19]);
@@ -179,6 +180,9 @@ public:
             }
             if (spriteDisplay != this_->vdp.isSpriteDisplay()) {
                 this_->putlog("Change Sprite Display: %s", spriteDisplay ? "OFF" : "ON");
+            }
+            if (ax != this_->vdp.getAdjustX() || ay != this_->vdp.getAdjustY()) {
+                this_->putlog("Adjust(%d,%d)", this_->vdp.getAdjustX(), this_->vdp.getAdjustY());
             }
         });
 #endif
