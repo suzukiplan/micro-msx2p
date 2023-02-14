@@ -6,7 +6,7 @@
 #include "mmu.hpp"
 #include "msx2def.h"
 #include "msx2clock.hpp"
-#include "kanji.hpp"
+#include "msx2kanji.hpp"
 
 class MSX2 {
 private:
@@ -35,7 +35,7 @@ public:
     V9958 vdp;
     AY8910 psg;
     MSX2Clock clock;
-    Kanji kanji;
+    MSX2Kanji kanji;
     
     struct Context {
         unsigned char io[256];

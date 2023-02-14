@@ -1,7 +1,7 @@
-#ifndef INCLUDE_KANJI_HPP
-#define INCLUDE_KANJI_HPP
+#ifndef INCLUDE_MSX2KANJI_HPP
+#define INCLUDE_MSX2KANJI_HPP
 
-class Kanji {
+class MSX2Kanji {
 private:
     unsigned char font[0x40000];
 public:
@@ -12,6 +12,10 @@ public:
 
     void loadFont(const void* data, size_t size) {
         memcpy(this->font, data, size < sizeof(this->font) ? size : sizeof(this->font));
+    }
+
+    MSX2Kanji() {
+        this->reset();
     }
 
     void reset() {
