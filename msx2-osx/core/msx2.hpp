@@ -85,12 +85,13 @@ public:
             ((MSX2*)arg)->putlog("update VRAM address: $%X (%s)", addr, ((MSX2*)arg)->vdp.where(addr));
         });
         this->vdp.setVramWriteListener(this, [](void* arg, int addr, unsigned char value) {
+            if (addr < 0x6A00)
             ((MSX2*)arg)->putlog("VRAM[%X] = $%02X (%s)", addr, value, ((MSX2*)arg)->vdp.where(addr));
         });
          */
         //cpu->addBreakPoint(0x46fb, [](void* arg) { ((MSX2*)arg)->putlog("0x46fb passed"); });
-        //cpu->addBreakPoint(0x46fb, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); }); });
-        //cpu->addBreakPoint(0x4720, [](void* arg) { ((MSX2*)arg)->cpu->resetDebugMessage(); });
+        //cpu->addBreakPoint(0x8428, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { if (strstr(msg, "OUT")!=NULL && strstr(msg, "$98")!=NULL) puts(msg); }); });
+        //cpu->addBreakPoint(0x83F8, [](void* arg) { ((MSX2*)arg)->cpu->resetDebugMessage(); });
 #if 0
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;

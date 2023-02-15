@@ -150,7 +150,10 @@ void emu_loadRom(const void* rom_, size_t romSize)
     if (rom) free(rom);
     rom = (unsigned char*)malloc(romSize);
     memcpy(rom, rom_, romSize);
-    msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_KONAMI_SCC);
+    //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC8);
+    msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC16);
+    //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_KONAMI);
+    //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_KONAMI_SCC);
     emu_reset();
 }
 

@@ -5,7 +5,7 @@
 #include <string.h>
 #include "msx2def.h"
 
-#define MMU_DEBUG_SHOW_PAGE_LAYOUT
+//#define MMU_DEBUG_SHOW_PAGE_LAYOUT
 
 class MSX2MMU
 {
