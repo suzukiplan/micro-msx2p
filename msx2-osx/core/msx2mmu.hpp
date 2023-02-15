@@ -30,6 +30,13 @@ public:
         int romType;
     } cartridge;
     
+    struct Callback {
+        void* arg;
+        unsigned char (*sccRead)(void* arg, unsigned short addr);
+        void (*sccWrite)(void* arg, unsigned short addr, unsigned char value);
+        void (*sccModeChange)(void* arg, unsigned char mode);
+    } CB;
+
     struct Context {
         unsigned char primary[4];
         unsigned char secondary[4];
@@ -42,6 +49,16 @@ public:
         memset(&this->slots, 0, sizeof(this->slots));
     }
     
+    void setupCallbacks(void* arg,
+                        unsigned char (*sccRead)(void* arg, unsigned short addr),
+                        void (*sccWrite)(void* arg, unsigned short addr, unsigned char value),
+                        void (*sccModeChange)(void* arg, unsigned char mode)) {
+        this->CB.arg = arg;
+        this->CB.sccRead = sccRead;
+        this->CB.sccWrite = sccWrite;
+        this->CB.sccModeChange = sccModeChange;
+    }
+
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
         secondaryExist[0] = page0;
         secondaryExist[1] = page1;
@@ -241,8 +258,7 @@ public:
         auto ptr = s->data[idx].ptr;
         if (this->cartridge.romType == MSX2_ROM_TYPE_KONAMI_SCC && s->data[idx].isCartridge) {
             if (0x9800 <= addr && addr < 0x9880) {
-                // TODO: SCC in
-                return 0x00;
+                return this->CB.sccRead(this->CB.arg, addr);
             }
         }
         return ptr ? ptr[addr & 0x1FFF] : 0xFF;
@@ -297,6 +313,10 @@ public:
     }
     
     inline void konamiSCC(int idx, unsigned short addr, unsigned char value) {
+        if (0xBFFE == (addr & 0xFFFE)) {
+            this->CB.sccModeChange(this->CB.arg, value);
+            return;
+        }
         switch (addr & 0xF000) {
             case 0x5000: this->ctx.cpos[idx][0] = value; break;
             case 0x7000: this->ctx.cpos[idx][1] = value; break;
@@ -305,7 +325,8 @@ public:
                 if (addr < 0x9800) {
                     this->ctx.cpos[idx][2] = value;
                 } else {
-                    // TODO: SCC out
+                    this->CB.sccWrite(this->CB.arg, addr, value);
+                    return;
                 }
                 break;
         }

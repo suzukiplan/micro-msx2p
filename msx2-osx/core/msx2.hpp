@@ -7,6 +7,7 @@
 #include "msx2def.h"
 #include "msx2clock.hpp"
 #include "msx2kanji.hpp"
+#include "scc.hpp"
 
 class MSX2 {
 private:
@@ -36,6 +37,7 @@ public:
     AY8910 psg;
     MSX2Clock clock;
     MSX2Kanji kanji;
+    SCC scc;
     
     struct Context {
         unsigned char io[256];
@@ -62,6 +64,13 @@ public:
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
         }, [](void* arg) {
             ((MSX2*)arg)->cpu->requestBreak();
+        });
+        this->mmu.setupCallbacks(this, [](void* arg, unsigned short addr) {
+            return ((MSX2*)arg)->scc.read(addr);
+        }, [](void* arg, unsigned short addr, unsigned char value) {
+            ((MSX2*)arg)->scc.write(addr, value);
+        }, [](void* arg, unsigned char mode) {
+            ((MSX2*)arg)->scc.setMode(mode);
         });
         //cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); });
         /*
@@ -357,6 +366,7 @@ public:
         this->psg.reset(27);
         this->clock.reset();
         this->kanji.reset();
+        this->scc.reset();
     }
 
     void putlog(const char* fmt, ...) {
@@ -392,6 +402,7 @@ public:
     
     void loadRom(void* data, int size, int romType) {
         this->mmu.setupCartridge(1, 0, 2, data, size, romType);
+        this->scc.enabled = romType == MSX2_ROM_TYPE_KONAMI_SCC;
         this->reset();
     }
     
@@ -402,11 +413,12 @@ public:
     }
 
     inline void consumeClock(int cpuClocks) {
-        // Asynchronous with PSG
+        // Asynchronous with PSG/SCC
         this->psg.ctx.bobo += cpuClocks * this->PSG_CLOCK;
         while (0 < this->psg.ctx.bobo) {
             this->psg.ctx.bobo -= this->CPU_CLOCK;
             this->psg.tick(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1], 81);
+            this->scc.tick(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1], 81);
             this->soundBufferCursor += 2;
         }
         // Asynchronous with VDP

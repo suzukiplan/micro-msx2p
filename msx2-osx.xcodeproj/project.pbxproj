@@ -76,6 +76,7 @@
 		741A1E2A2991F218001AE497 /* a1wsext.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsext.rom; sourceTree = "<group>"; };
 		741A1E2B2991F219001AE497 /* a1wsbios.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsbios.rom; sourceTree = "<group>"; };
 		741A1E2C2991F219001AE497 /* a1wsfirm.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsfirm.rom; sourceTree = "<group>"; };
+		741A1E37299B3026001AE497 /* scc.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = scc.hpp; sourceTree = "<group>"; };
 		748D22A7297E652600B504AF /* msx2-osx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "msx2-osx.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		748D22AA297E652600B504AF /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		748D22AB297E652600B504AF /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -170,6 +171,7 @@
 				741A1E052988DB8C001AE497 /* msx2def.h */,
 				741A1E0D298D2CA5001AE497 /* msx2kanji.hpp */,
 				748D22C2297E691A00B504AF /* msx2mmu.hpp */,
+				741A1E37299B3026001AE497 /* scc.hpp */,
 				748D22BF297E670500B504AF /* v9958.hpp */,
 				748D22C1297E675000B504AF /* z80.hpp */,
 			);
