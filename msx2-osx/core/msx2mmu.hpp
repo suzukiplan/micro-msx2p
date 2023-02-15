@@ -5,7 +5,7 @@
 #include <string.h>
 #include "msx2def.h"
 
-//#define MMU_DEBUG_SHOW_PAGE_LAYOUT
+#define MMU_DEBUG_SHOW_PAGE_LAYOUT
 
 class MSX2MMU
 {
@@ -36,7 +36,7 @@ public:
         void (*sccWrite)(void* arg, unsigned short addr, unsigned char value);
         void (*sccModeChange)(void* arg, unsigned char mode);
     } CB;
-
+    
     struct Context {
         unsigned char primary[4];
         unsigned char secondary[4];
@@ -58,7 +58,7 @@ public:
         this->CB.sccWrite = sccWrite;
         this->CB.sccModeChange = sccModeChange;
     }
-
+    
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
         secondaryExist[0] = page0;
         secondaryExist[1] = page1;
@@ -100,6 +100,10 @@ public:
                 for (int i = 0; i < 4; i++) {
                     this->ctx.cpos[pri - 1][i] = 0;
                 }
+                break;
+            case MSX2_ROM_TYPE_KONAMI:
+                this->ctx.cpos[pri - 1][0] = 0;
+                this->ctx.cpos[pri - 1][1] = 1;
                 break;
             default:
                 printf("UNKNOWN ROM TYPE: %d\n", romType);
@@ -284,6 +288,7 @@ public:
                 case MSX2_ROM_TYPE_ASC8: this->asc8(pri - 1, addr, value); return;
                 case MSX2_ROM_TYPE_ASC16: this->asc16(pri - 1, addr, value); return;
                 case MSX2_ROM_TYPE_KONAMI_SCC: this->konamiSCC(pri - 1, addr, value); return;
+                case MSX2_ROM_TYPE_KONAMI: this->konami(pri - 1, addr, value); return;
             }
             puts("DETECT ROM WRITE");
             exit(-1);
@@ -329,6 +334,18 @@ public:
                     return;
                 }
                 break;
+        }
+        this->bankSwitchover();
+    }
+    
+    inline void konami(int idx, unsigned short addr, unsigned char value) {
+        switch (addr & 0xF000) {
+            case 0x6000: this->ctx.cpos[idx][1] = value; break;
+            case 0x7000: this->ctx.cpos[idx][1] = value; break;
+            case 0x8000: this->ctx.cpos[idx][2] = value; break;
+            case 0x9000: this->ctx.cpos[idx][2] = value; break;
+            case 0xA000: this->ctx.cpos[idx][3] = value; break;
+            case 0xB000: this->ctx.cpos[idx][3] = value; break;
         }
         this->bankSwitchover();
     }
