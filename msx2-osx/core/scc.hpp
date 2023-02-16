@@ -26,6 +26,7 @@ public:
 
     void reset() { memset(&this->ctx, 0, sizeof(this->ctx)); }
 
+    // NOTE: The pins to read are on the hardware, but the interface is probably not on the MSX.
     inline unsigned char read(unsigned short addr) {
         switch (addr & 0xFF00) {
             case 0x9800: {
