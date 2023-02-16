@@ -26,6 +26,7 @@ class V9958
     unsigned short display[568 * 240];
     unsigned short palette[16];
     unsigned short paletteG7[16];
+    unsigned char lastRenderScanline;
 
     struct Context {
         int bobo;
@@ -370,13 +371,14 @@ class V9958
                     renderPosition[x2] = this->getBackdropColor();
                     renderPosition[x2 + 1] = renderPosition[x2];
             }
-            if (283 == x) {
+            if (0 == x) {
+                this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
+            } else if (283 == x) {
                 this->renderScanline(scanline, &renderPosition[13 * 2 + this->getAdjustX()]);
                 this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
             }
         }
         if (0 == x) {
-            this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
             if (this->isIE1()) {
                 int lineNumber = scanline - 1;
                 if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
@@ -670,12 +672,12 @@ class V9958
 
     inline void updateRegister(int rn, unsigned char value)
     {
-        bool previousInterrupt = this->isIE0();
+        bool prevIE0 = this->isIE0();
         if (debug.registerUpdateListener) {
             debug.registerUpdateListener(debug.arg, rn, value);
         }
         this->ctx.reg[rn] = value;
-        if (!previousInterrupt && this->isIE0() && this->ctx.stat[0] & 0x80) {
+        if (!prevIE0 && this->isIE0() && this->ctx.stat[0] & 0x80) {
             this->detectInterrupt(this->arg, 0);
         }
         if (44 == rn && this->ctx.command) {
@@ -699,6 +701,7 @@ class V9958
     inline void renderScanline(int lineNumber, unsigned short* renderPosition)
     {
         if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
+            this->lastRenderScanline = lineNumber;
             this->ctx.stat[2] &= 0b10111111; // reset VR flag
             if (this->isEnabledScreen()) {
                 // 00 000 : GRAPHIC1    256x192             Mode1   chr           16KB
@@ -1012,7 +1015,7 @@ class V9958
                         for (int j = 0; !overflow && j < 16; j++, x++) {
                             if (x < 0) continue;
                             if (wlog[x] && !limitOver) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -1027,7 +1030,7 @@ class V9958
                         for (int j = 0; !overflow && j < 16; j++, x++) {
                             if (x < 0) continue;
                             if (wlog[x] && !limitOver) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -1062,7 +1065,7 @@ class V9958
                         for (int j = 0; !overflow && j < 16; j++, x++) {
                             if (x < 0) continue;
                             if (wlog[x] && !limitOver) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -1100,7 +1103,7 @@ class V9958
                         for (int j = 0; !overflow && j < 8; j++, x++) {
                             if (x < 0) continue;
                             if (wlog[x] && !limitOver) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
@@ -1115,7 +1118,7 @@ class V9958
                         for (int j = 0; !overflow && j < 8; j++, x++) {
                             if (x < 0) continue;
                             if (wlog[x] && !limitOver) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
@@ -1150,7 +1153,7 @@ class V9958
                         for (int j = 0; !overflow && j < 8; j++, x++) {
                             if (x < 0) continue;
                             if (wlog[x] && !limitOver) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
@@ -1229,8 +1232,8 @@ class V9958
                         bool overflow = false;
                         for (int j = 0; !overflow && j < 16; j++, x++) {
                             if (x < 0) continue;
-                            if (wlog[x] && !limitOver && !ic) {
-                                this->ctx.stat[0] |= 0b00100000;
+                            if (dlog[x] && !limitOver && !ic) {
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -1250,8 +1253,8 @@ class V9958
                         cur += 16;
                         for (int j = 0; !overflow && j < 16; j++, x++) {
                             if (x < 0) continue;
-                            if (wlog[x] && !limitOver) {
-                                this->ctx.stat[0] |= 0b00100000;
+                            if (dlog[x] && !limitOver && !ic) {
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -1297,8 +1300,8 @@ class V9958
                         bool overflow = false;
                         for (int j = 0; !overflow && j < 16; j++, x++) {
                             if (x < 0) continue;
-                            if (wlog[x] && !limitOver && !ic) {
-                                this->ctx.stat[0] |= 0b00100000;
+                            if (dlog[x] && !limitOver && !ic) {
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -1346,8 +1349,8 @@ class V9958
                         bool overflow = false;
                         for (int j = 0; !overflow && j < 8; j++, x++) {
                             if (x < 0) continue;
-                            if (wlog[x] && !limitOver && !ic) {
-                                this->ctx.stat[0] |= 0b00100000;
+                            if (dlog[x] && !limitOver && !ic) {
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
@@ -1367,8 +1370,8 @@ class V9958
                         cur += 16;
                         for (int j = 0; !overflow && j < 8; j++, x++) {
                             if (x < 0) continue;
-                            if (wlog[x] && !limitOver) {
-                                this->ctx.stat[0] |= 0b00100000;
+                            if (dlog[x] && !limitOver && !ic) {
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
@@ -1414,8 +1417,8 @@ class V9958
                         bool overflow = false;
                         for (int j = 0; !overflow && j < 8; j++, x++) {
                             if (x < 0) continue;
-                            if (wlog[x] && !limitOver && !ic) {
-                                this->ctx.stat[0] |= 0b00100000;
+                            if (dlog[x] && !limitOver && !ic) {
+                                this->setCollision(x, lineNumber);
                             }
                             if (0 == dlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
