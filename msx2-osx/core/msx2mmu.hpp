@@ -257,11 +257,6 @@ public:
         int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
         auto ptr = s->data[idx].ptr;
-        if (this->cartridge.romType == MSX2_ROM_TYPE_KONAMI_SCC && s->data[idx].isCartridge) {
-            if (0x9800 <= addr && addr < 0x9880) {
-                return this->CB.sccRead(this->CB.arg, addr);
-            }
-        }
         return ptr ? ptr[addr & 0x1FFF] : 0xFF;
     }
     
