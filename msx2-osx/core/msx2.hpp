@@ -59,7 +59,7 @@ public:
             return ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
-            //if (1 == ie) ((MSX2*)arg)->putlog("Detect IE1 (R#19=%d, R#23=%d)", ((MSX2*)arg)->vdp.ctx.reg[19], ((MSX2*)arg)->vdp.ctx.reg[23]);
+            //((MSX2*)arg)->putlog("Detect IE%d", ie);
             ((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
         }, [](void* arg) {
@@ -116,6 +116,7 @@ public:
             int lineNumber = this_->vdp.getLineNumber();
             int ie1Line = this_->vdp.ctx.reg[19];
             int scrollV = this_->vdp.ctx.reg[23];
+            int scrollH = (this_->vdp.ctx.reg[26] & 0b00111111) * -8 + (this_->vdp.ctx.reg[27] & 0b00000111);
             bool spriteDisplay = this_->vdp.isSpriteDisplay();
             int sa = this_->vdp.getSpriteAttributeTable();
             int sg = this_->vdp.getSpriteGeneratorTable();
@@ -186,8 +187,13 @@ public:
                 this_->putlog("LineNumber changed: %d -> %d", lineNumber, this_->vdp.getLineNumber());
             }
             if (scrollV != this_->vdp.ctx.reg[23]) {
-                this_->putlog("Virtical Scroll changed: %d -> %d", scrollV, this_->vdp.ctx.reg[23]);
+                this_->putlog("Vertical Scroll changed: %d -> %d", scrollV, this_->vdp.ctx.reg[23]);
             }
+            int scrollH2 = (this_->vdp.ctx.reg[26] & 0b00111111) * -8 + (this_->vdp.ctx.reg[27] & 0b00000111);
+            if (scrollH != scrollH2) {
+                this_->putlog("Horizontal Scroll changed: %d -> %d", scrollH, scrollH2);
+            }
+
             if (spriteDisplay != this_->vdp.isSpriteDisplay()) {
                 this_->putlog("Change Sprite Display: %s", spriteDisplay ? "OFF" : "ON");
             }
@@ -386,7 +392,7 @@ public:
         } else {
             snprintf(addr, sizeof(addr), "[%04X]", this->cpu->reg.PC);
         }
-        printf("%02d:%02d:%02d %s V:%03d %s\n", t->tm_hour, t->tm_min, t->tm_sec, addr, this->vdp.ctx.countV, buf);
+        printf("%02d:%02d:%02d %s V:%03d %s\n", t->tm_hour, t->tm_min, t->tm_sec, addr, this->vdp.lastRenderScanline, buf);
     }
 
     void loadFont(const void* font, size_t fontSize) {
