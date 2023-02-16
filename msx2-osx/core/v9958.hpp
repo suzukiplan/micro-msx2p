@@ -358,6 +358,7 @@ class V9958
         int x = this->ctx.countH - 24;
         int y = this->ctx.countV - 16;
         int x2 = x << 1;
+        int scanline = y - 24 - this->getAdjustY();
         if (0 <= y && y < 240 && 0 <= x && x < 284) {
             auto renderPosition = &this->display[y * 284 * 2];
             switch (this->getScreenMode()) {
@@ -370,14 +371,14 @@ class V9958
                     renderPosition[x2 + 1] = renderPosition[x2];
             }
             if (283 == x) {
-                this->renderScanline(y - 24, &renderPosition[13 * 2 + this->getAdjustX()]);
+                this->renderScanline(scanline, &renderPosition[13 * 2 + this->getAdjustX()]);
                 this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
             }
         }
         if (0 == x) {
             this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
             if (this->isIE1()) {
-                int lineNumber = y - 25;
+                int lineNumber = scanline - 1;
                 if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
                     lineNumber += this->ctx.reg[23];
                     lineNumber &= 0xFF;
