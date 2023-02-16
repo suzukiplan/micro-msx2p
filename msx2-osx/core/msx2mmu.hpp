@@ -90,6 +90,7 @@ public:
         setup(pri, sec, idx, false, this->cartridge.ptr, this->cartridge.size < 0x8000 ? 0x4000 : 0x8000, "CART");
         switch (romType) {
             case MSX2_ROM_TYPE_NORMAL:
+            case MSX2_ROM_TYPE_KONAMI:
                 for (int i = 0; i < 4; i++) {
                     this->ctx.cpos[pri - 1][i] = i;
                 }
@@ -100,10 +101,6 @@ public:
                 for (int i = 0; i < 4; i++) {
                     this->ctx.cpos[pri - 1][i] = 0;
                 }
-                break;
-            case MSX2_ROM_TYPE_KONAMI:
-                this->ctx.cpos[pri - 1][0] = 0;
-                this->ctx.cpos[pri - 1][1] = 1;
                 break;
             default:
                 printf("UNKNOWN ROM TYPE: %d\n", romType);

@@ -1,6 +1,8 @@
 #include "emu.h"
 #include "msx2.hpp"
+#include "vgsspu_al.h"
 #include <string.h>
+#include <unistd.h>
 
 extern "C" {
 unsigned short emu_vram[VRAM_WIDTH * 2 * VRAM_HEIGHT];
@@ -21,6 +23,10 @@ static struct BIOS bios;
 static MSX2 msx2(0);
 static unsigned char* rom;
 static unsigned char ram[0x10000];
+static void* spu;
+pthread_mutex_t sound_locker;
+static short sound_buffer[65536 * 2];
+static unsigned short sound_cursor;
 
 extern "C" void emu_init_bios(const void* main, size_t mainSize,
                               const void* ext, size_t extSize,
@@ -151,9 +157,9 @@ void emu_loadRom(const void* rom_, size_t romSize)
     rom = (unsigned char*)malloc(romSize);
     memcpy(rom, rom_, romSize);
     //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC8);
-    msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC16);
+    //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC16);
     //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_KONAMI);
-    //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_KONAMI_SCC);
+    msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_KONAMI_SCC);
     emu_reset();
 }
 
@@ -163,10 +169,37 @@ extern "C" void emu_reset()
     memset(ram, 0xFF, sizeof(ram));
 }
 
+static void sound_callback(void* buffer, size_t size)
+{
+    while (sound_cursor < size / 2) usleep(100);
+    pthread_mutex_lock(&sound_locker);
+    memcpy(buffer, sound_buffer, size);
+    if (size <= sound_cursor)
+        sound_cursor -= size;
+    else
+        sound_cursor = 0;
+    pthread_mutex_unlock(&sound_locker);
+}
+
 extern "C" void emu_vsync()
 {
+    static bool initialized = false;
+    if (!initialized) {
+        pthread_mutex_init(&sound_locker, NULL);
+        spu = vgsspu_start2(44100, 16, 2, 23520, sound_callback);
+        initialized = true;
+    }
     msx2.tick(emu_key, 0, emu_keycode);
     memcpy(emu_vram, msx2.vdp.display, sizeof(emu_vram));
+    
+    size_t pcmSize;
+    void* pcm = msx2.getSound(&pcmSize);
+    pthread_mutex_lock(&sound_locker);
+    if (pcmSize + sound_cursor < sizeof(sound_buffer)) {
+        memcpy(&sound_buffer[sound_cursor], pcm, pcmSize);
+        sound_cursor += pcmSize / 2;
+    }
+    pthread_mutex_unlock(&sound_locker);
 }
 
 extern "C" void emu_destroy()

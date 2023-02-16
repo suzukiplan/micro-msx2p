@@ -413,6 +413,12 @@ public:
         this->cpu->execute(0x7FFFFFFF);
     }
 
+    void* getSound(size_t* soundSize) {
+        *soundSize = this->soundBufferCursor * 2;
+        this->soundBufferCursor = 0;
+        return this->soundBuffer;
+    }
+
     inline void consumeClock(int cpuClocks) {
         // Asynchronous with PSG/SCC
         this->psg.ctx.bobo += cpuClocks * this->PSG_CLOCK;

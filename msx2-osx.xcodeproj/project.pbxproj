@@ -29,6 +29,7 @@
 		741A1E332991F219001AE497 /* a1wsext.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E2A2991F218001AE497 /* a1wsext.rom */; };
 		741A1E342991F219001AE497 /* a1wsbios.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E2B2991F219001AE497 /* a1wsbios.rom */; };
 		741A1E352991F219001AE497 /* a1wsfirm.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E2C2991F219001AE497 /* a1wsfirm.rom */; };
+		741A1E3A299DA885001AE497 /* vgsspu_al.c in Sources */ = {isa = PBXBuildFile; fileRef = 741A1E39299DA885001AE497 /* vgsspu_al.c */; };
 		748D22AC297E652600B504AF /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 748D22AB297E652600B504AF /* AppDelegate.m */; };
 		748D22AF297E652600B504AF /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 748D22AE297E652600B504AF /* ViewController.m */; };
 		748D22B1297E652800B504AF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 748D22B0297E652800B504AF /* Assets.xcassets */; };
@@ -77,6 +78,8 @@
 		741A1E2B2991F219001AE497 /* a1wsbios.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsbios.rom; sourceTree = "<group>"; };
 		741A1E2C2991F219001AE497 /* a1wsfirm.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = a1wsfirm.rom; sourceTree = "<group>"; };
 		741A1E37299B3026001AE497 /* scc.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = scc.hpp; sourceTree = "<group>"; };
+		741A1E38299DA885001AE497 /* vgsspu_al.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vgsspu_al.h; sourceTree = "<group>"; };
+		741A1E39299DA885001AE497 /* vgsspu_al.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vgsspu_al.c; sourceTree = "<group>"; };
 		748D22A7297E652600B504AF /* msx2-osx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "msx2-osx.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		748D22AA297E652600B504AF /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		748D22AB297E652600B504AF /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -151,6 +154,8 @@
 				748D22C4297E758C00B504AF /* VideoView.m */,
 				748D22C6297E75C800B504AF /* VideoLayer.h */,
 				748D22C7297E75C800B504AF /* VideoLayer.m */,
+				741A1E39299DA885001AE497 /* vgsspu_al.c */,
+				741A1E38299DA885001AE497 /* vgsspu_al.h */,
 				748D22CA297E768D00B504AF /* emu.cpp */,
 				748D22CB297E768D00B504AF /* emu.h */,
 				748D22C9297E760700B504AF /* constants.h */,
@@ -323,6 +328,7 @@
 				748D22C5297E758C00B504AF /* VideoView.m in Sources */,
 				748D22AF297E652600B504AF /* ViewController.m in Sources */,
 				748D22B6297E652800B504AF /* main.m in Sources */,
+				741A1E3A299DA885001AE497 /* vgsspu_al.c in Sources */,
 				748D22CC297E768D00B504AF /* emu.cpp in Sources */,
 				748D22AC297E652600B504AF /* AppDelegate.m in Sources */,
 				748D22C8297E75C800B504AF /* VideoLayer.m in Sources */,
