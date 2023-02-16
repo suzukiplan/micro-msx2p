@@ -774,8 +774,9 @@ class V9958
         int pn = this->getNameTableAddress();
         int ct = this->getColorTableAddress();
         int pg = this->getPatternGeneratorAddress();
-        int lineNumberMod8 = lineNumber & 0b111;
-        unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
+        int lineNumberS = (lineNumber + this->ctx.reg[23]) & 0xFF;
+        int lineNumberMod8 = lineNumberS & 0b111;
+        unsigned char* nam = &this->ctx.ram[pn + lineNumberS / 8 * 32];
         int cur = 0;
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + lineNumberMod8];
@@ -808,6 +809,7 @@ class V9958
         int sp2 = this->getSP2();
         int x = this->ctx.reg[26] & 0b00111111;
         int cur = this->ctx.reg[27] & 0b00000111;
+        int lineNumberS = (lineNumber + this->ctx.reg[23]) & 0xFF;
         int pn = this->getNameTableAddress();
         int ct = this->getColorTableAddress();
         int cmask = this->ctx.reg[3] & 0b01111111;
@@ -818,9 +820,9 @@ class V9958
         pmask <<= 8;
         pmask |= 0xFF;
         int bd = this->ctx.reg[7] & 0b00001111;
-        int pixelLine = lineNumber % 8;
-        unsigned char* nt = &this->ctx.ram[pn + lineNumber / 8 * 32];
-        int ci = (lineNumber / 64) * 256;
+        int pixelLine = lineNumberS % 8;
+        unsigned char* nt = &this->ctx.ram[pn + lineNumberS / 8 * 32];
+        int ci = ((lineNumberS & 0xFF) / 64) * 256;
         for (int i = 0; i < 32; i++, x++) {
             unsigned char nam;
             if (sp2) {
