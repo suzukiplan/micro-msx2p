@@ -164,7 +164,7 @@ class V9958
     inline bool isIE2() { return ctx.reg[0] & 0b00100000 ? true : false; }
     inline bool isEnabledMouse() { return ctx.reg[8] & 0b10000000 ? true : false; }
     inline bool isEnabledLightPen() { return ctx.reg[8] & 0b01000000 ? true : false; }
-    inline bool isMaskLeft8px() { return ctx.reg[27] && (ctx.reg[25] & 0b00000010) ? true : false; }
+    inline bool isMaskLeft8px() { return ctx.reg[25] & 0b00000010 ? true : false; }
     inline bool getSP2() { return ctx.reg[25] & 0b00000001; }
     inline int getOnTime() { return (ctx.reg[13] & 0xF0) >> 4; }
     inline int getOffTime() { return ctx.reg[13] & 0x0F; }
