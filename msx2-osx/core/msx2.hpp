@@ -72,14 +72,6 @@ public:
         }, [](void* arg, unsigned char mode) {
             ((MSX2*)arg)->scc.setMode(mode);
         });
-        //cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); });
-        /*
-        cpu->addBreakOperand(0xFF, [](void* arg, unsigned char* op, int len) {
-            printf("Detect RST $38 (PC:$%04X)\n", ((MSX2*)arg)->cpu->reg.PC);
-            exit(0);
-        });
-         */
-        //cpu->addBreakPoint(0x402E, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); }); });
         /*
         this->vdp.setVramAddrChangedListener(this, [](void* arg, int addr) {
             ((MSX2*)arg)->putlog("update VRAM address: $%X (%s)", addr, ((MSX2*)arg)->vdp.where(addr));
@@ -89,9 +81,6 @@ public:
             ((MSX2*)arg)->putlog("VRAM[%X] = $%02X (%s)", addr, value, ((MSX2*)arg)->vdp.where(addr));
         });
          */
-        //cpu->addBreakPoint(0x46fb, [](void* arg) { ((MSX2*)arg)->putlog("0x46fb passed"); });
-        //cpu->addBreakPoint(0x8428, [](void* arg) { ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { if (strstr(msg, "OUT")!=NULL && strstr(msg, "$98")!=NULL) puts(msg); }); });
-        //cpu->addBreakPoint(0x83F8, [](void* arg) { ((MSX2*)arg)->cpu->resetDebugMessage(); });
 #if 0
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
@@ -221,42 +210,8 @@ public:
             ret <<= 8;
             ret |= ((MSX2*)arg)->mmu.read(sp);
             printf("[%04X] RDSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X\n", ret, a & 0x80 ? "YES" : "NO", pri, sec, hl);
-            //if (3==pri&&0==sec) ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); });
         });
 #endif
-        /*
-        this->cpu->addBreakPoint(0x01FB, [](void* arg) {
-            puts("RDSLT as BASIC SLOT");
-        });
-        this->cpu->addBreakPoint(0x0205, [](void* arg) {
-            puts("RDSLT as EXPAND SLOT");
-        });*/
-        // WRSLT
-        //this->cpu->addBreakPoint(0x2413, [](void* arg) {
-        /*
-        this->cpu->addBreakPoint(0x0014, [](void* arg) {
-            unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
-            unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
-            hl <<= 8;
-            hl |= ((MSX2*)arg)->cpu->reg.pair.L;
-            unsigned char e = ((MSX2*)arg)->cpu->reg.pair.E;
-            printf("WRSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X E=$%02X\n", a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl, e);
-        });
-         */
-        /*
-        // CALSLT
-        this->cpu->addBreakPoint(0x000C, [](void* arg) {
-            unsigned char a = (((MSX2*)arg)->cpu->reg.IY & 0xFF00) >> 8;
-            unsigned short hl = ((MSX2*)arg)->cpu->reg.IX;
-            printf("CALSLT: isExpand=%s, pri=%d, sec=%d, IX=$%04X\n", a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl);
-        });
-         */
-        //cpu->addBreakPoint(0x0C4B-3,[](void*arg){puts("0x0C4B");});
-        //cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); });
-        /*this->cpu->addBreakOperand(0xFF,[](void* arg, unsigned char* op, int size) {
-            puts("detect RST $38");
-            exit(-1);
-        });*/
         // CALL命令をページ3にRAMを割り当てていない状態で実行した時に落とす
         this->cpu->addBreakOperand(0xCD, [](void* arg, unsigned char* op, int size) {
             int pri3 = ((MSX2*)arg)->mmu.ctx.primary[3];
@@ -266,41 +221,7 @@ public:
                 ((MSX2*)arg)->putlog("invalid call $%02X%02X", op[2], op[1]);
                 exit(-1);
             }
-#if 0
-            if (op[2] == 0x00 && op[1] == 0x0C) {
-                unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
-                unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
-                hl <<= 8;
-                hl |= ((MSX2*)arg)->cpu->reg.pair.L;
-                unsigned short pc = ((MSX2*)arg)->cpu->reg.PC;
-                printf("[%04X] RDSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X\n", pc, a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl);
-            }
-            if (op[2] == 0x00 && op[1] == 0x1C) {
-                unsigned char iyH = (((MSX2*)arg)->cpu->reg.IY) >> 8;
-                unsigned short ix = ((MSX2*)arg)->cpu->reg.IX;
-                unsigned short pc = ((MSX2*)arg)->cpu->reg.PC;
-                printf("[%04X] CALSLT: isExpand=%s, pri=%d, sec=%d, IX=$%04X\n", pc, iyH & 0x80 ? "YES" : "NO", iyH & 0x03, (iyH & 0x0C) >> 2, ix);
-            }
-            if (op[2] == 0x00 && op[1] == 0x24) {
-                unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
-                unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
-                hl <<= 8;
-                hl |= ((MSX2*)arg)->cpu->reg.pair.L;
-                unsigned short pc = ((MSX2*)arg)->cpu->reg.PC;
-                printf("[%04X] ENASLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X\n", pc, a & 0x80 ? "YES" : "NO", a & 0x03, (a & 0x0C) >> 2, hl);
-            }
-#endif
         });
-#if 0
-        this->cpu->addBreakOperand(0xF7, [](void* arg, unsigned char* op, int size) {
-            auto cpu = ((MSX2*)arg)->cpu;
-            unsigned char s0 = ((MSX2*)arg)->mmu.read(cpu->reg.SP);
-            unsigned char s1 = ((MSX2*)arg)->mmu.read(cpu->reg.SP + 1);
-            unsigned char s2 = ((MSX2*)arg)->mmu.read(cpu->reg.SP + 2);
-            unsigned short pc = ((MSX2*)arg)->cpu->reg.PC;
-            printf("[%04X] CALLF: isExpand=%s, pri=%d, sec=%d, ADDR=$%02X%02X\n", pc, s0 & 0x80 ? "YES" : "NO", s0 & 0x03, (s0 & 0x0C) >> 2, s2, s1);
-        });
-#endif
 
         this->cpu->setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX2*)arg)->consumeClock(cpuClocks);
@@ -548,15 +469,15 @@ public:
             case 0xF4: this->vdp.outPortF4(value); break;
             case 0xF5: {
 #if 1
-                puts("Update System Control:");
-                printf(" - Kanji ROM: %s\n", value & 0b00000001 ? "Yes" : "No");
-                printf(" - Kanji Reserved: %s\n", value & 0b00000010 ? "Yes" : "No");
-                printf(" - MSX Audio: %s\n", value & 0b00000100 ? "Yes" : "No");
-                printf(" - Superimpose: %s\n", value & 0b00001000 ? "Yes" : "No");
-                printf(" - MSX Interface: %s\n", value & 0b00010000 ? "Yes" : "No");
-                printf(" - RS-232C: %s\n", value & 0b00100000 ? "Yes" : "No");
-                printf(" - Light Pen: %s\n", value & 0b01000000 ? "Yes" : "No");
-                printf(" - Clock-IC: %s\n", value & 0b10000000 ? "Yes" : "No");
+                putlog("Update System Control:");
+                putlog(" - Kanji ROM: %s", value & 0b00000001 ? "Yes" : "No");
+                putlog(" - Kanji Reserved: %s", value & 0b00000010 ? "Yes" : "No");
+                putlog(" - MSX Audio: %s", value & 0b00000100 ? "Yes" : "No");
+                putlog(" - Superimpose: %s", value & 0b00001000 ? "Yes" : "No");
+                putlog(" - MSX Interface: %s", value & 0b00010000 ? "Yes" : "No");
+                putlog(" - RS-232C: %s", value & 0b00100000 ? "Yes" : "No");
+                putlog(" - Light Pen: %s", value & 0b01000000 ? "Yes" : "No");
+                putlog(" - Clock-IC: %s", value & 0b10000000 ? "Yes" : "No");
                 //cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); });
 #endif
                 break; // System Control
@@ -570,14 +491,14 @@ public:
                 bool ymControlL = value & 0b00100000 ? true : false;
                 bool reverseVdpR9Bit4 = value & 0b01000000 ? true : false;
                 bool reverseVdpR9Bit5 = value & 0b10000000 ? true : false;
-                puts("Update AV Control:");
-                printf(" - audioRLMixingON: %s\n", audioRLMixingON ? "Yes" : "No");
-                printf(" - audioLLMixingOFF: %s\n", audioLLMixingOFF ? "Yes" : "No");
-                printf(" - videoInSelectL: %s\n", videoInSelectL ? "Yes" : "No");
-                printf(" - avControlL: %s\n", avControlL ? "Yes" : "No");
-                printf(" - ymControlL: %s\n", ymControlL ? "Yes" : "No");
-                printf(" - reverseVdpR9Bit4: %s\n", reverseVdpR9Bit4 ? "Yes" : "No");
-                printf(" - reverseVdpR9Bit5: %s\n", reverseVdpR9Bit5 ? "Yes" : "No");
+                putlog("Update AV Control:");
+                putlog(" - audioRLMixingON: %s", audioRLMixingON ? "Yes" : "No");
+                putlog(" - audioLLMixingOFF: %s", audioLLMixingOFF ? "Yes" : "No");
+                putlog(" - videoInSelectL: %s", videoInSelectL ? "Yes" : "No");
+                putlog(" - avControlL: %s", avControlL ? "Yes" : "No");
+                putlog(" - ymControlL: %s", ymControlL ? "Yes" : "No");
+                putlog(" - reverseVdpR9Bit4: %s", reverseVdpR9Bit4 ? "Yes" : "No");
+                putlog(" - reverseVdpR9Bit5: %s", reverseVdpR9Bit5 ? "Yes" : "No");
 #endif
                 this->vdp.ctx.reverseVdpR9Bit4 = value & 0b01000000 ? 1 : 0;
                 this->vdp.ctx.reverseVdpR9Bit5 = value & 0b10000000 ? 1 : 0;
