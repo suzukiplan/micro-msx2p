@@ -41,7 +41,7 @@ void emu_init_bios_fsa1wsx(const void* msx2p,
                            const void* kanji,
                            const void* firm);
 void emu_reset(void);
-void emu_loadRom(const void* rom, size_t romSize);
+void emu_loadRom(const void* rom, size_t romSize, const char* fileName);
 void emu_vsync(void);
 void emu_destroy(void);
 void emu_dumpVideoMemory(void);

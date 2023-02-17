@@ -151,15 +151,24 @@ void emu_init_bios_fsa1wsx(const void* msx2p,
     emu_reset();
 }
 
-void emu_loadRom(const void* rom_, size_t romSize)
+void emu_loadRom(const void* rom_, size_t romSize, const char* fileName)
 {
     if (rom) free(rom);
     rom = (unsigned char*)malloc(romSize);
     memcpy(rom, rom_, romSize);
+    int type = MSX2_ROM_TYPE_NORMAL;
+    if (strstr(fileName, "Space Manbow")) {
+        type = MSX2_ROM_TYPE_KONAMI_SCC;
+    } else if (strstr(fileName, "Zanac-EX")) {
+        type = MSX2_ROM_TYPE_ASC16;
+    } else if (strstr(fileName, "Relics")) {
+        type = MSX2_ROM_TYPE_ASC8;
+    }
+    printf("load game: %s (type:%d)\n", fileName, type);
     //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC8);
     //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC16);
     //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_KONAMI);
-    msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_KONAMI_SCC);
+    msx2.loadRom(rom, (int)romSize, type);
     emu_reset();
 }
 
