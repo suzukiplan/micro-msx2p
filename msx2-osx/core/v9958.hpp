@@ -169,6 +169,7 @@ class V9958
     inline int getOnTime() { return (ctx.reg[13] & 0xF0) >> 4; }
     inline int getOffTime() { return ctx.reg[13] & 0x0F; }
     inline int getSyncMode() { return (ctx.reg[9] & 0b00110000) >> 4; }
+    inline int getLineNumber() { return this->ctx.reg[9] & 0x80 ? 212 : 192; }
     inline bool isSprite16px() { return this->ctx.reg[1] & 0b00000010 ? true : false; }
     inline bool isSprite2x() { return this->ctx.reg[1] & 0b00000001 ? true : false; }
     inline bool isSpriteDisplay() { return this->ctx.reg[8] & 0b00000010 ? false : true; }
@@ -546,13 +547,6 @@ class V9958
         return this->ctx.hardwareResetFlag;
     }
 
-    inline int getLineNumber()
-    {
-        int mode = this->getScreenMode();
-        if (mode < 3 || 7 < mode) return 192;
-        return this->ctx.reg[9] & 0x80 ? 212 : 192;
-    }
-
     inline void updatePaletteCacheFromRegister(int pn)
     {
         unsigned short r = this->ctx.pal[pn][0] & 0b01110000;
@@ -656,17 +650,14 @@ class V9958
     }
 
     inline void incrementAddress() {
-        int mask = this->getAddressMask();
         this->ctx.addr++;
-        this->ctx.addr &= mask;
-        if (0x1FFFF == mask) {
-            unsigned char r14 = (this->ctx.addr >> 14) & 0b00000111;
-            if (r14 != this->ctx.reg[14]) {
-                if (debug.registerUpdateListener) {
-                    debug.registerUpdateListener(debug.arg, 14, r14);
-                }
-                this->ctx.reg[14] = r14;
+        this->ctx.addr &= 0x1FFFF;
+        unsigned char r14 = (this->ctx.addr >> 14) & 0b00000111;
+        if (r14 != this->ctx.reg[14]) {
+            if (debug.registerUpdateListener) {
+                debug.registerUpdateListener(debug.arg, 14, r14);
             }
+            this->ctx.reg[14] = r14;
         }
     }
 
@@ -826,14 +817,14 @@ class V9958
         int bd = this->ctx.reg[7] & 0b00001111;
         int pixelLine = lineNumberS % 8;
         unsigned char* nt = &this->ctx.ram[pn + lineNumberS / 8 * 32];
-        int ci = ((lineNumberS & 0xFF) / 64) * 256;
+        int ci = lineNumberS / 64 * 256;
         for (int i = 0; i < 32; i++, x++) {
             unsigned char nam;
             if (sp2) {
                 if (x < 32) {
                     nam = nt[x];
                 } else {
-                    nam = nt[768 + (x & 0x1F)];
+                    nam = nt[1024 + (x & 0x1F)];
                 }
             } else {
                 nam = nt[x & 0x1F];
