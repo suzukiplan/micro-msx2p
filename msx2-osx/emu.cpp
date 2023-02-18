@@ -163,6 +163,12 @@ void emu_loadRom(const void* rom_, size_t romSize, const char* fileName)
         type = MSX2_ROM_TYPE_ASC16;
     } else if (strstr(fileName, "Relics")) {
         type = MSX2_ROM_TYPE_ASC8;
+    } else if (strstr(fileName, "Akumajyo")) {
+        type = MSX2_ROM_TYPE_KONAMI;
+    } else if (strstr(fileName, "Return of Jelda")) {
+        type = MSX2_ROM_TYPE_ASC8;
+    } else if (strstr(fileName, "DQUEST2")) {
+        type = MSX2_ROM_TYPE_ASC8;
     }
     printf("load game: %s (type:%d)\n", fileName, type);
     //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC8);
@@ -256,12 +262,22 @@ extern "C" void emu_dumpVideoMemory()
     unsigned char* vram = msx2.vdp.ctx.ram;
     auto vdp = &msx2.vdp;
     printf("ScreenMode = %d\n", vdp->getScreenMode());
+    printf("NameTable = $%04X\n", vdp->getNameTableAddress());
+    printf("R#23(VS) = $%02X\n", vdp->ctx.reg[23]);
+    printf("R#26(HS) = $%02X\n", vdp->ctx.reg[26]);
+    printf("R#27(HS) = $%02X\n", vdp->ctx.reg[27]);
     dump("PatternNameTable", vram, vdp->getNameTableAddress(), vdp->getNameTableSize());
     dump("PatternGeneratorTable", vram, vdp->getPatternGeneratorAddress(), vdp->getPatternGeneratorSize());
     dump("ColorTable", vram, vdp->getColorTableAddress(), vdp->getColorTableSize());
     dump("SpriteAttributeTabel", vram, vdp->getSpriteAttributeTable(), 4 * 32);
     dump("SpriteColorTable", vram, vdp->getSpriteColorTable(), 512);
     dump("SpriteGenerator", vram, vdp->getSpriteGeneratorTable(), 8 * 256);
+    /*
+    vdp->setVramWriteListener(&msx2, [](void* arg, int addr, unsigned char value) {
+        if (addr < 0x07F0)
+        ((MSX2*)arg)->putlog("VRAM[%X] = $%02X", addr, value);
+    });
+     */
 }
 
 extern "C" void emu_startDebug()

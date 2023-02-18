@@ -1615,6 +1615,8 @@ class V9958
             this->ctx.commandDY = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
             this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
             this->ctx.commandNY = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+            if (0 == ctx.commandNX) ctx.commandNX = 512;
+            if (0 == ctx.commandNY) ctx.commandNY = 1024;
         }
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
@@ -1642,8 +1644,35 @@ class V9958
 
     inline void executeCommandYMMM()
     {
-        puts("execute YMMM (not implemented yet");
-        exit(-1);
+        if (!this->isBitmapMode()) {
+            printf("Error: YMMM was executed in invalid screen mode (%d)\n", this->getScreenMode());
+            exit(-1);
+        }
+        int screenWidth = this->getScreenWidth();
+        int dpb = this->getDotPerByteX();
+        int lineBytes = screenWidth / dpb;
+        int sy = (this->ctx.reg[35] & 3) * 256 + this->ctx.reg[34];
+        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+        int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        if (0 == ny) ny = 1024;
+        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
+        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int addrS = dx / dpb + sy * lineBytes;
+        int addrD = dx / dpb + dy * lineBytes;
+        printf("ExecuteCommand<YMMM>: SY=%d, DX=%d, DY=%d, NY=%d, DIX=%d, DIY=%d, ADDR(S)=$%05X, ADDR(D)=$%05X (SCREEN: %d)\n", sy, dx, dy, ny, dix, diy, addrS, addrD, getScreenMode());
+        int base = 0 < dix ? 0 : dx / dpb;
+        addrS -= base;
+        addrD -= base;
+        int size = 0 < dix ? lineBytes - dx / dpb : dx / dpb;
+        this->incrementCommandPending(1);
+        while (0 < ny) {
+            memmove(&ctx.ram[addrD], &ctx.ram[addrS], size);
+            ny--;
+            addrS += diy * lineBytes;
+            addrD += diy * lineBytes;
+            this->incrementCommandPending(size);
+        }
     }
 
     inline void executeCommandHMMM()
@@ -1661,6 +1690,8 @@ class V9958
         int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
         int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
         int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        if (0 == nx) nx = 512;
+        if (0 == ny) ny = 1024;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
         int addrS = sx / dpb + sy * lineBytes;
@@ -1692,6 +1723,8 @@ class V9958
         int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
         int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
         int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        if (0 == nx) nx = 512;
+        if (0 == ny) ny = 1024;
         unsigned char clr = this->ctx.reg[44];
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
@@ -1808,6 +1841,8 @@ class V9958
             this->ctx.commandDY = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
             this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
             this->ctx.commandNY = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+            if (0 == this->ctx.commandNX) this->ctx.commandNX = 512;
+            if (0 == this->ctx.commandNY) this->ctx.commandNY = 1024;
         }
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
@@ -1858,6 +1893,8 @@ class V9958
         int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
         int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
         int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        if (0 == nx) nx = 512;
+        if (0 == ny) ny = 1024;
         int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
         int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
         int addrS = sx / dpb + sy * lineBytes;
