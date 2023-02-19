@@ -25,7 +25,6 @@ class V9958
     bool renderLimitOverSprites = true;
     unsigned short display[568 * 240];
     unsigned short palette[16];
-    unsigned short paletteG7[16];
     unsigned char lastRenderScanline;
 
     struct Context {
@@ -571,30 +570,6 @@ class V9958
         this->palette[pn] = r | g | b;
     }
 
-    inline void updateG7PaletteCache(int pn, unsigned short msxGRB)
-    {
-        unsigned short r = msxGRB & 0b000111000;
-        unsigned short g = msxGRB & 0b111000000;
-        unsigned short b = msxGRB & 0b000000111;
-        switch (this->colorMode) {
-            case 0: // RGB555
-                r <<= 8;
-                g <<= 7;
-                b <<= 2;
-                break;
-            case 1: // RGB565
-                r <<= 9;
-                g <<= 8;
-                b <<= 2;
-                break;
-            default:
-                r = 0;
-                g = 0;
-                b = 0;
-        }
-        this->paletteG7[pn] = r | g | b;
-    }
-
     inline const char* where(int addr) {
         static const char* answer[] = {
             "UNKNOWN",
@@ -720,6 +695,9 @@ class V9958
                         break;
                     case 0b00100: // GRAPHIC5
                         this->renderScanlineModeG5(lineNumber, renderPosition);
+                        break;
+                    case 0b00101: // GRAPHIC6
+                        this->renderScanlineModeG6(lineNumber, renderPosition);
                         break;
                     case 0b00111: // GRAPHIC7
                         this->renderScanlineModeG7(lineNumber, renderPosition);
@@ -913,6 +891,17 @@ class V9958
             if (0 == x && sp2) {
                 addr ^= 0x8000;
             }
+        }
+        renderSpritesMode2(lineNumber, renderPosition);
+    }
+
+    inline void renderScanlineModeG6(int lineNumber, unsigned short* renderPosition)
+    {
+        int curD = 0;
+        int curP = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 256 + this->getNameTableAddress();
+        for (int i = 0; i < 256; i++) {
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[curP] & 0xF0) >> 4);
+            this->renderPixel1(&renderPosition[curD++], this->ctx.ram[curP++] & 0x0F);
         }
         renderSpritesMode2(lineNumber, renderPosition);
     }
@@ -1933,8 +1922,41 @@ class V9958
 
     inline void executeCommandLMMV()
     {
-        puts("execute LMMV (not implemented yet");
-        exit(-1);
+        if (!this->isBitmapMode()) {
+            printf("Error: LMMV was executed in invalid screen mode (%d)\n", this->getScreenMode());
+            exit(-1);
+        }
+        int screenWidth = this->getScreenWidth();
+        int dpb = this->getDotPerByteX();
+        int lineBytes = screenWidth / dpb;
+        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+        int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+        int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        if (0 == nx) nx = 512;
+        if (0 == ny) ny = 1024;
+        const int nxc = nx;
+        unsigned char clr = this->ctx.reg[44];
+        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
+        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int addr = dx / dpb + dy * lineBytes;
+#ifdef COMMAND_DEBUG
+        printf("ExecuteCommand<LMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, CLR=$%02X, LO=$%02X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addr, clr, ctx.commandL, getScreenMode());
+#endif
+        this->incrementCommandPending(1);
+        while (0 < ny) {
+            while (0 < nx) {
+                addr &= 0x1FFFF;
+                this->renderLogicalPixel((dx / dpb + dy * lineBytes) & 0x1FFFF, dpb, dx, clr, ctx.commandL);
+                this->incrementCommandPending(1);
+                dx += dix;
+                nx--;
+            }
+            nx = nxc;
+            dx -= dix * nx;
+            dy += diy;
+            ny--;
+        }
     }
 
     inline void executeCommandLINE()

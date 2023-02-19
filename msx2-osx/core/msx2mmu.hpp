@@ -51,12 +51,10 @@ public:
     
     void setupCallbacks(void* arg,
                         unsigned char (*sccRead)(void* arg, unsigned short addr),
-                        void (*sccWrite)(void* arg, unsigned short addr, unsigned char value),
-                        void (*sccModeChange)(void* arg, unsigned char mode)) {
+                        void (*sccWrite)(void* arg, unsigned short addr, unsigned char value)) {
         this->CB.arg = arg;
         this->CB.sccRead = sccRead;
         this->CB.sccWrite = sccWrite;
-        this->CB.sccModeChange = sccModeChange;
     }
     
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {

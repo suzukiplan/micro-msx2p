@@ -69,8 +69,6 @@ public:
             return ((MSX2*)arg)->scc.read(addr);
         }, [](void* arg, unsigned short addr, unsigned char value) {
             ((MSX2*)arg)->scc.write(addr, value);
-        }, [](void* arg, unsigned char mode) {
-            ((MSX2*)arg)->scc.setMode(mode);
         });
         /*
         this->vdp.setVramAddrChangedListener(this, [](void* arg, int addr) {
