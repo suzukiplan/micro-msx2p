@@ -897,11 +897,27 @@ class V9958
 
     inline void renderScanlineModeG6(int lineNumber, unsigned short* renderPosition)
     {
-        int curD = 0;
-        int curP = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 256 + this->getNameTableAddress();
-        for (int i = 0; i < 256; i++) {
-            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[curP] & 0xF0) >> 4);
-            this->renderPixel1(&renderPosition[curD++], this->ctx.ram[curP++] & 0x0F);
+        int curD = (this->ctx.reg[27] & 0b00000111) << 1;
+        int addr = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 256 + this->getNameTableAddress();
+        int sp2 = this->getSP2();
+        int x = this->ctx.reg[26];
+        if (sp2) {
+            x &= 0b00111111;
+            if (x < 32) {
+                addr &= 0x0FFFF;
+            } else {
+                addr |= 0x10000;
+            }
+        } else {
+            x &= 0b00011111;
+        }
+        x <<= 3;
+        for (int i = 0; i < 256 && curD < 512; i++) {
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0xF0) >> 4);
+            this->renderPixel1(&renderPosition[curD++], this->ctx.ram[addr + x] & 0x0F);
+            x++;
+            x &= 0xFF;
+            addr ^= 0 == x && sp2 ? 0x10000 : 0;
         }
         renderSpritesMode2(lineNumber, renderPosition);
     }
