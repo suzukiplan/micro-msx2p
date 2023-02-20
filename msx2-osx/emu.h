@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-extern unsigned short emu_vram[VRAM_WIDTH * 2 * VRAM_HEIGHT];
+extern unsigned short emu_vram[VRAM_WIDTH * 2 * VRAM_HEIGHT * 2];
 extern unsigned char emu_key;
 extern unsigned char emu_keycode;
 void emu_init_bios(const void* main, size_t mainSize,

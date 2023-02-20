@@ -23,7 +23,7 @@ class V9958
 
   public:
     bool renderLimitOverSprites = true;
-    unsigned short display[568 * 240];
+    unsigned short display[568 * 480];
     unsigned short palette[16];
     unsigned char lastRenderScanline;
 
@@ -50,6 +50,7 @@ class V9958
         unsigned short commandNX;
         unsigned short commandNY;
         int commandPending;
+        unsigned int counter;
     } ctx;
 
     void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value)) {
@@ -168,14 +169,23 @@ class V9958
     inline int getOnTime() { return (ctx.reg[13] & 0xF0) >> 4; }
     inline int getOffTime() { return ctx.reg[13] & 0x0F; }
     inline int getSyncMode() { return (ctx.reg[9] & 0b00110000) >> 4; }
-    inline int getLineNumber() { return this->ctx.reg[9] & 0x80 ? 212 : 192; }
+    inline int getLineNumber() { return this->ctx.reg[9] & 0b10000000 ? 212 : 192; }
+    inline int isInterlaceMode() { return this->ctx.reg[9] & 0b00001000 ? true : false; }
+    inline int isEvenOrderMode() { return this->ctx.reg[9] & 0b00000100 ? true : false; }
     inline bool isSprite16px() { return this->ctx.reg[1] & 0b00000010 ? true : false; }
     inline bool isSprite2x() { return this->ctx.reg[1] & 0b00000001 ? true : false; }
     inline bool isSpriteDisplay() { return this->ctx.reg[8] & 0b00000010 ? false : true; }
     inline int getAdjustX() { return this->adjust[this->ctx.reg[18] & 0x0F]; }
     inline int getAdjustY() { return this->adjust[(this->ctx.reg[18] & 0xF0) >> 4]; }
 
-    inline int getSpriteAttributeTable() {
+    inline int getSpriteAttributeTableM1() {
+        int addr = this->ctx.reg[11] & 0b00000011;
+        addr <<= 15;
+        addr |= (this->ctx.reg[5] & 0b11111111) << 7;
+        return addr;
+    }
+
+    inline int getSpriteAttributeTableM2() {
         int addr = this->ctx.reg[11] & 0b00000011;
         addr <<= 15;
         addr |= (this->ctx.reg[5] & 0b11111100) << 7;
@@ -361,7 +371,10 @@ class V9958
         int x2 = x << 1;
         int scanline = y - 24 - this->getAdjustY();
         if (0 <= y && y < 240 && 0 <= x && x < 284) {
-            auto renderPosition = &this->display[y * 284 * 2];
+            auto renderPosition = &this->display[y * 284 * 2 * 2];
+            if (this->isInterlaceMode() && (this->ctx.counter & 1)) {
+                renderPosition += 568;
+            }
             switch (this->getScreenMode()) {
                 case 0b00100: // GRAPHIC5
                     renderPosition[x2] = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
@@ -370,6 +383,10 @@ class V9958
                 default:
                     renderPosition[x2] = this->getBackdropColor();
                     renderPosition[x2 + 1] = renderPosition[x2];
+            }
+            if (!this->isInterlaceMode()) {
+                renderPosition[x2 + 568] = renderPosition[x2];
+                renderPosition[x2 + 568 + 1] = renderPosition[x2 + 1];
             }
             if (0 == x) {
                 this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
@@ -403,6 +420,7 @@ class V9958
                     }
                     break;
                 case 262:
+                    this->ctx.counter++;
                     this->ctx.countV -= 262;
                     this->detectBreak(this->arg);
                     break;
@@ -584,7 +602,7 @@ class V9958
         int pg = this->getPatternGeneratorAddress();
         int ct = this->getColorTableAddress();
         int sg = this->getSpriteGeneratorTable();
-        int sa = this->getSpriteAttributeTable();
+        int sa = this->getSpriteAttributeTableM2();
         int sc = this->getSpriteColorTable();
         if (nt <= addr && addr < nt + this->getNameTableSize()) {
             return answer[1];
@@ -714,6 +732,9 @@ class V9958
                     }
                 }
             } else return;
+            if (!this->isInterlaceMode()) {
+                memcpy(renderPosition + 568, renderPosition, 568 * 2);
+            }
         } else {
             this->ctx.stat[2] |= 0b01000000; // set VR flag
         }
@@ -850,6 +871,10 @@ class V9958
     {
         int curD = 0;
         int curP = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 128 + this->getNameTableAddress();
+        if (this->isEvenOrderMode() && curP & 0x8000) {
+            curP &= 0x17FFF;
+            curP |= (this->ctx.counter & 1) << 15;
+        }
         for (int i = 0; i < 128; i++) {
             this->renderPixel2(&renderPosition[curD], (this->ctx.ram[curP] & 0xF0) >> 4);
             curD += 2;
@@ -901,6 +926,10 @@ class V9958
         int addr = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 256 + this->getNameTableAddress();
         int sp2 = this->getSP2();
         int x = this->ctx.reg[26];
+        if (this->isEvenOrderMode() && addr & 0x10000) {
+            addr &= 0xFFFF;
+            addr |= (this->ctx.counter & 1) << 16;
+        }
         if (sp2) {
             x &= 0b00111111;
             if (x < 32) {
@@ -967,7 +996,7 @@ class V9958
             0b00000001};
         bool si = this->isSprite16px();
         bool mag = this->isSprite2x();
-        int sa = this->getSpriteAttributeTable();
+        int sa = this->getSpriteAttributeTableM1();
         int sg = this->getSpriteGeneratorTable();
         int sn = 0;
         int tsn = 0;
@@ -1179,7 +1208,7 @@ class V9958
             0b00000001};
         bool si = this->isSprite16px();
         bool mag = this->isSprite2x();
-        int sa = this->getSpriteAttributeTable();
+        int sa = this->getSpriteAttributeTableM2();
         int ct = this->getSpriteColorTable();
         int sg = this->getSpriteGeneratorTable();
         int sn = 0;
@@ -1665,7 +1694,9 @@ class V9958
         int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
         int addrS = dx / dpb + sy * lineBytes;
         int addrD = dx / dpb + dy * lineBytes;
+#ifdef COMMAND_DEBUG
         printf("ExecuteCommand<YMMM>: SY=%d, DX=%d, DY=%d, NY=%d, DIX=%d, DIY=%d, ADDR(S)=$%05X, ADDR(D)=$%05X (SCREEN: %d)\n", sy, dx, dy, ny, dix, diy, addrS, addrD, getScreenMode());
+#endif
         int base = 0 < dix ? 0 : dx / dpb;
         addrS -= base;
         addrD -= base;

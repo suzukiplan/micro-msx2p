@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 extern "C" {
-unsigned short emu_vram[VRAM_WIDTH * 2 * VRAM_HEIGHT];
+unsigned short emu_vram[VRAM_WIDTH * 2 * VRAM_HEIGHT * 2];
 unsigned char emu_key;
 unsigned char emu_keycode;
 };
@@ -169,6 +169,12 @@ void emu_loadRom(const void* rom_, size_t romSize, const char* fileName)
         type = MSX2_ROM_TYPE_ASC8;
     } else if (strstr(fileName, "DQUEST2")) {
         type = MSX2_ROM_TYPE_ASC8;
+    } else if (strstr(fileName, "Dires")) {
+        type = MSX2_ROM_TYPE_ASC8_SRAM2;
+    } else if (strstr(fileName, "Fire Ball")) {
+        type = MSX2_ROM_TYPE_ASC16;
+    } else if (strstr(fileName, "Hydlide III ")) {
+        type = MSX2_ROM_TYPE_ASC8;
     }
     printf("load game: %s (type:%d)\n", fileName, type);
     //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC8);
@@ -269,7 +275,7 @@ extern "C" void emu_dumpVideoMemory()
     dump("PatternNameTable", vram, vdp->getNameTableAddress(), vdp->getNameTableSize());
     dump("PatternGeneratorTable", vram, vdp->getPatternGeneratorAddress(), vdp->getPatternGeneratorSize());
     dump("ColorTable", vram, vdp->getColorTableAddress(), vdp->getColorTableSize());
-    dump("SpriteAttributeTabel", vram, vdp->getSpriteAttributeTable(), 4 * 32);
+    dump("SpriteAttributeTabel", vram, vdp->getSpriteAttributeTableM2(), 4 * 32);
     dump("SpriteColorTable", vram, vdp->getSpriteColorTable(), 512);
     dump("SpriteGenerator", vram, vdp->getSpriteGeneratorTable(), 8 * 256);
     /*

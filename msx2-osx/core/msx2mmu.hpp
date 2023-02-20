@@ -42,11 +42,15 @@ public:
         unsigned char secondary[4];
         unsigned char segment[4];
         unsigned char cpos[2][4]; // cartridge position register (0x2000 * n)
-        unsigned char reserved[12 + 32];
+        unsigned char isSelectSRAM[8];
+        unsigned char reserved[4 + 32];
     } ctx;
-    
+
+    unsigned char sram[0x2000];
+
     MSX2MMU() {
         memset(&this->slots, 0, sizeof(this->slots));
+        memset(sram, 0, sizeof(sram));
     }
     
     void setupCallbacks(void* arg,
@@ -94,6 +98,7 @@ public:
                 }
                 break;
             case MSX2_ROM_TYPE_ASC8:
+            case MSX2_ROM_TYPE_ASC8_SRAM2:
             case MSX2_ROM_TYPE_ASC16:
             case MSX2_ROM_TYPE_KONAMI_SCC:
                 for (int i = 0; i < 4; i++) {
@@ -134,7 +139,13 @@ public:
                 if (this->slots[i][0].data[j].isCartridge) {
                     for (int k = 0; k < 2; k++) {
                         //printf("this->slots[%d][0].data[%d].ptr=ROM[%05X]\n",i,j+k,this->ctx.cpos[i - 1][j - 2 + k] * 0x2000);
-                        this->slots[i][0].data[j + k].ptr = &this->cartridge.ptr[this->ctx.cpos[i - 1][j - 2 + k] * 0x2000];
+                        if (this->ctx.isSelectSRAM[j + k]) {
+                            this->slots[i][0].data[j + k].ptr = sram;
+                            this->slots[i][0].data[j + k].isRAM = true;
+                        } else {
+                            this->slots[i][0].data[j + k].ptr = &this->cartridge.ptr[this->ctx.cpos[i - 1][j - 2 + k] * 0x2000];
+                            this->slots[i][0].data[j + k].isRAM = false;
+                        }
                     }
                 }
             }
@@ -276,6 +287,7 @@ public:
             switch (this->cartridge.romType) {
                 case MSX2_ROM_TYPE_NORMAL: return;
                 case MSX2_ROM_TYPE_ASC8: this->asc8(pri - 1, addr, value); return;
+                case MSX2_ROM_TYPE_ASC8_SRAM2: this->asc8sram2(pri - 1, addr, value); return;
                 case MSX2_ROM_TYPE_ASC16: this->asc16(pri - 1, addr, value); return;
                 case MSX2_ROM_TYPE_KONAMI_SCC: this->konamiSCC(pri - 1, addr, value); return;
                 case MSX2_ROM_TYPE_KONAMI: this->konami(pri - 1, addr, value); return;
@@ -294,7 +306,13 @@ public:
         }
         this->bankSwitchover();
     }
-    
+
+    inline void asc8sram2(int idx, unsigned short addr, unsigned char value) {
+        this->ctx.isSelectSRAM[4] = value & 0b11110000 ? 1 : 0;
+        value &= 0b00001111;
+        this->asc8(idx, addr, value);
+    }
+
     inline void asc16(int idx, unsigned short addr, unsigned char value) {
         if (0x6000 <= addr && addr < 0x6800) {
             this->ctx.cpos[idx][0] = value * 2;
