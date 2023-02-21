@@ -79,6 +79,18 @@ public:
             ((MSX2*)arg)->putlog("VRAM[%X] = $%02X (%s)", addr, value, ((MSX2*)arg)->vdp.where(addr));
         });
          */
+        /*
+        this->cpu->addBreakPoint(0x4016, [](void* arg) {
+            ((MSX2*)arg)->putlog("START ROM PROCEDURE");
+            ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
+                if (0x4000 < ((MSX2*)arg)->cpu->reg.PC)
+                ((MSX2*)arg)->putlog(msg);
+            });
+        });
+        this->vdp.setVramWriteListener(this, [](void* arg, int addr, unsigned char value) {
+            ((MSX2*)arg)->putlog("VRAM[%X] = $%02X %c (%s)", addr, value, isprint(value) ? value : '?', ((MSX2*)arg)->vdp.where(addr));
+        });
+         */
 #if 0
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
@@ -105,7 +117,7 @@ public:
             int scrollV = this_->vdp.ctx.reg[23];
             int scrollH = (this_->vdp.ctx.reg[26] & 0b00111111) * -8 + (this_->vdp.ctx.reg[27] & 0b00000111);
             bool spriteDisplay = this_->vdp.isSpriteDisplay();
-            int sa = this_->vdp.getSpriteAttributeTable();
+            int sa = this_->vdp.getSpriteAttributeTableM2();
             int sg = this_->vdp.getSpriteGeneratorTable();
             unsigned char r14 = this_->vdp.ctx.reg[14];
 
@@ -123,8 +135,8 @@ public:
             if (nameTableAddress != this_->vdp.getNameTableAddress()) {
                 this_->putlog("Name Table Address: $%04X -> $%04X", nameTableAddress, this_->vdp.getNameTableAddress());
             }
-            if (sa != this_->vdp.getSpriteAttributeTable()) {
-                this_->putlog("Sprite Attribute Table Address: $%04X -> $%04X", sa, this_->vdp.getSpriteAttributeTable());
+            if (sa != this_->vdp.getSpriteAttributeTableM2()) {
+                this_->putlog("Sprite Attribute Table Address: $%04X -> $%04X", sa, this_->vdp.getSpriteAttributeTableM2());
             }
             if (sg != this_->vdp.getSpriteGeneratorTable()) {
                 this_->putlog("Sprite Generator Table Address: $%04X -> $%04X", sg, this_->vdp.getSpriteGeneratorTable());
@@ -193,6 +205,9 @@ public:
         this->cpu->addBreakPoint(0, [](void* arg) {
             puts("RESET!");
         });
+        this->mmu.setupPageChangeListener([](void* arg, const char* msg) {
+            ((MSX2*)arg)->putlog(msg);
+        });
 #if 0
         // RDSLT
         //this->cpu->addBreakPoint(0x23D2, [](void* arg) {
@@ -207,8 +222,30 @@ public:
             unsigned short ret = ((MSX2*)arg)->mmu.read(sp + 1);
             ret <<= 8;
             ret |= ((MSX2*)arg)->mmu.read(sp);
-            printf("[%04X] RDSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X\n", ret, a & 0x80 ? "YES" : "NO", pri, sec, hl);
+            ((MSX2*)arg)->putlog("RDSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X", a & 0x80 ? "YES" : "NO", pri, sec, hl);
+            if (a & 0x80 && pri == 1 && sec == 0 && hl == 0x4000) {
+                ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); });
+            }
         });
+        this->cpu->addBreakPoint(0x0014, [](void* arg) {
+            unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
+            int pri = a & 0x03;
+            int sec = (a & 0x0C) >> 2;
+            unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
+            hl <<= 8;
+            hl |= ((MSX2*)arg)->cpu->reg.pair.L;
+            ((MSX2*)arg)->putlog("WRSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X", a & 0x80 ? "YES" : "NO", pri, sec, hl);
+        });
+        this->cpu->addBreakPoint(0x0024, [](void* arg) {
+            unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
+            int pri = a & 0x03;
+            int sec = (a & 0x0C) >> 2;
+            unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
+            hl <<= 8;
+            hl |= ((MSX2*)arg)->cpu->reg.pair.L;
+            ((MSX2*)arg)->putlog("ENASLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X", a & 0x80 ? "YES" : "NO", pri, sec, hl);
+        });
+
 #endif
         // CALL命令をページ3にRAMを割り当てていない状態で実行した時に落とす
         this->cpu->addBreakOperand(0xCD, [](void* arg, unsigned char* op, int size) {
@@ -217,6 +254,14 @@ public:
             auto data = &((MSX2*)arg)->mmu.slots[pri3][sec3].data[7];
             if (!data->isRAM) {
                 ((MSX2*)arg)->putlog("invalid call $%02X%02X", op[2], op[1]);
+                exit(-1);
+            }
+        });
+        // RST命令のループ状態になったら落とす
+        this->cpu->addBreakOperand(0xFF, [](void* arg, unsigned char* op, int size) {
+            ((MSX2*)arg)->putlog("RST $0038");
+            if (((MSX2*)arg)->cpu->reg.PC == 0x0038 + size) {
+                ((MSX2*)arg)->putlog("RST loop detected");
                 exit(-1);
             }
         });
@@ -273,6 +318,7 @@ public:
         initKeyCode('X', 5, 5);
         initKeyCode('Y', 6, 5);
         initKeyCode('Z', 7, 5);
+        initKeyCode('\r', 7, 7);
         initKeyCode('\n', 7, 7);
         initKeyCode(' ', 0, 8);
     }
@@ -307,9 +353,9 @@ public:
         auto db = this->mmu.getDataBlock(this->cpu->reg.PC);
         if (db->isCartridge) {
             int romAddr = (int)(db->ptr - this->mmu.cartridge.ptr);
-            snprintf(addr, sizeof(addr), "[%04X:%X+%04X]", this->cpu->reg.PC, romAddr, this->cpu->reg.PC & 0x1FFF);
+            snprintf(addr, sizeof(addr), "[PC=%04X:%X+%04X,SP=%04X]", this->cpu->reg.PC, this->cpu->reg.SP, romAddr, this->cpu->reg.PC & 0x1FFF);
         } else {
-            snprintf(addr, sizeof(addr), "[%04X]", this->cpu->reg.PC);
+            snprintf(addr, sizeof(addr), "[PC=%04X,SP=%04X]", this->cpu->reg.PC, this->cpu->reg.SP);
         }
         printf("%02d:%02d:%02d %s V:%03d %s\n", t->tm_hour, t->tm_min, t->tm_sec, addr, this->vdp.lastRenderScanline, buf);
     }

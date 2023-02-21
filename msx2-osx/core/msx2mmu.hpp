@@ -34,12 +34,13 @@ public:
         void* arg;
         unsigned char (*sccRead)(void* arg, unsigned short addr);
         void (*sccWrite)(void* arg, unsigned short addr, unsigned char value);
-        void (*sccModeChange)(void* arg, unsigned char mode);
+        void (*pageChanged)(void* arg, const char* msg);
     } CB;
     
     struct Context {
         unsigned char primary[4];
         unsigned char secondary[4];
+        unsigned char secondaryChanged[4];
         unsigned char segment[4];
         unsigned char cpos[2][4]; // cartridge position register (0x2000 * n)
         unsigned char isSelectSRAM[8];
@@ -60,6 +61,10 @@ public:
         this->CB.sccRead = sccRead;
         this->CB.sccWrite = sccWrite;
     }
+
+    void setupPageChangeListener(void (*pageChange)(void* arg, const char* msg)) {
+        this->CB.pageChanged = pageChange;
+    }
     
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
         secondaryExist[0] = page0;
@@ -77,7 +82,7 @@ public:
             }
         }
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
-        dumpPageLayout("reset", 0);
+        dumpPageLayout("reset");
 #endif
     }
     
@@ -161,7 +166,8 @@ public:
     }
     
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
-    inline void dumpPageLayout(const char* msg, unsigned char value) {
+    inline void dumpPageLayout(const char* msg) {
+        static char buf[1024];
         auto pri = getPrimary();
         auto sec = getSecondary() ^ 0xFF;
         int p[4];
@@ -176,33 +182,27 @@ public:
         auto page1 = slots[p[1]][s[1]];
         auto page2 = slots[p[2]][s[2]];
         auto page3 = slots[p[3]][s[3]];
-        printf("Pages #0:%d-%d(%s), #1:%d-%d(%s), #2:%d-%d(%s), #3:%d-%d(%s) <%s:$%02X>\n"
+        snprintf(buf, sizeof(buf), "Pages #0:%d-%d(%s), #1:%d-%d(%s), #2:%d-%d(%s), #3:%d-%d(%s) <%s>"
                , p[0], s[0], page0.data[0].label[0] ? page0.data[0].label : "n/a"
                , p[1], s[1], page1.data[2].label[0] ? page1.data[2].label : "n/a"
                , p[2], s[2], page2.data[4].label[0] ? page2.data[4].label : "n/a"
                , p[3], s[3], page3.data[6].label[0] ? page3.data[6].label : "n/a"
-               , msg, value);
+               , msg);
+        if (CB.pageChanged) {
+            CB.pageChanged(CB.arg, buf);
+        }
     }
 #endif
     
     inline void updatePrimary(unsigned char value)
     {
-#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
-        unsigned char value_ = value;
-        unsigned char prev[4];
-        memcpy(prev, this->ctx.primary, 4);
-#endif
+        memcpy(this->ctx.secondary, this->ctx.secondaryChanged, 4);
         for (int i = 0; i < 4; i++) {
             this->ctx.primary[i] = value & 0b11;
             value >>= 2;
         }
 #ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
-        if (prev[0] != this->ctx.primary[0] ||
-            prev[1] != this->ctx.primary[1] ||
-            prev[2] != this->ctx.primary[2] ||
-            prev[3] != this->ctx.primary[3]) {
-            dumpPageLayout("updatePrimary", value_);
-        }
+        dumpPageLayout("changed");
 #endif
     }
     
@@ -216,34 +216,17 @@ public:
     {
         unsigned char sec[4];
         for (int i = 0; i < 4; i++) {
-            if (this->secondaryExist[this->ctx.primary[i]]) {
-                sec[i] = this->ctx.secondary[i];
-            } else {
-                sec[i] = 0;
-            }
+            sec[i] = this->ctx.secondary[i];
         }
         return 0xFF ^ ((sec[3] << 6) | (sec[2] << 4) | (sec[1] << 2) | sec[0]);
     }
     
     inline void updateSecondary(unsigned char value)
     {
-#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
-        unsigned char value_ = value;
-        unsigned char prev[4];
-        memcpy(prev, this->ctx.secondary, 4);
-#endif
         for (int i = 0; i < 4; i++) {
-            this->ctx.secondary[i] = value & 0b11;
+            this->ctx.secondaryChanged[i] = value & 0b11;
             value >>= 2;
         }
-#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
-        if (prev[0] != this->ctx.secondary[0] ||
-            prev[1] != this->ctx.secondary[1] ||
-            prev[2] != this->ctx.secondary[2] ||
-            prev[3] != this->ctx.secondary[3]) {
-            dumpPageLayout("updateSecondary", value_);
-        }
-#endif
     }
     
     struct DataBlock8KB* getDataBlock(unsigned short addr) {
@@ -326,10 +309,6 @@ public:
     }
     
     inline void konamiSCC(int idx, unsigned short addr, unsigned char value) {
-        if (0xBFFE == (addr & 0xFFFE)) {
-            this->CB.sccModeChange(this->CB.arg, value);
-            return;
-        }
         switch (addr & 0xF000) {
             case 0x5000: this->ctx.cpos[idx][0] = value; break;
             case 0x7000: this->ctx.cpos[idx][1] = value; break;
