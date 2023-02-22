@@ -290,11 +290,11 @@ extern "C" void emu_startDebug()
 {
     msx2.cpu->setDebugMessage([](void* arg, const char* msg) {
         auto msx2 = (MSX2*)arg;
-        printf("[%d:%d:%d:%d] L=%3d %s\n",
-               msx2->mmu.ctx.primary[0],
-               msx2->mmu.ctx.primary[1],
-               msx2->mmu.ctx.primary[2],
-               msx2->mmu.ctx.primary[3],
+        printf("[%d-%d:%d-%d:%d-%d:%d-%d] L=%3d %s\n",
+               msx2->mmu.ctx.pri[0], msx2->mmu.ctx.sec[0],
+               msx2->mmu.ctx.pri[1], msx2->mmu.ctx.sec[1],
+               msx2->mmu.ctx.pri[2], msx2->mmu.ctx.sec[2],
+               msx2->mmu.ctx.pri[3], msx2->mmu.ctx.sec[3],
                msx2->vdp.ctx.countV,
                msg);
     });

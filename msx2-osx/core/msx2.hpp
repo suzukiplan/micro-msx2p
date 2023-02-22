@@ -90,6 +90,9 @@ public:
         this->vdp.setVramWriteListener(this, [](void* arg, int addr, unsigned char value) {
             ((MSX2*)arg)->putlog("VRAM[%X] = $%02X %c (%s)", addr, value, isprint(value) ? value : '?', ((MSX2*)arg)->vdp.where(addr));
         });
+         cpu->setDebugMessage([](void* arg, const char* msg) {
+             ((MSX2*)arg)->putlog(msg);
+         });
          */
 #if 0
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
@@ -210,8 +213,8 @@ public:
         });
 #if 0
         // RDSLT
-        //this->cpu->addBreakPoint(0x23D2, [](void* arg) {
-        this->cpu->addBreakPoint(0x000C, [](void* arg) {
+        //this->cpu->addBreakPoint(0x000C, [](void* arg) {
+        this->cpu->addBreakPoint(0x01F5, [](void* arg) {
             unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
             int pri = a & 0x03;
             int sec = (a & 0x0C) >> 2;
@@ -249,8 +252,8 @@ public:
 #endif
         // CALL命令をページ3にRAMを割り当てていない状態で実行した時に落とす
         this->cpu->addBreakOperand(0xCD, [](void* arg, unsigned char* op, int size) {
-            int pri3 = ((MSX2*)arg)->mmu.ctx.primary[3];
-            int sec3 = ((MSX2*)arg)->mmu.ctx.secondary[3];
+            int pri3 = ((MSX2*)arg)->mmu.ctx.pri[3];
+            int sec3 = ((MSX2*)arg)->mmu.ctx.sec[3];
             auto data = &((MSX2*)arg)->mmu.slots[pri3][sec3].data[7];
             if (!data->isRAM) {
                 ((MSX2*)arg)->putlog("invalid call $%02X%02X", op[2], op[1]);

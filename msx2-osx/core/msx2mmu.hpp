@@ -5,8 +5,6 @@
 #include <string.h>
 #include "msx2def.h"
 
-//#define MMU_DEBUG_SHOW_PAGE_LAYOUT
-
 class MSX2MMU
 {
 public:
@@ -38,9 +36,14 @@ public:
     } CB;
     
     struct Context {
-        unsigned char primary[4];
-        unsigned char secondary[4];
-        unsigned char secondaryChanged[4];
+        struct PrimarySlotState {
+            unsigned char pri;
+            unsigned char sec;
+            unsigned char reg;
+            unsigned char reserved;
+        } pslot[4];
+        unsigned char pri[4];
+        unsigned char sec[4];
         unsigned char segment[4];
         unsigned char cpos[2][4]; // cartridge position register (0x2000 * n)
         unsigned char isSelectSRAM[8];
@@ -51,6 +54,7 @@ public:
 
     MSX2MMU() {
         memset(&this->slots, 0, sizeof(this->slots));
+        memset(&this->secondaryExist, 0, sizeof(this->secondaryExist));
         memset(sram, 0, sizeof(sram));
     }
     
@@ -81,13 +85,7 @@ public:
                 this->ctx.cpos[i][j] = j;
             }
         }
-#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
-        dumpPageLayout("reset");
-#endif
     }
-    
-    inline int primaryNumber(int page) { return this->ctx.primary[page & 0b11]; }
-    inline int secondaryNumber(int page) { return this->ctx.secondary[page & 0b11]; }
     
     void setupCartridge(int pri, int sec, int idx, void* data, size_t size, int romType)
     {
@@ -156,83 +154,65 @@ public:
             }
         }
     }
-    
-    inline unsigned char getPrimary()
-    {
-        return ((this->ctx.primary[3] << 6) |
-                (this->ctx.primary[2] << 4) |
-                (this->ctx.primary[1] << 2) |
-                this->ctx.primary[0]);
-    }
-    
-#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
-    inline void dumpPageLayout(const char* msg) {
-        static char buf[1024];
-        auto pri = getPrimary();
-        auto sec = getSecondary() ^ 0xFF;
-        int p[4];
-        int s[4];
-        for (int i = 0; i < 4; i++) {
-            p[i] = pri & 0b11;
-            s[i] = sec & 0b11;
-            pri >>= 2;
-            sec >>= 2;
-        }
-        auto page0 = slots[p[0]][s[0]];
-        auto page1 = slots[p[1]][s[1]];
-        auto page2 = slots[p[2]][s[2]];
-        auto page3 = slots[p[3]][s[3]];
-        snprintf(buf, sizeof(buf), "Pages #0:%d-%d(%s), #1:%d-%d(%s), #2:%d-%d(%s), #3:%d-%d(%s) <%s>"
-               , p[0], s[0], page0.data[0].label[0] ? page0.data[0].label : "n/a"
-               , p[1], s[1], page1.data[2].label[0] ? page1.data[2].label : "n/a"
-               , p[2], s[2], page2.data[4].label[0] ? page2.data[4].label : "n/a"
-               , p[3], s[3], page3.data[6].label[0] ? page3.data[6].label : "n/a"
-               , msg);
-        if (CB.pageChanged) {
-            CB.pageChanged(CB.arg, buf);
-        }
-    }
-#endif
-    
-    inline void updatePrimary(unsigned char value)
-    {
-        memcpy(this->ctx.secondary, this->ctx.secondaryChanged, 4);
-        for (int i = 0; i < 4; i++) {
-            this->ctx.primary[i] = value & 0b11;
-            value >>= 2;
-        }
-#ifdef MMU_DEBUG_SHOW_PAGE_LAYOUT
-        dumpPageLayout("changed");
-#endif
-    }
-    
+
     inline void updateSegment(int page, unsigned char value)
     {
         printf("update segment: page %d = %d\n", page, value);
         this->ctx.segment[page] = value;
     }
-    
+
+    inline unsigned char getPrimary()
+    {
+        return ((this->ctx.pri[3] << 6) |
+                (this->ctx.pri[2] << 4) |
+                (this->ctx.pri[1] << 2) |
+                this->ctx.pri[0]);
+    }
+
+    inline void updatePrimary(unsigned char value)
+    {
+        for (int page = 0; page < 4; page++) {
+            int pri = value & 0b11;
+            this->ctx.pslot[page].pri = pri;
+            this->ctx.pslot[page].sec = (this->ctx.pslot[pri].reg >> (page * 2)) & 0b11;
+            int sec = this->secondaryExist[pri] ? this->ctx.pslot[page].sec : 0;
+            this->ctx.pri[page] = pri;
+            this->ctx.sec[page] = sec;
+            value >>= 2;
+        }
+    }
+
     inline unsigned char getSecondary()
     {
-        unsigned char sec[4];
-        for (int i = 0; i < 4; i++) {
-            sec[i] = this->ctx.secondary[i];
+        unsigned char pri3 = this->ctx.pslot[3].pri;
+        if (this->secondaryExist[pri3]) {
+            return ~this->ctx.pslot[pri3].reg;
+        } else {
+            return 0xFF;
         }
-        return 0xFF ^ ((sec[3] << 6) | (sec[2] << 4) | (sec[1] << 2) | sec[0]);
     }
     
     inline void updateSecondary(unsigned char value)
     {
-        for (int i = 0; i < 4; i++) {
-            this->ctx.secondaryChanged[i] = value & 0b11;
-            value >>= 2;
+        unsigned char pri = this->ctx.pslot[3].pri;
+        if (this->secondaryExist[pri]) {
+            this->ctx.pslot[pri].reg = value;
+            for (int page = 0; page < 4; page++) {
+                if(this->ctx.pslot[page].pri == pri) {
+                    unsigned char sec = value & 0b11;
+                    this->ctx.pslot[page].sec = sec;
+                    this->ctx.pri[page] = pri;
+                    this->ctx.sec[page] = sec;
+                }
+                value >>= 2;
+            }
         }
     }
     
     struct DataBlock8KB* getDataBlock(unsigned short addr) {
         int page = (addr & 0b1100000000000000) >> 14;
-        int pri = this->ctx.primary[page];
-        int sec = this->secondaryExist[pri] ? this->ctx.secondary[page] : 0;
+        int pri = this->ctx.pri[page];
+        int sec = this->ctx.sec[page];
         int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
         return &s->data[idx];
@@ -244,8 +224,8 @@ public:
             return this->getSecondary();
         }
         int page = (addr & 0b1100000000000000) >> 14;
-        int pri = this->ctx.primary[page];
-        int sec = this->secondaryExist[pri] ? this->ctx.secondary[page] : 0;
+        int pri = this->ctx.pri[page];
+        int sec = this->ctx.sec[page];
         int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
         auto ptr = s->data[idx].ptr;
@@ -259,8 +239,8 @@ public:
             return;
         }
         int page = (addr & 0b1100000000000000) >> 14;
-        int pri = this->ctx.primary[page];
-        int sec = this->secondaryExist[pri] ? this->ctx.secondary[page] : 0;
+        int pri = this->ctx.pri[page];
+        int sec = this->ctx.sec[page];
         int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
         auto data = &s->data[idx];
