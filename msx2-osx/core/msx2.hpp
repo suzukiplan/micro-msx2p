@@ -59,7 +59,6 @@ public:
             return ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
-            //((MSX2*)arg)->putlog("Detect IE%d", ie);
             ((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
         }, [](void* arg) {
@@ -93,6 +92,12 @@ public:
          cpu->setDebugMessage([](void* arg, const char* msg) {
              ((MSX2*)arg)->putlog(msg);
          });
+        this->cpu->addBreakPoint(0x062D, [](void* arg) {
+            ((MSX2*)arg)->putlog("START MEMORY-MAPPER PROCEDURE");
+            ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
+                ((MSX2*)arg)->putlog(msg);
+            });
+        });
          */
 #if 0
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
@@ -324,6 +329,7 @@ public:
         initKeyCode('\r', 7, 7);
         initKeyCode('\n', 7, 7);
         initKeyCode(' ', 0, 8);
+        this->reset();
     }
     
     void reset() {
@@ -345,13 +351,12 @@ public:
     }
 
     void putlog(const char* fmt, ...) {
+        static int seqno = 0;
         char buf[256];
         va_list args;
         va_start(args, fmt);
         vsnprintf(buf, sizeof(buf), fmt, args);
         va_end(args);
-        auto now = time(nullptr);
-        auto t = localtime(&now);
         char addr[256];
         auto db = this->mmu.getDataBlock(this->cpu->reg.PC);
         if (db->isCartridge) {
@@ -360,7 +365,12 @@ public:
         } else {
             snprintf(addr, sizeof(addr), "[PC=%04X,SP=%04X]", this->cpu->reg.PC, this->cpu->reg.SP);
         }
-        printf("%02d:%02d:%02d %s V:%03d %s\n", t->tm_hour, t->tm_min, t->tm_sec, addr, this->vdp.lastRenderScanline, buf);
+        printf("%7d %s %d-%d:%d-%d:%d-%d:%d-%d V:%03d %s\n", ++seqno, addr,
+               this->mmu.ctx.pri[0], this->mmu.ctx.sec[0],
+               this->mmu.ctx.pri[1], this->mmu.ctx.sec[1],
+               this->mmu.ctx.pri[2], this->mmu.ctx.sec[2],
+               this->mmu.ctx.pri[3], this->mmu.ctx.sec[3],
+               this->vdp.lastRenderScanline, buf);
     }
 
     void loadFont(const void* font, size_t fontSize) {
@@ -418,7 +428,7 @@ public:
     
     inline unsigned char inPort(unsigned char port) {
         switch (port) {
-            case 0x81: return 0x00; // 8251 status command
+            case 0x81: return 0xFF; // 8251 status command
             case 0x88: return this->vdp.inPort98();
             case 0x89: return this->vdp.inPort99();
             case 0x90: return 0x00; // printer
@@ -453,10 +463,10 @@ public:
             case 0xB8: return 0x00; // light pen
             case 0xB9: return 0x00; // light pen
             case 0xBA: return 0x00; // light pen
-            case 0xBB: return 0x00; // light pen
-            case 0xC0: return 0x00; // MSX audio
+            case 0xBB: return 0xFF; // light pen
+            case 0xC0: return 0xFF; // MSX audio
             case 0xC1: return 0x00; // MSX audio
-            case 0xC8: return 0x00; // MSX interface
+            case 0xC8: return 0xFF; // MSX interface
             case 0xC9: return 0x00; // MSX interface
             case 0xCA: return 0x00; // MSX interface
             case 0xCB: return 0x00; // MSX interface
@@ -467,7 +477,7 @@ public:
             case 0xD9: return this->kanji.inPortD9(); // kanji
             case 0xDB: return this->kanji.inPortDB(); // kanji
             case 0xF4: return this->vdp.inPortF4();
-            case 0xF7: return 0x00; // AV control
+            case 0xF7: return 0xFF; // AV control
             default: printf("ignore an unknown input port $%02X\n", port);
         }
         return this->ctx.io[port];
@@ -515,7 +525,7 @@ public:
             case 0xF3: this->vdp.outPortF3(value); break;
             case 0xF4: this->vdp.outPortF4(value); break;
             case 0xF5: {
-#if 1
+#if 0
                 putlog("Update System Control:");
                 putlog(" - Kanji ROM: %s", value & 0b00000001 ? "Yes" : "No");
                 putlog(" - Kanji Reserved: %s", value & 0b00000010 ? "Yes" : "No");
@@ -530,7 +540,7 @@ public:
                 break; // System Control
             }
             case 0xF7: { // AV controll
-#if 1
+#if 0
                 bool audioRLMixingON = value & 0b00000001 ? true : false;
                 bool audioLLMixingOFF = value & 0b00000010 ? true : false;
                 bool videoInSelectL = value & 0b00000100 ? true : false;
@@ -551,10 +561,10 @@ public:
                 this->vdp.ctx.reverseVdpR9Bit5 = value & 0b10000000 ? 1 : 0;
                 break;
             }
-            case 0xFC: this->mmu.updateSegment(0, value); break;
-            case 0xFD: this->mmu.updateSegment(1, value); break;
-            case 0xFE: this->mmu.updateSegment(2, value); break;
-            case 0xFF: this->mmu.updateSegment(3, value); break;
+            case 0xFC: this->mmu.updateMemoryMapper(0, value); break;
+            case 0xFD: this->mmu.updateMemoryMapper(1, value); break;
+            case 0xFE: this->mmu.updateMemoryMapper(2, value); break;
+            case 0xFF: this->mmu.updateMemoryMapper(3, value); break;
             default: printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
     }

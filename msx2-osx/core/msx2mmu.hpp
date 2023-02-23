@@ -44,7 +44,7 @@ public:
         } pslot[4];
         unsigned char pri[4];
         unsigned char sec[4];
-        unsigned char segment[4];
+        unsigned char mmap[4];
         unsigned char cpos[2][4]; // cartridge position register (0x2000 * n)
         unsigned char isSelectSRAM[8];
         unsigned char reserved[4 + 32];
@@ -85,6 +85,10 @@ public:
                 this->ctx.cpos[i][j] = j;
             }
         }
+        this->ctx.mmap[0] = 3;
+        this->ctx.mmap[1] = 2;
+        this->ctx.mmap[2] = 1;
+        this->ctx.mmap[3] = 0;
     }
     
     void setupCartridge(int pri, int sec, int idx, void* data, size_t size, int romType)
@@ -155,10 +159,10 @@ public:
         }
     }
 
-    inline void updateSegment(int page, unsigned char value)
+    inline void updateMemoryMapper(int page, unsigned char value)
     {
-        printf("update segment: page %d = %d\n", page, value);
-        this->ctx.segment[page] = value;
+        //printf("update memory mapper: page %d = %d\n", page, value);
+        this->ctx.mmap[page] = value;
     }
 
     inline unsigned char getPrimary()

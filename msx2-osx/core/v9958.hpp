@@ -7,6 +7,16 @@
 class V9958
 {
   private:
+    const unsigned char regMask[64] = {
+        0x7e, 0x7b, 0x7f, 0xff, 0x3f, 0xff, 0x3f, 0xff,
+        0xfb, 0xbf, 0x07, 0x03, 0xff, 0xff, 0x07, 0x0f,
+        0x0f, 0xbf, 0xff, 0xff, 0x3f, 0x3f, 0x3f, 0xff,
+        0x00, 0x7f, 0x3f, 0x07, 0x00, 0x00, 0x00, 0x00,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+    };
     int colorMode;
     void* arg;
     void (*detectInterrupt)(void* arg, int ie);
@@ -126,6 +136,7 @@ class V9958
         memset(&this->ctx, 0, sizeof(this->ctx));
         memcpy(&this->ctx.stat , stat, sizeof(stat));
         memcpy(&this->ctx.reg , reg, sizeof(reg));
+        //this->ctx.hardwareResetFlag = 0xFF;
         for (int i = 0; i < 16; i++) {
             this->ctx.pal[i][0] = 0;
             this->ctx.pal[i][1] = 0;
@@ -526,11 +537,12 @@ class V9958
 
     inline void outPort9B(unsigned char value)
     {
-        // Indirect access to registers through R#17 (Control Register Pointer)
-        this->updateRegister(this->ctx.reg[17] & 0b00111111, value);
-        if ((this->ctx.reg[17] & 0b11000000) == 0b00000000) {
-            this->ctx.reg[17]++;
-            this->ctx.reg[17] &= 0b00111111;
+        unsigned char r17 = this->ctx.reg[17];
+        if (17 != (r17 & 0b00111111)) {
+            this->updateRegister(r17 & 0b00111111, value);
+        }
+        if (0 == (r17 & 0b11000000)) {
+            this->ctx.reg[17] = (r17 + 1) & 0b00111111;
         }
     }
 
@@ -546,14 +558,17 @@ class V9958
          b7    YAE ... not support yet
          */
         // update M3/M4/M5
-        this->ctx.reg[0] &= 0b11110001;
-        this->ctx.reg[0] |= (value & 0b00000111) << 1;
+        unsigned char r0 = this->ctx.reg[0] & 0b11110001;
+        r0 |= (value & 0b00000111) << 1;
+        this->updateRegister(0, r0);
         // update M2/M1
-        this->ctx.reg[1] &= 0b11100111;
-        this->ctx.reg[1] |= value & 0b00011000;
+        unsigned char r1 = this->ctx.reg[1] & 0b11100111;
+        r1 |= value & 0b00011000;
+        this->updateRegister(1, r1);
         // update TP
-        this->ctx.reg[8] &= 0b11011111;
-        this->ctx.reg[8] |= value & 0b00100000;
+        unsigned char r8 = this->ctx.reg[8] & 0b11011111;
+        r8 |= value & 0b00100000;
+        this->updateRegister(8, r8);
     }
 
     inline void outPortF4(unsigned char value) {
@@ -656,6 +671,7 @@ class V9958
 
     inline void updateRegister(int rn, unsigned char value)
     {
+        value &= this->regMask[rn];
         bool prevIE0 = this->isIE0();
         if (debug.registerUpdateListener) {
             debug.registerUpdateListener(debug.arg, rn, value);
