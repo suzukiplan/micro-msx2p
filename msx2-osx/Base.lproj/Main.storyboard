@@ -48,6 +48,12 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="kCx-OE-vgT"/>
+                                        <menuItem title="Reset" keyEquivalent="r" id="APx-PU-rQR">
+                                            <connections>
+                                                <action selector="menuReset:" target="Ady-hI-5gd" id="WNr-sL-Y5i"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="3Lc-1i-xH4"/>
                                         <menuItem title="Quit msx2-osx" keyEquivalent="q" id="4sb-4s-VLi">
                                             <connections>
                                                 <action selector="terminate:" target="Ady-hI-5gd" id="Te7-pn-YzF"/>
@@ -63,6 +69,30 @@
                                         <menuItem title="Open ROM file" keyEquivalent="o" id="eRI-UE-Fgx">
                                             <connections>
                                                 <action selector="menuOpenRomFile:" target="Ady-hI-5gd" id="PxJ-JT-NZl"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="0ji-NX-QrA"/>
+                                        <menuItem title="Insert Disk to A drive" keyEquivalent="1" id="Bq6-qW-51a">
+                                            <connections>
+                                                <action selector="menuInsertDiskA:" target="Ady-hI-5gd" id="ymy-bJ-me4"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Eject Disk from A drive" id="JZR-Da-SrY">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="menuEjectDiskA:" target="Ady-hI-5gd" id="a7L-sh-8TW"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="Z4Z-UG-yYf"/>
+                                        <menuItem title="Insert Disk to B drive" keyEquivalent="2" id="PWm-EB-LXg">
+                                            <connections>
+                                                <action selector="menuInsertDiskB:" target="Ady-hI-5gd" id="K34-qR-DJz"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Eject Disk from B drive" id="EUX-pb-Grl">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="menuEjectDiskB:" target="Ady-hI-5gd" id="QA6-0G-KQz"/>
                                             </connections>
                                         </menuItem>
                                     </items>

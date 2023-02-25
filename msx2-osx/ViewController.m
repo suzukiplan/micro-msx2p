@@ -11,7 +11,13 @@
 #import "VideoView.h"
 #import "ViewController.h"
 
-@interface ViewController () <NSWindowDelegate, OpenFileDelegate>
+typedef NS_ENUM(NSInteger, OpenFileType) {
+    OpenFileTypeRom,
+    OpenFileTypeDiskA,
+    OpenFileTypeDiskB,
+};
+
+@interface ViewController () <NSWindowDelegate>
 @property (nonatomic, weak) AppDelegate* appDelegate;
 @property (nonatomic) VideoView* video;
 @property (nonatomic) NSData* rom;
@@ -95,16 +101,6 @@
                   biosFont.bytes, biosFont.length);
 #endif
     
-#if 0
-    NSString* romFile = [[NSUserDefaults standardUserDefaults] objectForKey:@"previous_rom_file"];
-    if (romFile) {
-        NSLog(@"previous_rom_file: %@", romFile);
-        __weak ViewController* weakSelf = self;
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.5 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-            [weakSelf _openURL:[NSURL fileURLWithPath:romFile]];
-        });
-    }
-#endif
     self.view.frame = CGRectMake(0, 0, VRAM_WIDTH * 2, VRAM_HEIGHT * 2);
     CALayer* layer = [CALayer layer];
     [layer setBackgroundColor:CGColorCreateGenericRGB(0.0, 0.0, 0.2525, 1.0)];
@@ -115,9 +111,6 @@
     _appDelegate = (AppDelegate*)[NSApplication sharedApplication].delegate;
     NSLog(@"menu: %@", _appDelegate.menu);
     _appDelegate.menu.autoenablesItems = NO;
-    //_appDelegate.menu.item
-    _appDelegate.menuQuickLoadFromMemory.enabled = NO;
-    _appDelegate.openFileDelegate = self;
     [self.view.window makeFirstResponder:_video];
 }
 
@@ -163,6 +156,40 @@
 - (void)menuOpenRomFile:(id)sender
 {
     NSLog(@"menuOpenRomFile");
+    [self _openWithType:OpenFileTypeRom];
+}
+
+-(IBAction)menuInsertDiskA:(id)sender
+{
+    NSLog(@"menuInsertDiskA");
+    [self _openWithType:OpenFileTypeDiskA];
+}
+
+-(IBAction)menuEjectDiskA:(id)sender
+{
+    NSLog(@"menuEjectDiskA");
+    emu_ejectDisk(0);
+}
+
+-(IBAction)menuInsertDiskB:(id)sender
+{
+    NSLog(@"menuInsertDiskB");
+    [self _openWithType:OpenFileTypeDiskB];
+}
+
+-(IBAction)menuEjectDiskB:(id)sender
+{
+    NSLog(@"menuEjectDiskB");
+    emu_ejectDisk(1);
+}
+
+- (IBAction)menuReset:(id)sender;
+{
+    emu_reset();
+}
+
+- (void)_openWithType:(OpenFileType)type
+{
     NSOpenPanel* panel = [NSOpenPanel openPanel];
     panel.allowsMultipleSelection = NO;
     panel.canChooseDirectories = NO;
@@ -171,11 +198,11 @@
     __weak ViewController* weakSelf = self;
     [panel beginWithCompletionHandler:^(NSModalResponse result) {
         if (!result) return;
-        [weakSelf _openURL:panel.URL];
+        [weakSelf _openURL:panel.URL type:type];
     }];
 }
 
-- (void)_openURL:(NSURL*)url
+- (void)_openURL:(NSURL*)url type:(OpenFileType)type
 {
     NSError* error;
     NSData* data = [NSData dataWithContentsOfURL:url options:NSDataReadingUncached error:&error];
@@ -183,34 +210,39 @@
         NSLog(@"File open error: %@", error);
         return;
     }
-    char gameCode[16];
-    memset(gameCode, 0, sizeof(gameCode));
-    gameCode[0] = '\0';
-    const char* fileName = strrchr(url.path.UTF8String, '/');
-    if (fileName) {
-        while ('/' == *fileName || isdigit(*fileName)) fileName++;
-        if ('_' == *fileName) fileName++;
-        strncpy(gameCode, fileName, 15);
-        char* cp = strchr(gameCode, '.');
-        if (cp) *cp = '\0';
+    switch (type) {
+        case OpenFileTypeRom: {
+            char gameCode[16];
+            memset(gameCode, 0, sizeof(gameCode));
+            gameCode[0] = '\0';
+            const char* fileName = strrchr(url.path.UTF8String, '/');
+            if (fileName) {
+                while ('/' == *fileName || isdigit(*fileName)) fileName++;
+                if ('_' == *fileName) fileName++;
+                strncpy(gameCode, fileName, 15);
+                char* cp = strchr(gameCode, '.');
+                if (cp) *cp = '\0';
+            }
+            NSLog(@"loading game: %s", gameCode);
+            emu_loadRom(data.bytes, data.length, gameCode);
+            break;
+        }
+        case OpenFileTypeDiskA:
+            emu_insertDisk(0, data.bytes, data.length);
+            break;
+        case OpenFileTypeDiskB:
+            emu_insertDisk(1, data.bytes, data.length);
+            break;
     }
-    NSLog(@"loading game: %s", gameCode);
-    emu_loadRom(data.bytes, data.length, gameCode);
-    [self.appDelegate.menuQuickLoadFromMemory setEnabled:NO];
-    [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:url];
-    [[NSUserDefaults standardUserDefaults] setObject:url.path forKey:@"previous_rom_file"];
 }
 
+/*
 - (BOOL)application:(AppDelegate*)app didOpenFile:(NSString*)file
 {
-    [self _openURL:[NSURL fileURLWithPath:file]];
+    [self _openURL:[NSURL fileURLWithPath:file] type:OpenFileTypeRom];
     return YES;
 }
-
-- (void)menuReset:(id)sender
-{
-    emu_reset();
-}
+ */
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification
 {

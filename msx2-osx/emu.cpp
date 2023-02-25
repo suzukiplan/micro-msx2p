@@ -300,3 +300,12 @@ extern "C" void emu_startDebug()
     });
 }
 
+void emu_insertDisk(int driveId, const void* data, size_t size)
+{
+    msx2.fdc.insertDisk(driveId, data, size, true);
+}
+
+void emu_ejectDisk(int driveId)
+{
+    msx2.fdc.ejectDisk(driveId);
+}
