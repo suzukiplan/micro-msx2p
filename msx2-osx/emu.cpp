@@ -129,7 +129,8 @@ void emu_init_bios_fsa1wsx(const void* msx2p,
     static unsigned char disk_[0x4000];
     static unsigned char msxkanji_[0x8000];
     static unsigned char kanji_[0x40000];
-    static unsigned char firm_[0x10000];
+    static unsigned char empty[0x4000];
+    //static unsigned char firm_[0x10000];
 
     memcpy(msx2p_, msx2p, sizeof(msx2p_));
     memcpy(msx2pext_, msx2pext, sizeof(msx2pext_));
@@ -137,16 +138,19 @@ void emu_init_bios_fsa1wsx(const void* msx2p,
     memcpy(disk_, disk, sizeof(disk_));
     memcpy(msxkanji_, msxkanji, sizeof(msxkanji_));
     memcpy(kanji_, kanji, sizeof(kanji_));
-    memcpy(firm_, firm, sizeof(firm_));
+    //memcpy(firm_, firm, sizeof(firm_));
 
     msx2.setupSecondaryExist(true, false, false, true);
     msx2.setup(0, 0, 0, false, msx2p_, sizeof(msx2p_), "MAIN");
     msx2.setup(3, 0, 0, true, ram, sizeof(ram), "RAM");
     msx2.setup(3, 1, 0, false, msx2pext_, sizeof(msx2pext_), "SUB");
     msx2.setup(0, 2, 2, false, msx2pmus_, sizeof(msx2pmus_), "MUS");
+    msx2.setup(3, 2, 0, false, empty, sizeof(empty), "DISK");
     msx2.setup(3, 2, 2, false, disk_, sizeof(disk_), "DISK");
+    msx2.setup(3, 2, 4, false, empty, sizeof(empty), "DISK");
+    msx2.setup(3, 2, 6, false, empty, sizeof(empty), "DISK");
     msx2.setup(3, 1, 2, false, msxkanji_, sizeof(msxkanji_), "KNJ");
-    msx2.setup(3, 3, 0, false, firm_, sizeof(firm_), "FIRM");
+    //msx2.setup(3, 3, 0, false, firm_, sizeof(firm_), "FIRM");
     msx2.loadFont(kanji_, sizeof(kanji_));
     emu_reset();
 }

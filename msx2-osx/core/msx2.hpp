@@ -114,10 +114,16 @@ public:
             });
         });
          */
-        this->cpu->addBreakPoint(0x3FD7, [](void* arg) {
-            ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
-                ((MSX2*)arg)->putlog(msg);
-            });
+        this->fdc.setDiskReadListener(this, [](void* arg, int driveId, int sector) {
+            //((MSX2*)arg)->putlog("DiskRead: drive=%d, sector=%d", driveId, sector);
+            /*if (694 == sector) {
+                ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
+                    ((MSX2*)arg)->putlog(msg);
+                });
+            }*/
+        });
+        this->fdc.setDiskWriteListener(this, [](void* arg, int driveId, int sector) {
+            //((MSX2*)arg)->putlog("DiskWrite: drive=%d, sector=%d", driveId, sector);
         });
 #if 0
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
@@ -284,7 +290,6 @@ public:
         });
         // RST命令のループ状態になったら落とす
         this->cpu->addBreakOperand(0xFF, [](void* arg, unsigned char* op, int size) {
-            ((MSX2*)arg)->putlog("RST $0038");
             if (((MSX2*)arg)->cpu->reg.PC == 0x0038 + size) {
                 ((MSX2*)arg)->putlog("RST loop detected");
                 exit(-1);

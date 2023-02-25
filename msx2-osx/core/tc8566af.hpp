@@ -72,6 +72,12 @@ private:
         unsigned char sectors[8192][SECTOR_SIZE];
     } drives[NUMBER_OF_DRIVES];
     
+    struct Callback {
+        void* arg;
+        void (*diskReadListener)(void* arg, int driveId, int sector);
+        void (*diskWriteListener)(void* arg, int driveId, int sector);
+    } CB;
+
 public:
     struct Context {
         int phaseStep;
@@ -94,9 +100,20 @@ public:
     
     TC8566AF() {
         memset(&this->drives, 0, sizeof(this->drives));
+        memset(&this->CB, 0, sizeof(this->CB));
         this->reset();
     }
     
+    void setDiskReadListener(void* arg, void (*diskReadListener)(void* arg, int driveId, int sector)) {
+        this->CB.arg = arg;
+        this->CB.diskReadListener = diskReadListener;
+    }
+
+    void setDiskWriteListener(void* arg, void (*diskWriteListener)(void* arg, int driveId, int sector)) {
+        this->CB.arg = arg;
+        this->CB.diskWriteListener = diskWriteListener;
+    }
+
     void reset() {
         memset(&this->ctx, 0, sizeof(this->ctx));
         this->ctx.mainStatus = STM_NDM | STM_RQM;
@@ -191,6 +208,13 @@ private:
     }
 
     inline int diskReadSector(int driveId, int side, int track, int sector) {
+        int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
+        if (8192 <= offset) {
+            return 0;
+        }
+        if (this->CB.diskReadListener) {
+            this->CB.diskReadListener(this->CB.arg, driveId, offset);
+        }
         if (!this->diskPresent(driveId)) {
             return 0;
         } else if (side < 0 || NUMBER_OF_SIDES <= side) {
@@ -200,16 +224,18 @@ private:
         } else if (sector < 1 || NUMBER_OF_SECTORS < sector) {
             return 0;
         }
-        int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
-        if (8192 <= offset) {
-            return 0;
-        }
-        printf("ReadDisk: drive-%d, sector#%d\n", driveId, offset);
         memcpy(this->ctx.sectorBuf, this->drives[driveId].sectors[offset], SECTOR_SIZE);
         return 1;
     }
 
     inline int diskWriteSector(int driveId, int side, int track, int sector) {
+        int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
+        if (8192 <= offset) {
+            return 0;
+        }
+        if (this->CB.diskWriteListener) {
+            this->CB.diskWriteListener(this->CB.arg, driveId, offset);
+        }
         if (!this->diskPresent(driveId)) {
             return 0;
         } else if (this->diskReadOnly(driveId)) {
@@ -219,10 +245,6 @@ private:
         } else if (track < 0 || NUMBER_OF_TRACKS <= track) {
             return 0;
         } else if (sector < 1 || NUMBER_OF_SECTORS < sector) {
-            return 0;
-        }
-        int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
-        if (8192 <= offset) {
             return 0;
         }
         memcpy(this->drives[driveId].sectors[offset], this->ctx.sectorBuf, SECTOR_SIZE);

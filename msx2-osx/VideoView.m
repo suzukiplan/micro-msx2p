@@ -75,7 +75,7 @@ extern unsigned char emu_keycode;
 - (void)keyDown:(NSEvent*)event
 {
     unichar c = [self keyMapFrom:[event.charactersIgnoringModifiers characterAtIndex:0]];
-    NSLog(@"keyDown: %04X", tolower(c));
+    //NSLog(@"keyDown: %04X", tolower(c));
     switch (tolower(c)) {
         case 0xF703: emu_key |= MSX2_JOY_RI; break;
         case 0xF702: emu_key |= MSX2_JOY_LE; break;

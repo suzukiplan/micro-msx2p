@@ -136,7 +136,7 @@ class V9958
         memset(&this->ctx, 0, sizeof(this->ctx));
         memcpy(&this->ctx.stat , stat, sizeof(stat));
         memcpy(&this->ctx.reg , reg, sizeof(reg));
-        //this->ctx.hardwareResetFlag = 0xFF;
+        this->ctx.hardwareResetFlag = 0xFF;
         for (int i = 0; i < 16; i++) {
             this->ctx.pal[i][0] = 0;
             this->ctx.pal[i][1] = 0;
