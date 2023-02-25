@@ -69,13 +69,7 @@ private:
     struct DiskDrive {
         bool readOnly;
         int size;
-        struct Side {
-            struct Track {
-                struct Sector {
-                    unsigned char data[SECTOR_SIZE];
-                } sectors[NUMBER_OF_SECTORS];
-            } tracks[NUMBER_OF_TRACKS];
-        } sides[NUMBER_OF_SIDES];
+        unsigned char sectors[8192][SECTOR_SIZE];
     } drives[NUMBER_OF_DRIVES];
     
 public:
@@ -119,28 +113,19 @@ public:
         this->drives[driveId].readOnly = readOnly;
         const unsigned char* ptr = (const unsigned char*)data;
         int si = 0;
-        int tr = 0;
-        int se = 0;
         while (0 < size) {
             if (size < SECTOR_SIZE) {
-                memcpy(this->drives[driveId].sides[si].tracks[tr].sectors[se].data, ptr, size);
+                memcpy(this->drives[driveId].sectors[si], ptr, size);
                 size = 0;
             } else {
-                memcpy(this->drives[driveId].sides[si].tracks[tr].sectors[se].data, ptr, 512);
+                memcpy(this->drives[driveId].sectors[si], ptr, SECTOR_SIZE);
                 size -= SECTOR_SIZE;
+                ptr += SECTOR_SIZE;
             }
             this->drives[driveId].size += SECTOR_SIZE;
-            se++;
-            if (NUMBER_OF_SECTORS == se) {
-                se = 0;
-                tr++;
-                if (NUMBER_OF_TRACKS == tr) {
-                    tr = 0;
-                    si++;
-                    if (NUMBER_OF_SIDES == si) {
-                        break; // size over
-                    }
-                }
+            si++;
+            if (8192 == si) {
+                break; // size over
             }
         }
     }
@@ -212,10 +197,15 @@ private:
             return 0;
         } else if (track < 0 || NUMBER_OF_TRACKS <= track) {
             return 0;
-        } else if (sector < 0 || NUMBER_OF_SECTORS <= sector) {
+        } else if (sector < 1 || NUMBER_OF_SECTORS < sector) {
             return 0;
         }
-        memcpy(this->ctx.sectorBuf, this->drives[driveId].sides[side].tracks[track].sectors[sector].data, SECTOR_SIZE);
+        int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
+        if (8192 <= offset) {
+            return 0;
+        }
+        printf("ReadDisk: drive-%d, sector#%d\n", driveId, offset);
+        memcpy(this->ctx.sectorBuf, this->drives[driveId].sectors[offset], SECTOR_SIZE);
         return 1;
     }
 
@@ -228,10 +218,14 @@ private:
             return 0;
         } else if (track < 0 || NUMBER_OF_TRACKS <= track) {
             return 0;
-        } else if (sector < 0 || NUMBER_OF_SECTORS <= sector) {
+        } else if (sector < 1 || NUMBER_OF_SECTORS < sector) {
             return 0;
         }
-        memcpy(this->drives[driveId].sides[side].tracks[track].sectors[sector].data, this->ctx.sectorBuf, SECTOR_SIZE);
+        int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
+        if (8192 <= offset) {
+            return 0;
+        }
+        memcpy(this->drives[driveId].sectors[offset], this->ctx.sectorBuf, SECTOR_SIZE);
         return 1;
     }
 
