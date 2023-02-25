@@ -35,7 +35,6 @@ public:
         void (*sccWrite)(void* arg, unsigned short addr, unsigned char value);
         unsigned char (*diskRead)(void* arg, unsigned short addr);
         void (*diskWrite)(void* arg, unsigned short addr, unsigned char value);
-        void (*pageChanged)(void* arg, const char* msg);
     } CB;
     
     struct Context {
@@ -73,10 +72,6 @@ public:
         this->CB.diskWrite = diskWrite;
     }
 
-    void setupPageChangeListener(void (*pageChange)(void* arg, const char* msg)) {
-        this->CB.pageChanged = pageChange;
-    }
-    
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
         secondaryExist[0] = page0;
         secondaryExist[1] = page1;

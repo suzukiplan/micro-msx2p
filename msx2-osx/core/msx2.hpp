@@ -233,9 +233,6 @@ public:
         this->cpu->addBreakPoint(0, [](void* arg) {
             puts("RESET!");
         });
-        this->mmu.setupPageChangeListener([](void* arg, const char* msg) {
-            ((MSX2*)arg)->putlog(msg);
-        });
 #if 0
         // RDSLT
         //this->cpu->addBreakPoint(0x000C, [](void* arg) {
