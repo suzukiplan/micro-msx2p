@@ -8,6 +8,7 @@
 #include "msx2clock.hpp"
 #include "msx2kanji.hpp"
 #include "scc.hpp"
+#include "tc8566af.hpp"
 
 class MSX2 {
 private:
@@ -38,6 +39,7 @@ public:
     MSX2Clock clock;
     MSX2Kanji kanji;
     SCC scc;
+    TC8566AF fdc;
     
     struct Context {
         unsigned char io[256];
@@ -56,7 +58,7 @@ public:
         }, [](void* arg, unsigned short port) {
             return ((MSX2*)arg)->inPort((unsigned char) port);
         }, [](void* arg, unsigned short port, unsigned char value) {
-            return ((MSX2*)arg)->outPort((unsigned char) port, value);
+            ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
             ((MSX2*)arg)->cpu->resetDebugMessage();
@@ -68,6 +70,19 @@ public:
             return ((MSX2*)arg)->scc.read(addr);
         }, [](void* arg, unsigned short addr, unsigned char value) {
             ((MSX2*)arg)->scc.write(addr, value);
+        }, [](void* arg, unsigned short addr) {
+            switch (addr) {
+                case 0x3FFA: return ((MSX2*)arg)->fdc.read(4);
+                case 0x3FFB: return ((MSX2*)arg)->fdc.read(5);
+                default: return (unsigned char)0xFF;
+            }
+        }, [](void* arg, unsigned short addr, unsigned char value) {
+            switch (addr) {
+                case 0x3FF8: ((MSX2*)arg)->fdc.write(2, value); break;
+                case 0x3FF9: ((MSX2*)arg)->fdc.write(3, value); break;
+                case 0x3FFA: ((MSX2*)arg)->fdc.write(4, value); break;
+                case 0x3FFB: ((MSX2*)arg)->fdc.write(5, value); break;
+            }
         });
         /*
         this->vdp.setVramAddrChangedListener(this, [](void* arg, int addr) {
@@ -99,6 +114,11 @@ public:
             });
         });
          */
+        this->cpu->addBreakPoint(0x3FD7, [](void* arg) {
+            ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
+                ((MSX2*)arg)->putlog(msg);
+            });
+        });
 #if 0
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
@@ -348,6 +368,7 @@ public:
         this->clock.reset();
         this->kanji.reset();
         this->scc.reset();
+        this->fdc.reset();
     }
 
     void putlog(const char* fmt, ...) {

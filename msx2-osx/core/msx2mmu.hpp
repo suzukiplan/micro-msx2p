@@ -14,6 +14,7 @@ public:
         unsigned char* ptr;
         bool isRAM;
         bool isCartridge;
+        bool isDiskBios;
     };
     
     struct Slot {
@@ -32,6 +33,8 @@ public:
         void* arg;
         unsigned char (*sccRead)(void* arg, unsigned short addr);
         void (*sccWrite)(void* arg, unsigned short addr, unsigned char value);
+        unsigned char (*diskRead)(void* arg, unsigned short addr);
+        void (*diskWrite)(void* arg, unsigned short addr, unsigned char value);
         void (*pageChanged)(void* arg, const char* msg);
     } CB;
     
@@ -60,10 +63,14 @@ public:
     
     void setupCallbacks(void* arg,
                         unsigned char (*sccRead)(void* arg, unsigned short addr),
-                        void (*sccWrite)(void* arg, unsigned short addr, unsigned char value)) {
+                        void (*sccWrite)(void* arg, unsigned short addr, unsigned char value),
+                        unsigned char (*diskRead)(void* arg, unsigned short addr),
+                        void (*diskWrite)(void* arg, unsigned short addr, unsigned char value)) {
         this->CB.arg = arg;
         this->CB.sccRead = sccRead;
         this->CB.sccWrite = sccWrite;
+        this->CB.diskRead = diskRead;
+        this->CB.diskWrite = diskWrite;
     }
 
     void setupPageChangeListener(void (*pageChange)(void* arg, const char* msg)) {
@@ -130,6 +137,7 @@ public:
             }
             this->slots[pri][sec].data[idx].isRAM = isRAM;
             this->slots[pri][sec].data[idx].isCartridge = NULL != label && 0 == strcmp(label, "CART");
+            this->slots[pri][sec].data[idx].isDiskBios = NULL != label && 0 == strcmp(label, "DISK");
             if (!this->slots[pri][sec].data[idx].isCartridge) {
                 this->slots[pri][sec].data[idx].ptr = data;
             }
@@ -233,6 +241,11 @@ public:
         int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
         auto ptr = s->data[idx].ptr;
+        if (ptr && s->data[idx].isDiskBios) {
+            if (0x3FF0 <= (addr & 0x3FFF)) {
+                return CB.diskRead(CB.arg, addr & 0x3FFF);
+            }
+        }
         return ptr ? ptr[addr & 0x1FFF] : 0xFF;
     }
     
@@ -250,6 +263,8 @@ public:
         auto data = &s->data[idx];
         if (data->isRAM && data->ptr) {
             data->ptr[addr & 0x1FFF] = value;
+        } else if (data->isDiskBios) {
+            CB.diskWrite(CB.arg, addr & 0x3FFF, value);
         } else if (data->isCartridge) {
             switch (this->cartridge.romType) {
                 case MSX2_ROM_TYPE_NORMAL: return;

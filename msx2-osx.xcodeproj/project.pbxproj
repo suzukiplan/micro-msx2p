@@ -54,6 +54,7 @@
 /* Begin PBXFileReference section */
 		7407A1D329834DB500D59AA5 /* cbios_logo_msx2.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_logo_msx2.rom; sourceTree = "<group>"; };
 		7407A1D429834DB500D59AA5 /* cbios_sub.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_sub.rom; sourceTree = "<group>"; };
+		740B459A29A89A2900289C9D /* tc8566af.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = tc8566af.hpp; sourceTree = "<group>"; };
 		741A1E052988DB8C001AE497 /* msx2def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msx2def.h; sourceTree = "<group>"; };
 		741A1E0C298B77E5001AE497 /* msx2clock.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = msx2clock.hpp; sourceTree = "<group>"; };
 		741A1E0D298D2CA5001AE497 /* msx2kanji.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = msx2kanji.hpp; sourceTree = "<group>"; };
@@ -177,6 +178,7 @@
 				741A1E0D298D2CA5001AE497 /* msx2kanji.hpp */,
 				748D22C2297E691A00B504AF /* msx2mmu.hpp */,
 				741A1E37299B3026001AE497 /* scc.hpp */,
+				740B459A29A89A2900289C9D /* tc8566af.hpp */,
 				748D22BF297E670500B504AF /* v9958.hpp */,
 				748D22C1297E675000B504AF /* z80.hpp */,
 			);

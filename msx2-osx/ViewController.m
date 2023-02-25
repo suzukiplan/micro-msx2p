@@ -65,7 +65,7 @@
                        tm1pdesk1.bytes,
                        tm1pdesk2.bytes,
                        font.bytes, font.length);
-#elif 0
+#elif 1
     NSData* msx2p = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wsbios" ofType:@"rom"]];
     NSData* msx2pext = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wsext" ofType:@"rom"]];
     NSData* msx2pmus = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wsmus" ofType:@"rom"]];
