@@ -192,61 +192,54 @@ public:
     }
     
 private:
-    inline bool diskPresent(int driveId) {
-        return 0 <= driveId && driveId < NUMBER_OF_DRIVES && 0 < this->drives[driveId].size;
-    }
-
-    inline bool diskEnabled(int driveId) {
+    inline bool isEnabled(int driveId) {
         return 0 <= driveId && driveId < NUMBER_OF_DRIVES;
     }
 
+    inline bool isPresent(int driveId) {
+        return this->isEnabled(driveId) && 0 < this->drives[driveId].size;
+    }
+
     inline int diskGetSides(int driveId) {
-        return 0 <= driveId && driveId < NUMBER_OF_DRIVES ? NUMBER_OF_SIDES : 0;
+        return this->isPresent(driveId) ? NUMBER_OF_SIDES : 0;
     }
 
-    inline bool diskReadOnly(int driveId) {
-        return 0 <= driveId && driveId < NUMBER_OF_DRIVES ? this->drives[driveId].readOnly : false;
+    inline bool isReadOnly(int driveId) {
+        return this->isPresent(driveId) ? this->drives[driveId].readOnly : false;
     }
 
-    inline int diskReadSector(int driveId, int side, int track, int sector) {
+    inline bool isValid(int driveId, int side, int track, int sector) {
+        if (!this->isPresent(driveId)) {
+            return false;
+        } else if (side < 0 || NUMBER_OF_SIDES <= side) {
+            return false;
+        } else if (track < 0 || NUMBER_OF_TRACKS <= track) {
+            return false;
+        } else if (sector < 1 || NUMBER_OF_SECTORS < sector) {
+            return false;
+        }
+        return true;
+    }
+
+    inline int readSector(int driveId, int side, int track, int sector) {
         int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
-        if (SECTOR_LIMIT <= offset) {
+        if (SECTOR_LIMIT <= offset || !this->isValid(driveId, side, track, sector)) {
             return 0;
         }
         if (this->CB.diskReadListener) {
             this->CB.diskReadListener(this->CB.arg, driveId, offset);
         }
-        if (!this->diskPresent(driveId)) {
-            return 0;
-        } else if (side < 0 || NUMBER_OF_SIDES <= side) {
-            return 0;
-        } else if (track < 0 || NUMBER_OF_TRACKS <= track) {
-            return 0;
-        } else if (sector < 1 || NUMBER_OF_SECTORS < sector) {
-            return 0;
-        }
         memcpy(this->ctx.sectorBuf, this->drives[driveId].sectors[offset], SECTOR_SIZE);
         return 1;
     }
 
-    inline int diskWriteSector(int driveId, int side, int track, int sector) {
+    inline int writeSector(int driveId, int side, int track, int sector) {
         int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
-        if (SECTOR_LIMIT <= offset) {
+        if (SECTOR_LIMIT <= offset || !this->isValid(driveId, side, track, sector)) {
             return 0;
         }
         if (this->CB.diskWriteListener) {
             this->CB.diskWriteListener(this->CB.arg, driveId, offset);
-        }
-        if (!this->diskPresent(driveId)) {
-            return 0;
-        } else if (this->diskReadOnly(driveId)) {
-            return 0;
-        } else if (side < 0 || NUMBER_OF_SIDES <= side) {
-            return 0;
-        } else if (track < 0 || NUMBER_OF_TRACKS <= track) {
-            return 0;
-        } else if (sector < 1 || NUMBER_OF_SECTORS < sector) {
-            return 0;
         }
         memcpy(this->drives[driveId].sectors[offset], this->ctx.sectorBuf, SECTOR_SIZE);
         return 1;
@@ -314,14 +307,14 @@ private:
         switch (this->ctx.phaseStep++) {
             case 0:
                 this->ctx.status[0] &= ~(ST0_DS0 | ST0_DS1 | ST0_IC0 | ST0_IC1);
-                this->ctx.status[0] |= this->diskPresent(this->ctx.drive) ? 0 : ST0_DS0;
+                this->ctx.status[0] |= this->isPresent(this->ctx.drive) ? 0 : ST0_DS0;
                 this->ctx.status[0] |= value & (ST0_DS0 | ST0_DS1);
-                this->ctx.status[0] |= this->diskEnabled(this->ctx.drive) ? 0 : ST0_IC1;
+                this->ctx.status[0] |= this->isEnabled(this->ctx.drive) ? 0 : ST0_IC1;
                 this->ctx.status[3] = value & (ST3_DS0 | ST3_DS1);
                 this->ctx.status[3] |= this->ctx.currentTrack == 0 ? ST3_TK0 : 0;
                 this->ctx.status[3] |= this->diskGetSides(this->ctx.drive) == 2 ? ST3_HD : 0;
-                this->ctx.status[3] |= this->diskReadOnly(this->ctx.drive) ? ST3_WP : 0;
-                this->ctx.status[3] |= this->diskPresent(this->ctx.drive) ? ST3_RDY : 0;
+                this->ctx.status[3] |= this->isReadOnly(this->ctx.drive) ? ST3_WP : 0;
+                this->ctx.status[3] |= this->isPresent(this->ctx.drive) ? ST3_RDY : 0;
                 break;
             case 1:
                 this->ctx.cylinderNumber = value;
@@ -338,7 +331,10 @@ private:
                 break;
             case 7:
                 if (this->ctx.command == CMD_READ_DATA) {
-                    int readCount = this->diskReadSector(this->ctx.drive, this->ctx.side, this->ctx.currentTrack, this->ctx.sectorNumber);
+                    int readCount = this->readSector(this->ctx.drive,
+                                                     this->ctx.side,
+                                                     this->ctx.currentTrack,
+                                                     this->ctx.sectorNumber);
                     if (0 == readCount) {
                         this->ctx.status[0] |= ST0_IC0;
                         this->ctx.status[1] |= ST1_ND;
@@ -357,14 +353,14 @@ private:
         switch (this->ctx.phaseStep++) {
             case 0:
                 this->ctx.status[0] &= ~(ST0_DS0 | ST0_DS1 | ST0_IC0 | ST0_IC1);
-                this->ctx.status[0] |= this->diskPresent(this->ctx.drive) ? 0 : ST0_DS0;
+                this->ctx.status[0] |= this->isPresent(this->ctx.drive) ? 0 : ST0_DS0;
                 this->ctx.status[0] |= value & (ST0_DS0 | ST0_DS1);
-                this->ctx.status[0] |= this->diskEnabled(this->ctx.drive) ? 0 : ST0_IC1;
+                this->ctx.status[0] |= this->isEnabled(this->ctx.drive) ? 0 : ST0_IC1;
                 this->ctx.status[3] = value & (ST3_DS0 | ST3_DS1);
                 this->ctx.status[3] |= this->ctx.currentTrack == 0 ? ST3_TK0 : 0;
                 this->ctx.status[3] |= this->diskGetSides(this->ctx.drive) == 2 ? ST3_HD : 0;
-                this->ctx.status[3] |= this->diskReadOnly(this->ctx.drive) ? ST3_WP : 0;
-                this->ctx.status[3] |= this->diskPresent(this->ctx.drive) ? ST3_RDY : 0;
+                this->ctx.status[3] |= this->isReadOnly(this->ctx.drive) ? ST3_WP : 0;
+                this->ctx.status[3] |= this->isPresent(this->ctx.drive) ? ST3_RDY : 0;
                 break;
             case 1:
                 this->ctx.number = value;
@@ -387,14 +383,14 @@ private:
         switch (this->ctx.phaseStep++) {
             case 0:
                 this->ctx.status[0] &= ~(ST0_DS0 | ST0_DS1 | ST0_IC0 | ST0_IC1);
-                this->ctx.status[0] |= this->diskPresent(this->ctx.drive) ? 0 : ST0_DS0;
+                this->ctx.status[0] |= this->isPresent(this->ctx.drive) ? 0 : ST0_DS0;
                 this->ctx.status[0] |= value & (ST0_DS0 | ST0_DS1);
-                this->ctx.status[0] |= this->diskEnabled(this->ctx.drive) ? 0 : ST0_IC1;
+                this->ctx.status[0] |= this->isEnabled(this->ctx.drive) ? 0 : ST0_IC1;
                 this->ctx.status[3] = value & (ST3_DS0 | ST3_DS1);
                 this->ctx.status[3] |= this->ctx.currentTrack == 0 ? ST3_TK0 : 0;
                 this->ctx.status[3] |= this->diskGetSides(this->ctx.drive) == 2 ? ST3_HD : 0;
-                this->ctx.status[3] |= this->diskReadOnly(this->ctx.drive) ? ST3_WP : 0;
-                this->ctx.status[3] |= this->diskPresent(this->ctx.drive) ? ST3_RDY : 0;
+                this->ctx.status[3] |= this->isReadOnly(this->ctx.drive) ? ST3_WP : 0;
+                this->ctx.status[3] |= this->isPresent(this->ctx.drive) ? ST3_RDY : 0;
                 break;
             case 1:
                 this->ctx.currentTrack = value;
@@ -409,15 +405,15 @@ private:
         switch (this->ctx.phaseStep++) {
             case 0:
                 this->ctx.status[0] &= ~(ST0_DS0 | ST0_DS1 | ST0_IC0 | ST0_IC1);
-                this->ctx.status[0] |= this->diskPresent(this->ctx.drive) ? 0 : ST0_DS0;
+                this->ctx.status[0] |= this->isPresent(this->ctx.drive) ? 0 : ST0_DS0;
                 this->ctx.status[0] |= value & (ST0_DS0 | ST0_DS1);
-                this->ctx.status[0] |= this->diskEnabled(this->ctx.drive) ? 0 : ST0_IC1;
+                this->ctx.status[0] |= this->isEnabled(this->ctx.drive) ? 0 : ST0_IC1;
                 this->ctx.status[0] |= ST0_SE;
                 this->ctx.status[3] = value & (ST3_DS0 | ST3_DS1);
                 this->ctx.status[3] |= this->ctx.currentTrack == 0 ? ST3_TK0 : 0;
                 this->ctx.status[3] |= this->diskGetSides(this->ctx.drive) == 2 ? ST3_HD : 0;
-                this->ctx.status[3] |= this->diskReadOnly(this->ctx.drive) ? ST3_WP : 0;
-                this->ctx.status[3] |= this->diskPresent(this->ctx.drive) ? ST3_RDY : 0;
+                this->ctx.status[3] |= this->isReadOnly(this->ctx.drive) ? ST3_WP : 0;
+                this->ctx.status[3] |= this->isPresent(this->ctx.drive) ? ST3_RDY : 0;
                 this->ctx.currentTrack = 0;
                 this->ctx.mainStatus &= ~STM_CB;
                 this->ctx.phase = PHASE_IDLE;
@@ -438,14 +434,14 @@ private:
         switch (this->ctx.phaseStep++) {
             case 0:
                 this->ctx.status[0] &= ~(ST0_DS0 | ST0_DS1 | ST0_IC0 | ST0_IC1);
-                this->ctx.status[0] |= this->diskPresent(this->ctx.drive) ? 0 : ST0_DS0;
+                this->ctx.status[0] |= this->isPresent(this->ctx.drive) ? 0 : ST0_DS0;
                 this->ctx.status[0] |= value & (ST0_DS0 | ST0_DS1);
-                this->ctx.status[0] |= this->diskEnabled(this->ctx.drive) ? 0 : ST0_IC1;
+                this->ctx.status[0] |= this->isEnabled(this->ctx.drive) ? 0 : ST0_IC1;
                 this->ctx.status[3] = value & (ST3_DS0 | ST3_DS1);
                 this->ctx.status[3] |= this->ctx.currentTrack == 0 ? ST3_TK0 : 0;
                 this->ctx.status[3] |= this->diskGetSides(this->ctx.drive) == 2 ? ST3_HD : 0;
-                this->ctx.status[3] |= this->diskReadOnly(this->ctx.drive) ? ST3_WP : 0;
-                this->ctx.status[3] |= this->diskPresent(this->ctx.drive) ? ST3_RDY : 0;
+                this->ctx.status[3] |= this->isReadOnly(this->ctx.drive) ? ST3_WP : 0;
+                this->ctx.status[3] |= this->isPresent(this->ctx.drive) ? ST3_RDY : 0;
                 this->ctx.phase = PHASE_RESULT;
                 this->ctx.phaseStep = 0;
                 this->ctx.mainStatus |= STM_DIO;
@@ -464,10 +460,10 @@ private:
         if (this->ctx.sectorOffset < SECTOR_SIZE) {
             this->ctx.sectorBuf[this->ctx.sectorOffset++] = value;
             if (this->ctx.sectorOffset == SECTOR_SIZE) {
-                int ret = this->diskWriteSector(this->ctx.drive,
-                                                this->ctx.side,
-                                                this->ctx.currentTrack,
-                                                this->ctx.sectorNumber);
+                int ret = this->writeSector(this->ctx.drive,
+                                            this->ctx.side,
+                                            this->ctx.currentTrack,
+                                            this->ctx.sectorNumber);
                 this->ctx.status[1] |= !ret ? ST1_NW : 0;
                 this->ctx.phase = PHASE_RESULT;
                 this->ctx.phaseStep = 0;
