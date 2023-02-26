@@ -213,45 +213,6 @@ public:
         this->cpu->addBreakPoint(0, [](void* arg) {
             puts("RESET!");
         });
-#if 0
-        // RDSLT
-        //this->cpu->addBreakPoint(0x000C, [](void* arg) {
-        this->cpu->addBreakPoint(0x01F5, [](void* arg) {
-            unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
-            int pri = a & 0x03;
-            int sec = (a & 0x0C) >> 2;
-            unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
-            hl <<= 8;
-            hl |= ((MSX2*)arg)->cpu->reg.pair.L;
-            unsigned short sp = ((MSX2*)arg)->cpu->reg.SP;
-            unsigned short ret = ((MSX2*)arg)->mmu.read(sp + 1);
-            ret <<= 8;
-            ret |= ((MSX2*)arg)->mmu.read(sp);
-            ((MSX2*)arg)->putlog("RDSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X", a & 0x80 ? "YES" : "NO", pri, sec, hl);
-            if (a & 0x80 && pri == 1 && sec == 0 && hl == 0x4000) {
-                ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) { puts(msg); });
-            }
-        });
-        this->cpu->addBreakPoint(0x0014, [](void* arg) {
-            unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
-            int pri = a & 0x03;
-            int sec = (a & 0x0C) >> 2;
-            unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
-            hl <<= 8;
-            hl |= ((MSX2*)arg)->cpu->reg.pair.L;
-            ((MSX2*)arg)->putlog("WRSLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X", a & 0x80 ? "YES" : "NO", pri, sec, hl);
-        });
-        this->cpu->addBreakPoint(0x0024, [](void* arg) {
-            unsigned char a = ((MSX2*)arg)->cpu->reg.pair.A;
-            int pri = a & 0x03;
-            int sec = (a & 0x0C) >> 2;
-            unsigned short hl = ((MSX2*)arg)->cpu->reg.pair.H;
-            hl <<= 8;
-            hl |= ((MSX2*)arg)->cpu->reg.pair.L;
-            ((MSX2*)arg)->putlog("ENASLT: isExpand=%s, pri=%d, sec=%d, HL=$%04X", a & 0x80 ? "YES" : "NO", pri, sec, hl);
-        });
-
-#endif
         // CALL命令をページ3にRAMを割り当てていない状態で実行した時に落とす
         this->cpu->addBreakOperand(0xCD, [](void* arg, unsigned char* op, int size) {
             int pri3 = ((MSX2*)arg)->mmu.ctx.pri[3];
