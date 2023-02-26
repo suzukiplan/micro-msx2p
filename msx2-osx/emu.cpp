@@ -144,7 +144,7 @@ void emu_init_bios_fsa1wsx(const void* msx2p,
     msx2.setup(0, 0, 0, false, msx2p_, sizeof(msx2p_), "MAIN");
     msx2.setup(3, 0, 0, true, ram, sizeof(ram), "RAM");
     msx2.setup(3, 1, 0, false, msx2pext_, sizeof(msx2pext_), "SUB");
-    msx2.setup(0, 2, 2, false, msx2pmus_, sizeof(msx2pmus_), "MUS");
+    msx2.setup(0, 2, 2, false, msx2pmus_, sizeof(msx2pmus_), "FM");
     msx2.setup(3, 2, 0, false, empty, sizeof(empty), "DISK");
     msx2.setup(3, 2, 2, false, disk_, sizeof(disk_), "DISK");
     msx2.setup(3, 2, 4, false, empty, sizeof(empty), "DISK");

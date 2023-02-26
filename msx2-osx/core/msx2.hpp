@@ -9,6 +9,7 @@
 #include "msx2kanji.hpp"
 #include "scc.hpp"
 #include "tc8566af.hpp"
+#include "emu2413.h"
 
 class MSX2 {
 private:
@@ -40,6 +41,7 @@ public:
     MSX2Kanji kanji;
     SCC scc;
     TC8566AF fdc;
+    OPLL* ym2413;
     
     struct Context {
         unsigned char io[256];
@@ -47,6 +49,7 @@ public:
     } ctx;
 
     ~MSX2() {
+        OPLL_delete(this->ym2413);
         delete this->cpu;
     }
 
@@ -60,6 +63,7 @@ public:
         }, [](void* arg, unsigned short port, unsigned char value) {
             ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
+        this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
             ((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
@@ -83,44 +87,14 @@ public:
                 case 0x3FFA: ((MSX2*)arg)->fdc.write(4, value); break;
                 case 0x3FFB: ((MSX2*)arg)->fdc.write(5, value); break;
             }
+        }, [](void* arg, unsigned short addr, unsigned char value) {
+            switch (addr) {
+                case 0x3FF4: OPLL_writeIO(((MSX2*)arg)->ym2413, 0, value); break;
+                case 0x3FF5: OPLL_writeIO(((MSX2*)arg)->ym2413, 1, value); break;
+            }
         });
-        /*
-        this->vdp.setVramAddrChangedListener(this, [](void* arg, int addr) {
-            ((MSX2*)arg)->putlog("update VRAM address: $%X (%s)", addr, ((MSX2*)arg)->vdp.where(addr));
-        });
-        this->vdp.setVramWriteListener(this, [](void* arg, int addr, unsigned char value) {
-            if (addr < 0x6A00)
-            ((MSX2*)arg)->putlog("VRAM[%X] = $%02X (%s)", addr, value, ((MSX2*)arg)->vdp.where(addr));
-        });
-         */
-        /*
-        this->cpu->addBreakPoint(0x4016, [](void* arg) {
-            ((MSX2*)arg)->putlog("START ROM PROCEDURE");
-            ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
-                if (0x4000 < ((MSX2*)arg)->cpu->reg.PC)
-                ((MSX2*)arg)->putlog(msg);
-            });
-        });
-        this->vdp.setVramWriteListener(this, [](void* arg, int addr, unsigned char value) {
-            ((MSX2*)arg)->putlog("VRAM[%X] = $%02X %c (%s)", addr, value, isprint(value) ? value : '?', ((MSX2*)arg)->vdp.where(addr));
-        });
-         cpu->setDebugMessage([](void* arg, const char* msg) {
-             ((MSX2*)arg)->putlog(msg);
-         });
-        this->cpu->addBreakPoint(0x062D, [](void* arg) {
-            ((MSX2*)arg)->putlog("START MEMORY-MAPPER PROCEDURE");
-            ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
-                ((MSX2*)arg)->putlog(msg);
-            });
-        });
-         */
         this->fdc.setDiskReadListener(this, [](void* arg, int driveId, int sector) {
             //((MSX2*)arg)->putlog("DiskRead: drive=%d, sector=%d", driveId, sector);
-            /*if (694 == sector) {
-                ((MSX2*)arg)->cpu->setDebugMessage([](void* arg, const char* msg) {
-                    ((MSX2*)arg)->putlog(msg);
-                });
-            }*/
         });
         this->fdc.setDiskWriteListener(this, [](void* arg, int driveId, int sector) {
             //((MSX2*)arg)->putlog("DiskWrite: drive=%d, sector=%d", driveId, sector);
@@ -371,6 +345,7 @@ public:
         this->kanji.reset();
         this->scc.reset();
         this->fdc.reset();
+        OPLL_reset(this->ym2413);
     }
 
     void putlog(const char* fmt, ...) {
@@ -433,6 +408,17 @@ public:
             this->psg.ctx.bobo -= this->CPU_CLOCK;
             this->psg.tick(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1], 81);
             this->scc.tick(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1], 81);
+            auto opllWav = OPLL_calc(this->ym2413);
+            int l = this->soundBuffer[this->soundBufferCursor];
+            int r = this->soundBuffer[this->soundBufferCursor + 1];
+            l += opllWav;
+            r += opllWav;
+            if (32767 < l) l = 32767;
+            else if (l < -32768) l = -32768;
+            if (32767 < r) r = 32767;
+            else if (r < -32768) r = -32768;
+            this->soundBuffer[this->soundBufferCursor] = (short)l;
+            this->soundBuffer[this->soundBufferCursor + 1] = (short)r;
             this->soundBufferCursor += 2;
         }
         // Asynchronous with VDP
@@ -487,8 +473,7 @@ public:
             case 0xB9: return 0x00; // light pen
             case 0xBA: return 0x00; // light pen
             case 0xBB: return 0xFF; // light pen
-            case 0xC0: return 0xFF; // MSX audio
-            case 0xC1: return 0x00; // MSX audio
+            case 0xC0: return 0xFF; // MSX-Audio (Y8950?)
             case 0xC8: return 0xFF; // MSX interface
             case 0xC9: return 0x00; // MSX interface
             case 0xCA: return 0x00; // MSX interface
@@ -509,6 +494,8 @@ public:
     inline void outPort(unsigned char port, unsigned char value) {
         this->ctx.io[port] = value;
         switch (port) {
+            case 0x7C: OPLL_writeIO(this->ym2413, 0, value); break;
+            case 0x7D: OPLL_writeIO(this->ym2413, 1, value); break;
             case 0x81: break; // 8251 status command
             case 0x88: this->vdp.outPort98(value); break;
             case 0x89: this->vdp.outPort99(value); break;

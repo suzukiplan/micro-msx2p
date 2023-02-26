@@ -15,6 +15,7 @@ public:
         bool isRAM;
         bool isCartridge;
         bool isDiskBios;
+        bool isFmBios;
     };
     
     struct Slot {
@@ -35,6 +36,7 @@ public:
         void (*sccWrite)(void* arg, unsigned short addr, unsigned char value);
         unsigned char (*diskRead)(void* arg, unsigned short addr);
         void (*diskWrite)(void* arg, unsigned short addr, unsigned char value);
+        void (*fmWrite)(void* arg, unsigned short addr, unsigned char value);
     } CB;
     
     struct Context {
@@ -64,12 +66,14 @@ public:
                         unsigned char (*sccRead)(void* arg, unsigned short addr),
                         void (*sccWrite)(void* arg, unsigned short addr, unsigned char value),
                         unsigned char (*diskRead)(void* arg, unsigned short addr),
-                        void (*diskWrite)(void* arg, unsigned short addr, unsigned char value)) {
+                        void (*diskWrite)(void* arg, unsigned short addr, unsigned char value),
+                        void (*fmWrite)(void* arg, unsigned short addr, unsigned char value)) {
         this->CB.arg = arg;
         this->CB.sccRead = sccRead;
         this->CB.sccWrite = sccWrite;
         this->CB.diskRead = diskRead;
         this->CB.diskWrite = diskWrite;
+        this->CB.fmWrite = fmWrite;
     }
 
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
@@ -133,6 +137,7 @@ public:
             this->slots[pri][sec].data[idx].isRAM = isRAM;
             this->slots[pri][sec].data[idx].isCartridge = NULL != label && 0 == strcmp(label, "CART");
             this->slots[pri][sec].data[idx].isDiskBios = NULL != label && 0 == strcmp(label, "DISK");
+            this->slots[pri][sec].data[idx].isFmBios = NULL != label && 0 == strcmp(label, "FM");
             if (!this->slots[pri][sec].data[idx].isCartridge) {
                 this->slots[pri][sec].data[idx].ptr = data;
             }
@@ -260,6 +265,8 @@ public:
             data->ptr[addr & 0x1FFF] = value;
         } else if (data->isDiskBios) {
             CB.diskWrite(CB.arg, addr & 0x3FFF, value);
+        } else if (data->isFmBios) {
+            CB.fmWrite(CB.arg, addr & 0x3FFF, value);
         } else if (data->isCartridge) {
             switch (this->cartridge.romType) {
                 case MSX2_ROM_TYPE_NORMAL: return;

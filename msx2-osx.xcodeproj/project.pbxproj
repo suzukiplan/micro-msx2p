@@ -49,6 +49,7 @@
 		748D22E0297E7E2E00B504AF /* MSX2EXT.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 748D22D6297E7E2E00B504AF /* MSX2EXT.ROM */; };
 		748D22E5297FB69800B504AF /* cbios_main_msx2_jp.rom in Resources */ = {isa = PBXBuildFile; fileRef = 748D22E4297FB69800B504AF /* cbios_main_msx2_jp.rom */; };
 		748D22E72980CB8400B504AF /* MSX2J.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 748D22E62980CB8400B504AF /* MSX2J.ROM */; };
+		749112BA29AB4A6E004140F5 /* emu2413.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112B829AB4A6E004140F5 /* emu2413.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -113,6 +114,8 @@
 		748D22D6297E7E2E00B504AF /* MSX2EXT.ROM */ = {isa = PBXFileReference; lastKnownFileType = text; path = MSX2EXT.ROM; sourceTree = "<group>"; };
 		748D22E4297FB69800B504AF /* cbios_main_msx2_jp.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_main_msx2_jp.rom; sourceTree = "<group>"; };
 		748D22E62980CB8400B504AF /* MSX2J.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = MSX2J.ROM; sourceTree = "<group>"; };
+		749112B829AB4A6E004140F5 /* emu2413.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = emu2413.c; sourceTree = "<group>"; };
+		749112B929AB4A6E004140F5 /* emu2413.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = emu2413.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -172,6 +175,8 @@
 			isa = PBXGroup;
 			children = (
 				748D22BE297E670500B504AF /* ay8910.hpp */,
+				749112B829AB4A6E004140F5 /* emu2413.c */,
+				749112B929AB4A6E004140F5 /* emu2413.h */,
 				748D22C0297E672F00B504AF /* msx2.hpp */,
 				741A1E0C298B77E5001AE497 /* msx2clock.hpp */,
 				741A1E052988DB8C001AE497 /* msx2def.h */,
@@ -330,6 +335,7 @@
 				748D22C5297E758C00B504AF /* VideoView.m in Sources */,
 				748D22AF297E652600B504AF /* ViewController.m in Sources */,
 				748D22B6297E652800B504AF /* main.m in Sources */,
+				749112BA29AB4A6E004140F5 /* emu2413.c in Sources */,
 				741A1E3A299DA885001AE497 /* vgsspu_al.c in Sources */,
 				748D22CC297E768D00B504AF /* emu.cpp in Sources */,
 				748D22AC297E652600B504AF /* AppDelegate.m in Sources */,
