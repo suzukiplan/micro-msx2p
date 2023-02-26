@@ -8,6 +8,7 @@ private:
     static const int NUMBER_OF_TRACKS = 80;
     static const int NUMBER_OF_SECTORS = 9;
     static const int SECTOR_SIZE = 512;
+    static const int SECTOR_LIMIT = 4096;
     static const int CMD_UNKNOWN = 0;
     static const int CMD_READ_DATA = 1;
     static const int CMD_WRITE_DATA = 2;
@@ -69,7 +70,7 @@ private:
     struct DiskDrive {
         bool readOnly;
         int size;
-        unsigned char sectors[8192][SECTOR_SIZE];
+        unsigned char sectors[SECTOR_LIMIT][SECTOR_SIZE];
     } drives[NUMBER_OF_DRIVES];
     
     struct Callback {
@@ -141,7 +142,7 @@ public:
             }
             this->drives[driveId].size += SECTOR_SIZE;
             si++;
-            if (8192 == si) {
+            if (SECTOR_LIMIT == si) {
                 break; // size over
             }
         }
@@ -209,7 +210,7 @@ private:
 
     inline int diskReadSector(int driveId, int side, int track, int sector) {
         int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
-        if (8192 <= offset) {
+        if (SECTOR_LIMIT <= offset) {
             return 0;
         }
         if (this->CB.diskReadListener) {
@@ -230,7 +231,7 @@ private:
 
     inline int diskWriteSector(int driveId, int side, int track, int sector) {
         int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
-        if (8192 <= offset) {
+        if (SECTOR_LIMIT <= offset) {
             return 0;
         }
         if (this->CB.diskWriteListener) {
