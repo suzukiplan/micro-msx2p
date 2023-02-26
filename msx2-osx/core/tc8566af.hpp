@@ -482,9 +482,10 @@ private:
                 this->ctx.currentTrack = value;
                 break;
             case 1:
-                memset(this->ctx.sectorBuf, this->ctx.fillerByte, 512);
-                //int ret = this->diskWrite(this->ctx.drive, this->ctx.sectorBuf, this->ctx.sectorNumber - 1 + this->diskGetSectorsPerTrack(this->ctx.drive) * (this->ctx.currentTrack * this->diskGetSides(this->ctx.drive) + value));
-                //this->ctx.status[1] |= !ret ? ST1_NW : 0;
+                memset(this->ctx.sectorBuf, this->ctx.fillerByte, SECTOR_SIZE);
+                for (int i = 0; i < SECTOR_LIMIT; i++) {
+                    memcpy(this->drives[this->ctx.drive].sectors[i], this->ctx.sectorBuf, SECTOR_SIZE);
+                }
                 this->ctx.status[1] |= ST1_NW;
                 break;
             case 2:
