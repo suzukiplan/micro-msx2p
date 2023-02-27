@@ -48,6 +48,7 @@ void emu_vsync(void);
 void emu_destroy(void);
 void emu_dumpVideoMemory(void);
 void emu_startDebug(void);
+const void* emu_quickSave(size_t* size);
 
 #ifdef __cplusplus
 };

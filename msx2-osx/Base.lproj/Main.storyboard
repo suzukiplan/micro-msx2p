@@ -95,6 +95,17 @@
                                                 <action selector="menuEjectDiskB:" target="Ady-hI-5gd" id="QA6-0G-KQz"/>
                                             </connections>
                                         </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="4MB-d6-U9d"/>
+                                        <menuItem title="Quick Save" keyEquivalent="s" id="rcb-HF-qGc">
+                                            <connections>
+                                                <action selector="menuQuickSave:" target="Ady-hI-5gd" id="T4J-v3-OFm"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Quick Load" keyEquivalent="l" id="hby-2u-CfZ">
+                                            <connections>
+                                                <action selector="menuQuickLoad:" target="Ady-hI-5gd" id="LWJ-X8-Rg9"/>
+                                            </connections>
+                                        </menuItem>
                                     </items>
                                 </menu>
                             </menuItem>

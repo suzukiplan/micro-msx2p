@@ -18,20 +18,22 @@ private:
     const int PSG_CLOCK = 44100;
     short soundBuffer[65536];
     unsigned short soundBufferCursor;
-   
+    char quickSaveBuffer[1024 * 1024 * 4];
+    size_t quickSaveBufferSize;
+    
     struct KeyCode {
         bool exist;
         int x;
         int y;
     } keyCodes[0x80];
-
+    
     void initKeyCode(char code, int x, int y) {
         code &= 0x7F;
         keyCodes[code].exist = true;
         keyCodes[code].x = x;
         keyCodes[code].y = y;
     }
-
+    
 public:
     Z80* cpu;
     MSX2MMU mmu;
@@ -47,12 +49,12 @@ public:
         unsigned char io[256];
         unsigned char key;
     } ctx;
-
+    
     ~MSX2() {
         OPLL_delete(this->ym2413);
         delete this->cpu;
     }
-
+    
     MSX2(int colorMode) {
         this->cpu = new Z80([](void* arg, unsigned short addr) {
             return ((MSX2*)arg)->mmu.read(addr);
@@ -128,9 +130,9 @@ public:
             int sa = this_->vdp.getSpriteAttributeTableM2();
             int sg = this_->vdp.getSpriteGeneratorTable();
             unsigned char r14 = this_->vdp.ctx.reg[14];
-
+            
             this_->vdp.ctx.reg[rn] = value;
-
+            
             if (screen != this_->vdp.isEnabledScreen()) {
                 this_->putlog("Change VDP screen enabled: %s", this_->vdp.isEnabledScreen() ? "ENABLED" : "DISABLED");
             }
@@ -159,9 +161,9 @@ public:
                 this_->putlog("AddressCounter R#14: $%02X -> $%02X", r14, this_->vdp.ctx.reg[14]);
             }
             /*
-            if (ie0 != this_->vdp.isIE0()) {
-                this_->putlog("Change EI0: %s", ie0 ? "OFF" : "ON");
-            }
+             if (ie0 != this_->vdp.isIE0()) {
+             this_->putlog("Change EI0: %s", ie0 ? "OFF" : "ON");
+             }
              */
             if (ie1 != this_->vdp.isIE1()) {
                 this_->putlog("Change IE1 enabled: %s", ie1 ? "OFF" : "ON");
@@ -200,7 +202,7 @@ public:
             if (scrollH != scrollH2) {
                 this_->putlog("Horizontal Scroll changed: %d -> %d", scrollH, scrollH2);
             }
-
+            
             if (spriteDisplay != this_->vdp.isSpriteDisplay()) {
                 this_->putlog("Change Sprite Display: %s", spriteDisplay ? "OFF" : "ON");
             }
@@ -209,7 +211,7 @@ public:
             }
         });
 #endif
-
+        
         this->cpu->addBreakPoint(0, [](void* arg) {
             puts("RESET!");
         });
@@ -230,7 +232,7 @@ public:
                 exit(-1);
             }
         });
-
+        
         this->cpu->setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX2*)arg)->consumeClock(cpuClocks);
         });
@@ -308,7 +310,7 @@ public:
         this->fdc.reset();
         OPLL_reset(this->ym2413);
     }
-
+    
     void putlog(const char* fmt, ...) {
         static int seqno = 0;
         char buf[256];
@@ -331,17 +333,21 @@ public:
                this->mmu.ctx.pri[3], this->mmu.ctx.sec[3],
                this->vdp.lastRenderScanline, buf);
     }
-
+    
     void loadFont(const void* font, size_t fontSize) {
         this->kanji.loadFont(font, fontSize);
     }
-
+    
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
         this->mmu.setupSecondaryExist(page0, page1, page2, page3);
     }
 
-    void setup(int pri, int sec, int idx, bool isRAM, void* data, int size, const char* label = NULL) {
-        this->mmu.setup(pri, sec, idx, isRAM, (unsigned char*)data, size, label);
+    void setupRAM(int pri, int sec) {
+        this->mmu.setupRAM(pri, sec);
+    }
+
+    void setup(int pri, int sec, int idx, void* data, int size, const char* label = NULL) {
+        this->mmu.setup(pri, sec, idx, (unsigned char*)data, size, label);
     }
     
     void loadRom(void* data, int size, int romType) {
@@ -350,18 +356,26 @@ public:
         this->reset();
     }
     
+    void insertDisk(int driveId, const void *data, size_t size, bool readOnly) {
+        this->fdc.insertDisk(driveId, data, size, readOnly);
+    }
+
+    void ejectDisk(int driveId) {
+        this->fdc.ejectDisk(driveId);
+    }
+
     void tick(unsigned char pad1, unsigned char pad2, unsigned char key) {
         this->psg.setPads(pad1, pad2);
         this->ctx.key = toupper(key);
         this->cpu->execute(0x7FFFFFFF);
     }
-
+    
     void* getSound(size_t* soundSize) {
         *soundSize = this->soundBufferCursor * 2;
         this->soundBufferCursor = 0;
         return this->soundBuffer;
     }
-
+    
     inline void consumeClock(int cpuClocks) {
         // Asynchronous with PSG/SCC
         this->psg.ctx.bobo += cpuClocks * this->PSG_CLOCK;
@@ -538,6 +552,80 @@ public:
             case 0xFF: this->mmu.updateMemoryMapper(3, value); break;
             default: printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
+    }
+    
+    const void* quickSave(size_t* size) {
+        this->quickSaveBufferSize = 0;
+        this->writeSaveChunk("Z80", &this->cpu->reg, (int)sizeof(this->cpu->reg));
+        this->writeSaveChunk("MMU", &this->mmu.ctx, (int)sizeof(this->mmu.ctx));
+        this->writeSaveChunk("R:0", &this->mmu.ram, (int)sizeof(this->mmu.ram));
+        if (this->mmu.sramEnabled) {
+            this->writeSaveChunk("SRM", &this->mmu.sram, (int)sizeof(this->mmu.sram));
+        }
+        if (this->mmu.sccEnabled) {
+            this->writeSaveChunk("SCC", &this->scc.ctx, (int)sizeof(this->scc.ctx));
+        }
+        this->writeSaveChunk("PSG", &this->psg.ctx, (int)sizeof(this->psg.ctx));
+        this->writeSaveChunk("RTC", &this->clock.ctx, (int)sizeof(this->clock.ctx));
+        this->writeSaveChunk("KNJ", &this->kanji.ctx, (int)sizeof(this->kanji.ctx));
+        this->writeSaveChunk("VDP", &this->vdp.ctx, (int)sizeof(this->vdp.ctx));
+        this->writeSaveChunk("FDC", &this->fdc.ctx, (int)sizeof(this->fdc.ctx));
+        this->writeSaveChunk("OPL", this->ym2413, (int)sizeof(OPLL));
+        *size = this->quickSaveBufferSize;
+        return this->quickSaveBuffer;
+    }
+
+    void quickLoad(const void* buffer, size_t bufferSize) {
+        this->reset();
+        const char* ptr = (const char*)buffer;
+        int size = (int)bufferSize;
+        while (8 < size) {
+            char chunk[4];
+            int chunkSize;
+            strncpy(chunk, ptr, 4);
+            if ('\0' != chunk[3]) break;
+            ptr += 4;
+            memcpy(&chunkSize, ptr, 4);
+            ptr += 4;
+            if (chunkSize < 0) break;
+            if (0 == strcmp(chunk, "Z80")) {
+                memcpy(&this->cpu->reg, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "MMU")) {
+                memcpy(&this->mmu.ctx, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "R:0")) {
+                memcpy(&this->mmu.ram, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "SRM")) {
+                memcpy(&this->mmu.sram, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "SCC")) {
+                memcpy(&this->scc.ctx, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "PSG")) {
+                memcpy(&this->psg.ctx, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "RTC")) {
+                memcpy(&this->clock.ctx, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "KNJ")) {
+                memcpy(&this->kanji.ctx, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "VDP")) {
+                memcpy(&this->vdp.ctx, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "FDP")) {
+                memcpy(&this->fdc.ctx, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "OPL")) {
+                auto conv = this->ym2413->conv;
+                memcpy(this->ym2413, ptr, chunkSize);
+                this->ym2413->conv = conv;
+            }
+            ptr += chunkSize;
+            size -= chunkSize;
+        }
+    }
+
+private:
+    void writeSaveChunk(const char* name, const void* data, int size) {
+        memcpy(&this->quickSaveBuffer[this->quickSaveBufferSize], name, 4);
+        this->quickSaveBufferSize += 4;
+        memcpy(&this->quickSaveBuffer[this->quickSaveBufferSize], &size, 4);
+        this->quickSaveBufferSize += 4;
+        memcpy(&this->quickSaveBuffer[this->quickSaveBufferSize], data, size);
+        this->quickSaveBufferSize += size;
     }
 };
 

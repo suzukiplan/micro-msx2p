@@ -54,12 +54,16 @@ public:
         unsigned char reserved[4 + 32];
     } ctx;
 
+    bool sccEnabled;
+    bool sramEnabled;
     unsigned char sram[0x2000];
+    unsigned char ram[0x10000];
 
     MSX2MMU() {
         memset(&this->slots, 0, sizeof(this->slots));
         memset(&this->secondaryExist, 0, sizeof(this->secondaryExist));
-        memset(sram, 0, sizeof(sram));
+        memset(this->sram, 0, sizeof(this->sram));
+        this->sramEnabled = false;
     }
     
     void setupCallbacks(void* arg,
@@ -102,7 +106,9 @@ public:
         this->cartridge.ptr = (unsigned char*)data;
         this->cartridge.size = size;
         this->cartridge.romType = romType;
-        setup(pri, sec, idx, false, this->cartridge.ptr, this->cartridge.size < 0x8000 ? 0x4000 : 0x8000, "CART");
+        setup(pri, sec, idx, this->cartridge.ptr, this->cartridge.size < 0x8000 ? 0x4000 : 0x8000, "CART");
+        this->sramEnabled = false;
+        this->sccEnabled = false;
         switch (romType) {
             case MSX2_ROM_TYPE_NORMAL:
             case MSX2_ROM_TYPE_KONAMI:
@@ -111,12 +117,23 @@ public:
                 }
                 break;
             case MSX2_ROM_TYPE_ASC8:
-            case MSX2_ROM_TYPE_ASC8_SRAM2:
             case MSX2_ROM_TYPE_ASC16:
+                for (int i = 0; i < 4; i++) {
+                    this->ctx.cpos[pri - 1][i] = 0;
+                }
+                break;
             case MSX2_ROM_TYPE_KONAMI_SCC:
                 for (int i = 0; i < 4; i++) {
                     this->ctx.cpos[pri - 1][i] = 0;
                 }
+                this->sccEnabled = true;
+                break;
+            case MSX2_ROM_TYPE_ASC8_SRAM2:
+                for (int i = 0; i < 4; i++) {
+                    this->ctx.cpos[pri - 1][i] = 0;
+                }
+                this->sramEnabled = true;
+                memset(this->sram, 0, sizeof(this->sram));
                 break;
             default:
                 printf("UNKNOWN ROM TYPE: %d\n", romType);
@@ -124,7 +141,19 @@ public:
         }
     }
     
-    void setup(int pri, int sec, int idx, bool isRAM, unsigned char* data, int size, const char* label)
+    void setupRAM(int pri, int sec) {
+        printf("Setup SLOT %d-%d $%04X~$%04X = %s\n", pri, sec, 0, 0xFFFF, "RAM");
+        for (int i = 0; i < 8; i++) {
+            strcpy(this->slots[pri][sec].data[i].label, "RAM");
+            this->slots[pri][sec].data[i].isRAM = true;
+            this->slots[pri][sec].data[i].isCartridge = false;
+            this->slots[pri][sec].data[i].isDiskBios = false;
+            this->slots[pri][sec].data[i].isFmBios = false;
+            this->slots[pri][sec].data[i].ptr = &this->ram[i * 0x2000];
+        }
+    }
+
+    void setup(int pri, int sec, int idx, unsigned char* data, int size, const char* label)
     {
         if (label) {
             printf("Setup SLOT %d-%d $%04X~$%04X = %s\n", pri, sec, idx * 0x2000, idx * 0x2000 + size - 1, label);
@@ -134,7 +163,7 @@ public:
             if (label) {
                 strncpy(this->slots[pri][sec].data[idx].label, label, 4);
             }
-            this->slots[pri][sec].data[idx].isRAM = isRAM;
+            this->slots[pri][sec].data[idx].isRAM = false;
             this->slots[pri][sec].data[idx].isCartridge = NULL != label && 0 == strcmp(label, "CART");
             this->slots[pri][sec].data[idx].isDiskBios = NULL != label && 0 == strcmp(label, "DISK");
             this->slots[pri][sec].data[idx].isFmBios = NULL != label && 0 == strcmp(label, "FM");

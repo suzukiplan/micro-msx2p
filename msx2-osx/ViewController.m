@@ -188,6 +188,20 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
     emu_reset();
 }
 
+- (IBAction)menuQuickSave:(id)sender
+{
+    NSLog(@"menuQuickSave");
+    size_t size;
+    emu_quickSave(&size);
+    NSLog(@"save data size = %lu", size);
+}
+
+- (IBAction)menuQuickLoad:(id)sender
+{
+    NSLog(@"menuQuickLoad");
+}
+
+
 - (void)_openWithType:(OpenFileType)type
 {
     NSOpenPanel* panel = [NSOpenPanel openPanel];
@@ -277,24 +291,5 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
     if (_isFullScreen) return;
     [self.view.window setContentSize:NSMakeSize(VRAM_WIDTH * 4, VRAM_HEIGHT * 4)];
 }
-
-#if 0
-- (void)menuQuickSaveToMemory:(id)sender
-{
-    [_appDelegate.menuQuickLoadFromMemory setEnabled:YES];
-    size_t size;
-    const void* data = emu_saveState(&size);
-    NSLog(@"saving: %ld bytes", size);
-    _saveData = [[NSData alloc] initWithBytes:data length:size];
-}
-
-- (void)menuQuickLoadFromMemory:(id)sender
-{
-    if (_saveData) {
-        NSLog(@"loading");
-        emu_loadState(_saveData.bytes, _saveData.length);
-    }
-}
-#endif
 
 @end

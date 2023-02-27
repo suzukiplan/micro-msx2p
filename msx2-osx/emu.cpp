@@ -38,24 +38,24 @@ extern "C" void emu_init_bios(const void* main, size_t mainSize,
     msx2.setupSecondaryExist(false, false, false, true);
     if (main && 0x8000 == mainSize) {
         memcpy(bios.main, main, 0x8000);
-        msx2.setup(0, 0, 0, false, bios.main, 0x8000, "MAIN");
+        msx2.setup(0, 0, 0, bios.main, 0x8000, "MAIN");
     }
-    msx2.setup(3, 3, 0, true, ram, 0x10000, "RAM");
+    msx2.setupRAM(3, 3);
     if (ext && 0x4000 == extSize) {
         memcpy(bios.ext, ext, 0x4000);
-        msx2.setup(3, 0, 0, false, bios.ext, 0x4000, "SUB");
+        msx2.setup(3, 0, 0, bios.ext, 0x4000, "SUB");
     }
     if (knj && 0x8000 == knjSize) {
         memcpy(bios.knj, knj, 0x8000);
-        msx2.setup(3, 0, 2, false, bios.knj, 0x8000, "KNJ");
+        msx2.setup(3, 0, 2, bios.knj, 0x8000, "KNJ");
     }
     if (disk && 0x4000 <= diskSize) {
         memcpy(bios.disk, disk, 0x4000);
-        msx2.setup(3, 1, 2, false, bios.disk, 0x4000, "DISK");
+        msx2.setup(3, 1, 2, bios.disk, 0x4000, "DISK");
     }
     if (fm && 0x4000 <= fmSize) {
         memcpy(bios.fm, fm, 0x4000);
-        msx2.setup(3, 2, 2, false, bios.fm, 0x4000, "FM");
+        msx2.setup(3, 2, 2, bios.fm, 0x4000, "FM");
     }
     if (font && 0 < fontSize) {
         msx2.loadFont(font, fontSize);
@@ -71,10 +71,10 @@ extern "C" void emu_init_cbios(const void* main, size_t mainSize,
     memcpy(bios.ext, sub, 0x4000);
     memcpy(bios.logo, logo, 0x4000);
     msx2.setupSecondaryExist(false, false, false, true);
-    msx2.setup(0, 0, 0, false, bios.main, 0x8000, "MAIN");
-    msx2.setup(0, 0, 4, false, bios.logo, 0x4000, "LOGO");
-    msx2.setup(3, 0, 0, false, bios.ext, 0x4000, "SUB");
-    msx2.setup(3, 3, 0, true, ram, 0x10000, "RAM");
+    msx2.setup(0, 0, 0, bios.main, 0x8000, "MAIN");
+    msx2.setup(0, 0, 4, bios.logo, 0x4000, "LOGO");
+    msx2.setup(3, 0, 0, bios.ext, 0x4000, "SUB");
+    msx2.setupRAM(3, 3);
     emu_reset();
 }
 
@@ -105,12 +105,12 @@ extern "C" void emu_init_bios_tm1p(const void* tm1pbios,
     memcpy(tm1pdesk1_, tm1pdesk1, sizeof(tm1pdesk1_));
     memcpy(tm1pdesk2_, tm1pdesk2, sizeof(tm1pdesk2_));
     msx2.setupSecondaryExist(false, false, false, true);
-    msx2.setup(0, 0, 0, false, tm1pbios_, sizeof(tm1pbios_), "MAIN");
-    msx2.setup(3, 0, 0, true, ram, sizeof(ram), "RAM");
-    msx2.setup(3, 1, 0, false, tm1pext_, sizeof(tm1pext_), "SUB");
-    msx2.setup(3, 1, 2, false, tm1pkdr_, sizeof(tm1pkdr_), "KNJ");
-    msx2.setup(3, 2, 2, false, tm1pdesk1_, sizeof(tm1pdesk1_), "DSK1");
-    msx2.setup(3, 3, 2, false, tm1pdesk2_, sizeof(tm1pdesk2_), "DSK2");
+    msx2.setup(0, 0, 0, tm1pbios_, sizeof(tm1pbios_), "MAIN");
+    msx2.setupRAM(3, 0);
+    msx2.setup(3, 1, 0, tm1pext_, sizeof(tm1pext_), "SUB");
+    msx2.setup(3, 1, 2, tm1pkdr_, sizeof(tm1pkdr_), "KNJ");
+    msx2.setup(3, 2, 2, tm1pdesk1_, sizeof(tm1pdesk1_), "DSK1");
+    msx2.setup(3, 3, 2, tm1pdesk2_, sizeof(tm1pdesk2_), "DSK2");
     msx2.loadFont(font, fontSize);
     emu_reset();
 }
@@ -141,15 +141,15 @@ void emu_init_bios_fsa1wsx(const void* msx2p,
     //memcpy(firm_, firm, sizeof(firm_));
 
     msx2.setupSecondaryExist(true, false, false, true);
-    msx2.setup(0, 0, 0, false, msx2p_, sizeof(msx2p_), "MAIN");
-    msx2.setup(3, 0, 0, true, ram, sizeof(ram), "RAM");
-    msx2.setup(3, 1, 0, false, msx2pext_, sizeof(msx2pext_), "SUB");
-    msx2.setup(0, 2, 2, false, msx2pmus_, sizeof(msx2pmus_), "FM");
-    msx2.setup(3, 2, 0, false, empty, sizeof(empty), "DISK");
-    msx2.setup(3, 2, 2, false, disk_, sizeof(disk_), "DISK");
-    msx2.setup(3, 2, 4, false, empty, sizeof(empty), "DISK");
-    msx2.setup(3, 2, 6, false, empty, sizeof(empty), "DISK");
-    msx2.setup(3, 1, 2, false, msxkanji_, sizeof(msxkanji_), "KNJ");
+    msx2.setupRAM(3, 0);
+    msx2.setup(0, 0, 0, msx2p_, sizeof(msx2p_), "MAIN");
+    msx2.setup(3, 1, 0, msx2pext_, sizeof(msx2pext_), "SUB");
+    msx2.setup(0, 2, 2, msx2pmus_, sizeof(msx2pmus_), "FM");
+    msx2.setup(3, 2, 0, empty, sizeof(empty), "DISK");
+    msx2.setup(3, 2, 2, disk_, sizeof(disk_), "DISK");
+    msx2.setup(3, 2, 4, empty, sizeof(empty), "DISK");
+    msx2.setup(3, 2, 6, empty, sizeof(empty), "DISK");
+    msx2.setup(3, 1, 2, msxkanji_, sizeof(msxkanji_), "KNJ");
     //msx2.setup(3, 3, 0, false, firm_, sizeof(firm_), "FIRM");
     msx2.loadFont(kanji_, sizeof(kanji_));
     emu_reset();
@@ -306,10 +306,15 @@ extern "C" void emu_startDebug()
 
 void emu_insertDisk(int driveId, const void* data, size_t size)
 {
-    msx2.fdc.insertDisk(driveId, data, size, true);
+    msx2.insertDisk(driveId, data, size, true);
 }
 
 void emu_ejectDisk(int driveId)
 {
-    msx2.fdc.ejectDisk(driveId);
+    msx2.ejectDisk(driveId);
+}
+
+const void* emu_quickSave(size_t* size)
+{
+    return msx2.quickSave(size);
 }
