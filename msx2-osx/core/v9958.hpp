@@ -969,18 +969,21 @@ class V9958
 
     inline unsigned short convertColor_8bit_to_16bit(unsigned char c)
     {
+        unsigned short g = c & 0b11100000;
+        unsigned short r = c & 0b00011100;
+        unsigned short b = c & 0b00000011;
         switch (this->colorMode) {
             case 0: {
-                unsigned short result = (c & 0b00011100) << 10;
-                result |= (c & 0b11100000) >> 3;
-                result |= (c & 0b00000011) << 3;
-                return result;
+                r <<= 10;
+                g <<= 2;
+                b <<= 3;
+                return r | g | b;
             }
             case 1: {
-                unsigned short result = (c & 0b00011100) << 11;
-                result |= (c & 0b11100000) >> 2;
-                result |= (c & 0b00000011) << 3;
-                return result;
+                r <<= 11;
+                g <<= 3;
+                b <<= 3;
+                return r | g | b;
             }
             default: return 0;
         }
