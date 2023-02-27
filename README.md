@@ -4,7 +4,10 @@ macOS 用の MSX2+ エミュレータ
 
 # core modules
 
-エミュレータのコアモジュール([./msx2-osx/core](./msx2-osx/core))はOS非依存です。
+- エミュレータのコアモジュール([./msx2-osx/core](./msx2-osx/core))はOS非依存
+  - iOS, Android, Windows, macOS, PlayStation, NintendoSwitch などで使用可能な筈
+- セーブデータはエンディアンモデルが異なるコンピュータ間では互換性が無い
+- 32bit CPU は非サポート（64bit CPU only)
 
 ## [./msx2-osx/core](./msx2-osx/core) の使い方
 
@@ -68,7 +71,6 @@ msx2.ejectDisk(driveId);
 ```c++
 // リセット
 msx2.reset();
-
 
 // 1フレーム実行
 // キー入力は1フレームに1キーのみ送信可能（動画対応のための制限）
