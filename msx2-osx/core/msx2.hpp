@@ -10,6 +10,7 @@
 #include "scc.hpp"
 #include "tc8566af.hpp"
 #include "emu2413.h"
+#include "lz4.h"
 
 class MSX2 {
 private:
@@ -19,6 +20,7 @@ private:
     short soundBuffer[65536];
     unsigned short soundBufferCursor;
     char quickSaveBuffer[1024 * 1024 * 4];
+    char quickSaveBufferCompressed[1024 * 1024 * 4];
     size_t quickSaveBufferSize;
     
     struct KeyCode {
@@ -571,15 +573,21 @@ public:
         this->writeSaveChunk("VDP", &this->vdp.ctx, (int)sizeof(this->vdp.ctx));
         this->writeSaveChunk("FDC", &this->fdc.ctx, (int)sizeof(this->fdc.ctx));
         this->writeSaveChunk("OPL", this->ym2413, (int)sizeof(OPLL));
-        *size = this->quickSaveBufferSize;
-        return this->quickSaveBuffer;
+        *size = LZ4_compress_default(this->quickSaveBuffer,
+                                     this->quickSaveBufferCompressed,
+                                     (int)this->quickSaveBufferSize,
+                                     sizeof(this->quickSaveBufferCompressed));
+        return this->quickSaveBufferCompressed;
     }
 
     void quickLoad(const void* buffer, size_t bufferSize) {
         this->reset();
-        const char* ptr = (const char*)buffer;
-        int size = (int)bufferSize;
-        while (8 < size) {
+        int size = LZ4_decompress_safe((const char*)buffer,
+                                       this->quickSaveBuffer,
+                                       (int)bufferSize,
+                                       sizeof(this->quickSaveBuffer));
+        const char* ptr = this->quickSaveBuffer;
+        while (8 <= size) {
             char chunk[4];
             int chunkSize;
             strncpy(chunk, ptr, 4);

@@ -50,6 +50,10 @@
 		748D22E5297FB69800B504AF /* cbios_main_msx2_jp.rom in Resources */ = {isa = PBXBuildFile; fileRef = 748D22E4297FB69800B504AF /* cbios_main_msx2_jp.rom */; };
 		748D22E72980CB8400B504AF /* MSX2J.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 748D22E62980CB8400B504AF /* MSX2J.ROM */; };
 		749112BA29AB4A6E004140F5 /* emu2413.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112B829AB4A6E004140F5 /* emu2413.c */; };
+		749112C729AC6F66004140F5 /* lz4frame.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112BF29AC6F66004140F5 /* lz4frame.c */; };
+		749112C829AC6F66004140F5 /* lz4.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112C029AC6F66004140F5 /* lz4.c */; };
+		749112C929AC6F66004140F5 /* xxhash.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112C329AC6F66004140F5 /* xxhash.c */; };
+		749112CA29AC6F66004140F5 /* lz4hc.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112C629AC6F66004140F5 /* lz4hc.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -116,6 +120,15 @@
 		748D22E62980CB8400B504AF /* MSX2J.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = MSX2J.ROM; sourceTree = "<group>"; };
 		749112B829AB4A6E004140F5 /* emu2413.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = emu2413.c; sourceTree = "<group>"; };
 		749112B929AB4A6E004140F5 /* emu2413.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = emu2413.h; sourceTree = "<group>"; };
+		749112BE29AC6F66004140F5 /* xxhash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xxhash.h; sourceTree = "<group>"; };
+		749112BF29AC6F66004140F5 /* lz4frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lz4frame.c; sourceTree = "<group>"; };
+		749112C029AC6F66004140F5 /* lz4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lz4.c; sourceTree = "<group>"; };
+		749112C129AC6F66004140F5 /* lz4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lz4.h; sourceTree = "<group>"; };
+		749112C229AC6F66004140F5 /* lz4frame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lz4frame.h; sourceTree = "<group>"; };
+		749112C329AC6F66004140F5 /* xxhash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = xxhash.c; sourceTree = "<group>"; };
+		749112C429AC6F66004140F5 /* lz4frame_static.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lz4frame_static.h; sourceTree = "<group>"; };
+		749112C529AC6F66004140F5 /* lz4hc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lz4hc.h; sourceTree = "<group>"; };
+		749112C629AC6F66004140F5 /* lz4hc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lz4hc.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -148,6 +161,7 @@
 		748D22A9297E652600B504AF /* msx2-osx */ = {
 			isa = PBXGroup;
 			children = (
+				749112BD29AC6F0D004140F5 /* lz4 */,
 				748D22CD297E7E0000B504AF /* bios */,
 				748D22BD297E66C600B504AF /* core */,
 				748D22AA297E652600B504AF /* AppDelegate.h */,
@@ -228,6 +242,22 @@
 				741A1E272991F218001AE497 /* a1wsmus.rom */,
 			);
 			path = bios;
+			sourceTree = "<group>";
+		};
+		749112BD29AC6F0D004140F5 /* lz4 */ = {
+			isa = PBXGroup;
+			children = (
+				749112C029AC6F66004140F5 /* lz4.c */,
+				749112C129AC6F66004140F5 /* lz4.h */,
+				749112C429AC6F66004140F5 /* lz4frame_static.h */,
+				749112BF29AC6F66004140F5 /* lz4frame.c */,
+				749112C229AC6F66004140F5 /* lz4frame.h */,
+				749112C629AC6F66004140F5 /* lz4hc.c */,
+				749112C529AC6F66004140F5 /* lz4hc.h */,
+				749112C329AC6F66004140F5 /* xxhash.c */,
+				749112BE29AC6F66004140F5 /* xxhash.h */,
+			);
+			path = lz4;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -336,10 +366,14 @@
 				748D22AF297E652600B504AF /* ViewController.m in Sources */,
 				748D22B6297E652800B504AF /* main.m in Sources */,
 				749112BA29AB4A6E004140F5 /* emu2413.c in Sources */,
+				749112C829AC6F66004140F5 /* lz4.c in Sources */,
 				741A1E3A299DA885001AE497 /* vgsspu_al.c in Sources */,
 				748D22CC297E768D00B504AF /* emu.cpp in Sources */,
+				749112C729AC6F66004140F5 /* lz4frame.c in Sources */,
 				748D22AC297E652600B504AF /* AppDelegate.m in Sources */,
+				749112CA29AC6F66004140F5 /* lz4hc.c in Sources */,
 				748D22C8297E75C800B504AF /* VideoLayer.m in Sources */,
+				749112C929AC6F66004140F5 /* xxhash.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
