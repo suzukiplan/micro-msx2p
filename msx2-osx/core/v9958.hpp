@@ -579,21 +579,44 @@ class V9958
         return this->ctx.hardwareResetFlag;
     }
 
+    inline unsigned short bit2to5(unsigned short n) {
+        n <<= 3;
+        n |= n & 0b01000 ? 1 : 0;
+        n |= n & 0b10000 ? 2 : 0;
+        n |= n & 0b11000 ? 4 : 0;
+        return n;
+    }
+
+    inline unsigned short bit3to5(unsigned short n) {
+        n <<= 2;
+        n |= n & 0b01000 ? 1 : 0;
+        n |= n & 0b10000 ? 2 : 0;
+        return n;
+    }
+
+    inline unsigned short bit3to6(unsigned short n) {
+        n <<= 3;
+        n |= n & 0b001000 ? 1 : 0;
+        n |= n & 0b010000 ? 2 : 0;
+        n |= n & 0b100000 ? 4 : 0;
+        return n;
+    }
+
     inline void updatePaletteCacheFromRegister(int pn)
     {
-        unsigned short r = this->ctx.pal[pn][0] & 0b01110000;
+        unsigned short r = (this->ctx.pal[pn][0] & 0b01110000) >> 4;
         unsigned short b = this->ctx.pal[pn][0] & 0b00000111;
         unsigned short g = this->ctx.pal[pn][1] & 0b00000111;
         switch (this->colorMode) {
             case 0: // RGB555
-                r <<= 8;
-                g <<= 7;
-                b <<= 2;
+                r = this->bit3to5(r) << 10;
+                g = this->bit3to5(g) << 5;
+                b = this->bit3to5(b);
                 break;
             case 1: // RGB565
-                r <<= 9;
-                g <<= 8;
-                b <<= 2;
+                r = this->bit3to5(r) << 11;
+                g = this->bit3to6(g) << 6;
+                b = this->bit3to5(b);
                 break;
             default:
                 r = 0;
@@ -969,20 +992,20 @@ class V9958
 
     inline unsigned short convertColor_8bit_to_16bit(unsigned char c)
     {
-        unsigned short g = c & 0b11100000;
-        unsigned short r = c & 0b00011100;
+        unsigned short g = (c & 0b11100000) >> 5;
+        unsigned short r = (c & 0b00011100) >> 2;
         unsigned short b = c & 0b00000011;
         switch (this->colorMode) {
             case 0: {
-                r <<= 10;
-                g <<= 2;
-                b <<= 3;
+                r = this->bit3to5(r) << 10;
+                g = this->bit3to5(g) << 5;
+                b = this->bit2to5(b);
                 return r | g | b;
             }
             case 1: {
-                r <<= 11;
-                g <<= 3;
-                b <<= 3;
+                r = this->bit3to5(r) << 11;
+                g = this->bit3to6(g) << 5;
+                b = this->bit2to5(b);
                 return r | g | b;
             }
             default: return 0;
