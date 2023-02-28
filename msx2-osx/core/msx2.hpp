@@ -290,7 +290,8 @@ public:
         initKeyCode('\r', 7, 7);
         initKeyCode('\n', 7, 7);
         initKeyCode(' ', 0, 8);
-        initKeyCode(0x1B, 2, 7);
+        initKeyCode(0x1B, 2, 7); // ESC
+        initKeyCode(0x7F, 5, 7); // DEL as Back Space
         this->reset();
     }
     
