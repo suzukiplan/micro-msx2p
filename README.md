@@ -25,34 +25,40 @@ macOS 用の MSX2+ エミュレータ
 // ディスプレイのカラーモードを指定 (0: RGB555, 1: RGB565)
 MSX2 msx2(0);      
 
-// RAM の割当
-msx2.setupRAM(3, 0);
+// 拡張スロットの有効化設定
+msx2.setupSecondaryExist(false, false, false, true);
 
 // 漢字フォントを読み込む
 msx2.loadFont(knjfnt16, sizeof(knjfnt16));
 
+// RAM の割当 (3-0)
+msx2.setupRAM(3, 0);
+
 // 必須 BIOS (MSX2P.ROM, MSX2PEXT.ROM) を読み込む
-msx2.setup(0, 0, 0, msx2p, sizeof(msx2p), "MAIN");
-msx2.setup(3, 1, 0, msx2pext, sizeof(msx2pext), "SUB");
+msx2.setup(0, 0, 0, msx2p, 0x8000, "MAIN");
+msx2.setup(3, 1, 0, msx2pext, 0x4000, "SUB");
 
-// 漢字BASIC BIOS が必要な場合は読み込む
-msx2.setup(3, 1, 2, msxkanji_, sizeof(msxkanji_), "KNJ");
+// 漢字BASIC BIOS を読み込む (optional)
+msx2.setup(3, 1, 2, knjdrv, 0x8000, "KNJ");
 
-// FM音源が必要な場合は読み込む
-msx2.setup(0, 2, 2, fmbios, sizeof(fmbios), "FM"); // 注: ラベルは必ず "FM" にする
-
-// FDDが必要な場合は DISK BIOS を読み込む
+// DISK BIOS を読み込む (optional)
+// ※FDCはTOSHIBA TC8566AF のみ対応
 static unsigned char empty[0x4000];
-msx2.setup(3, 2, 0, empty, sizeof(empty), "DISK"); // ラベルは必ず "DISK" & 空バッファを指定
-msx2.setup(3, 2, 2, disk, sizeof(disk), "DISK"); // ラベルは必ず "DISK" & BIOSを指定
-msx2.setup(3, 2, 4, empty, sizeof(empty), "DISK"); // ラベルは必ず "DISK" & 空バッファを指定
-msx2.setup(3, 2, 6, empty, sizeof(empty), "DISK"); // ラベルは必ず "DISK" & 空バッファを指定
+msx2.setup(3, 2, 0, empty, 0x4000, "DISK"); // ラベルは必ず "DISK" & 空バッファを指定
+msx2.setup(3, 2, 2, disk, 0x4000, "DISK"); // ラベルは必ず "DISK" & BIOSを指定
+msx2.setup(3, 2, 4, empty, 0x4000, "DISK"); // ラベルは必ず "DISK" & 空バッファを指定
+msx2.setup(3, 2, 6, empty, 0x4000, "DISK"); // ラベルは必ず "DISK" & 空バッファを指定
+
+// FM-PAC BIOS を読み込む (optional)
+msx2.setup(3, 3, 2, data.fm, sizeof(data.fm), "FM");
 ```
 
 ### load media
 
+#### （カートリッジソフトを使う場合）
+
 ```c++
-// カートリッジソフトを使う場合（適切なメガロム種別の指定が必要）
+// 適切なメガロム種別の指定が必要:
 // - MSX2_ROM_TYPE_NORMAL 0
 // - MSX2_ROM_TYPE_ASC8 1
 // - MSX2_ROM_TYPE_ASC8_SRAM2 2
@@ -60,8 +66,11 @@ msx2.setup(3, 2, 6, empty, sizeof(empty), "DISK"); // ラベルは必ず "DISK" 
 // - MSX2_ROM_TYPE_KONAMI_SCC 4
 // - MSX2_ROM_TYPE_KONAMI 5
 msx2.loadRom(rom, romSize, megaRomType);
+```
 
-// FDDを使う場合
+#### (FDDを使う場合)
+
+```c++
 msx2.insertDisk(driveId, data, size, true);
 msx2.ejectDisk(driveId);
 ```
@@ -82,7 +91,7 @@ void* sound = msx2.getSound(&soundSize);
 
 // 1フレーム実行後の映像を取得
 // - Size: 568(width) x 480(height) x 2(16bit-color)
-// - Color: RGB555 or RGB565
+// - Color: RGB555 or RGB565 (コンストラクタで指定したもの)
 unsigned short* display = msx2.vdp.display;
 ```
 
@@ -97,7 +106,34 @@ const void* saveData = msx2.quickSave(&size);
 msx2.quickLoad(saveData, size);
 ```
 
-#### （ディスク挿入状態のロード手順）
+#### (セーブデータサイズについての補足)
+
+セーブデータサイズは可変で、以下のデータを LZ4 で高速圧縮しています。
+
+|Chunk|Size in Byte|Optional|Describe|
+|:-:|:-:|:-|
+|`Z80`|40|n|CPUコンテキスト（レジスタ等）|
+|`MMU`|8,240|n|メモリ管理システム（スロット）のSRAM+コンテキスト（レジスタ等）|
+|`SCC`|204|y|Sound Creative Chip（コナミ音源）のコンテキスト|
+|`PSG`|108|n|AY-3-8910（PSG音源）のコンテキスト|
+|`RTC`|104|n|クロックICのSRAM+コンテキスト|
+|`KNJ`|12|n|漢字制御システムのコンテキスト|
+|`VDP`|131,288|n|V9958（Video Display Processor）のRAM+コンテキスト|
+|`FDC`|544|n|フロッピディスク制御装置 (TC8655AF) のコンテキスト|
+|`JCT`|4|n|フロッピの書き込みセクタジャーナル|
+|`JDT`|520 x JCT|n|フロッピの書き込みデータ（セクタ単位）|
+|`OPL`|4,280|n|FM音源システム（YM2413）のコンテキスト|
+|`SRM`|8,192|y|メガROMカートリッジSRAM|
+|`R:0`|65,536|n|マッパー0 RAM|
+|`R:1`|65,536|y|マッパー1 RAM|
+|`R:2`|65,536|y|マッパー2 RAM|
+|`R:3`|65,536|y|マッパー3 RAM|
+|`R:4`|65,536|y|マッパー4 RAM|
+|`R:5`|65,536|y|マッパー5 RAM|
+|`R:6`|65,536|y|マッパー6 RAM|
+|`R:7`|65,536|y|マッパー7 RAM|
+
+#### (ディスク挿入状態のロード手順)
 
 フロッピーディスクの挿入状態は記憶されるが、挿入データの復元は手動で行う必要がある。
 
