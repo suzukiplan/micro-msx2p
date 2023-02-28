@@ -623,8 +623,8 @@ public:
             } else if (0 == strcmp(chunk, "VDP")) {
                 putlog("extract VDP (%d bytes)", chunkSize);
                 memcpy(&this->vdp.ctx, ptr, chunkSize);
-            } else if (0 == strcmp(chunk, "FDP")) {
-                putlog("extract FDP (%d bytes)", chunkSize);
+            } else if (0 == strcmp(chunk, "FDC")) {
+                putlog("extract FDC (%d bytes)", chunkSize);
                 memcpy(&this->fdc.ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "OPL")) {
                 putlog("extract OPL (%d bytes)", chunkSize);

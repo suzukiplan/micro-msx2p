@@ -81,11 +81,12 @@ private:
 
 public:
     struct Context {
+        unsigned int crc[NUMBER_OF_DRIVES];
         int phaseStep;
         int sectorOffset;
+        unsigned char status[4];
         unsigned char drive;
         unsigned char mainStatus;
-        unsigned char status[4];
         unsigned char phase;
         unsigned char command;
         unsigned char commandCode;
@@ -120,6 +121,18 @@ public:
         this->ctx.mainStatus = STM_NDM | STM_RQM;
     }
 
+    unsigned int calcDiskCrc(const void* data, size_t size) {
+        unsigned int buf[SECTOR_SIZE * SECTOR_LIMIT / 4];
+        if (sizeof(buf) < size) return 0;
+        memset(buf, 0, sizeof(buf));
+        memcpy(buf, data, size);
+        unsigned int crc = 0;
+        for (int i = 0; i < sizeof(buf) / 4; i++) {
+            crc += buf[i];
+        }
+        return crc;
+    }
+
     void ejectDisk(int driveId) {
         if (driveId < 0 || NUMBER_OF_DRIVES <= driveId) return;
         memset(&this->drives[driveId], 0, sizeof(struct DiskDrive));
@@ -129,6 +142,7 @@ public:
         if (driveId < 0 || NUMBER_OF_DRIVES <= driveId) return;
         this->ejectDisk(driveId);
         this->drives[driveId].readOnly = readOnly;
+        this->ctx.crc[driveId] = this->calcDiskCrc(data, size);
         const unsigned char* ptr = (const unsigned char*)data;
         int si = 0;
         while (0 < size) {
