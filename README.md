@@ -97,17 +97,21 @@ const void* saveData = msx2.quickSave(&size);
 msx2.quickLoad(saveData, size);
 ```
 
-#### ディスク挿入状態のロード手順
+#### （ディスク挿入状態のロード手順）
 
-フロッピーディスクを挿入した時の情報はFDCコンテキストの下記に記憶される。
+フロッピーディスクの挿入状態は記憶されるが、挿入データの復元は手動で行う必要がある。
+
+挿入されていたフロッピーディスクはCRC符号のみFDCコンテキストに記憶されている。
 
 ```c++
 msx2.fdc.ctx.crc[driveId]
 ```
 
-に記憶されている。
+次のように実装することでディスク挿入状態を自動的に復元できる。
 
-`msx2.quickLoad` でクイックロード後、上記CRC符号と一致するディスクを `msx2.insertDisk` で挿入することで、セーブ時点のディスク挿入状態を復元できる。
+1. `msx2.quickLoad` でクイックロード
+2. `msx2.fdc.calcDiskCrc` で上記CRC符号と一致するディスクを探索
+3. `msx2.insertDisk` で挿入
 
 ```c++
 for (int driveId = 0; driveId < 2; driveId++) {
