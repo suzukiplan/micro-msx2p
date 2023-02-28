@@ -124,12 +124,16 @@ for (int driveId = 0; driveId < 2; driveId++) {
 }
 ```
 
+#### （ディスク書き込み状態の復元についての補足）
 
+`msx2.insertDisk` の第4引数 `readOnly` を `false` にすることで書き込み可能ディスクとして挿入できる。
 
+```
+msx2.insertDisk(driveId, myDisk.data, myDisk.size, false);
+```
 
+- ディスクの書き込み状態は、ディスク（CRC）のセクタ番号（絶対セクタ番号）単位でジャーナルに記憶している。
+- ジャーナルは、クイックセーブ時に有効な全て記憶され、クイックロード時に復元される。
+- ジャーナル情報が存在する場合 `msx2.insertDisk` が行われた時に自動的にオンメモリのディスクキャッシュに反映される。
 
-
-
-
-
-
+> つまり、何も考えずに quick save/load して `msx2.insertDisk` すればディスク更新状態も自動的に復元される。 
