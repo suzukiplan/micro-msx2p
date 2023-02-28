@@ -111,7 +111,7 @@ msx2.quickLoad(saveData, size);
 セーブデータサイズは可変で、以下のデータを LZ4 で高速圧縮しています。
 
 |Chunk|Size in Byte|Optional|Describe|
-|:-:|:-:|:-|
+|:-:|:-:|:-:|:-|
 |`Z80`|40|n|CPUコンテキスト（レジスタ等）|
 |`MMU`|8,240|n|メモリ管理システム（スロット）のSRAM+コンテキスト（レジスタ等）|
 |`SCC`|204|y|Sound Creative Chip（コナミ音源）のコンテキスト|
