@@ -215,6 +215,8 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
         NSSavePanel* panel = [NSSavePanel savePanel];
         panel.canCreateDirectories = YES;
         panel.showsTagField = YES;
+        panel.nameFieldStringValue = @"savedata.dat";
+        panel.level = NSModalPanelWindowLevel;
         __weak ViewController* weakSelf = self;
         [panel beginWithCompletionHandler:^(NSModalResponse result) {
             if (result) {
