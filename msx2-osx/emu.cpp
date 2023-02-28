@@ -40,8 +40,8 @@ extern "C" void emu_init_bios(const void* main,
     memcpy(data.font, font, sizeof(data.font));
     memcpy(data.knj, knj, sizeof(data.knj));
     msx2.setupSecondaryExist(false, false, false, true);
-    msx2.setup(0, 0, 0, data.main, sizeof(data.main), "MAIN");
     msx2.setupRAM(3, 0);
+    msx2.setup(0, 0, 0, data.main, sizeof(data.main), "MAIN");
     msx2.setup(3, 1, 0, data.sub, sizeof(data.sub), "SUB");
     msx2.setup(3, 1, 2, data.knj, sizeof(data.knj), "KNJ");
     msx2.setup(3, 2, 0, data.empty, sizeof(data.empty), "DISK");

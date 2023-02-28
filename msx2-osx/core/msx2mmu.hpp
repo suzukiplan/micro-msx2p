@@ -52,12 +52,12 @@ public:
         unsigned char reserved[4];
         unsigned char cpos[2][4]; // cartridge position register (0x2000 * n)
         unsigned char isSelectSRAM[8];
-        unsigned char pac[0x2000]; // FM-Pac SRAM area
     } ctx;
 
     bool sccEnabled;
     bool sramEnabled;
     unsigned char sram[0x2000];
+    unsigned char pac[0x2000];
     unsigned char ram[0x10000];
 
     MSX2MMU() {
@@ -279,7 +279,7 @@ public:
                 }
             } else if (s->data[idx].isFmBios && this->isEnabledPacSRAM()) {
                 if ((addr & 0x3FFF) < 0x1FFE) {
-                    return this->ctx.pac[addr &0x1FFF];
+                    return this->pac[addr &0x1FFF];
                 }
             }
         }
@@ -287,7 +287,7 @@ public:
     }
     
     inline bool isEnabledPacSRAM() {
-        return this->ctx.pac[0x1FFE] == 0x4D && this->ctx.pac[0x1FFF] == 0x69;
+        return this->pac[0x1FFE] == 0x4D && this->pac[0x1FFF] == 0x69;
     }
 
     inline void write(unsigned short addr, unsigned char value)
@@ -308,11 +308,11 @@ public:
             CB.diskWrite(CB.arg, addr & 0x3FFF, value);
         } else if (data->isFmBios) {
             switch (addr & 0x3FFF) {
-                case 0x1FFE: this->ctx.pac[0x1FFE] = value; break;
-                case 0x1FFF: this->ctx.pac[0x1FFF] = value; break;
+                case 0x1FFE: this->pac[0x1FFE] = value; break;
+                case 0x1FFF: this->pac[0x1FFF] = value; break;
                 default:
                     if (this->isEnabledPacSRAM() && (addr & 0x3FFF) < 0x2000) {
-                        this->ctx.pac[addr & 0x1FFF] = value;
+                        this->pac[addr & 0x1FFF] = value;
                     } else {
                         this->CB.fmWrite(CB.arg, addr & 0x3FFF, value);
                     }

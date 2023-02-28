@@ -561,6 +561,7 @@ public:
         this->quickSaveBufferSize = 0;
         this->writeSaveChunk("Z80", &this->cpu->reg, (int)sizeof(this->cpu->reg));
         this->writeSaveChunk("MMU", &this->mmu.ctx, (int)sizeof(this->mmu.ctx));
+        this->writeSaveChunk("PAC", &this->mmu.pac, (int)sizeof(this->mmu.pac));
         this->writeSaveChunk("R:0", &this->mmu.ram, (int)sizeof(this->mmu.ram));
         if (this->mmu.sramEnabled) {
             this->writeSaveChunk("SRM", &this->mmu.sram, (int)sizeof(this->mmu.sram));
@@ -605,6 +606,9 @@ public:
             } else if (0 == strcmp(chunk, "MMU")) {
                 putlog("extract MMU (%d bytes)", chunkSize);
                 memcpy(&this->mmu.ctx, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "PAC")) {
+                putlog("extract PAC (%d bytes)", chunkSize);
+                memcpy(&this->mmu.pac, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "R:0")) {
                 putlog("extract R:0 (%d bytes)", chunkSize);
                 memcpy(&this->mmu.ram, ptr, chunkSize);
