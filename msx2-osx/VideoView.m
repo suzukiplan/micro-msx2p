@@ -18,8 +18,8 @@ extern unsigned char emu_keycode;
 @interface VideoView ()
 @property (nonatomic) VideoLayer* videoLayer;
 @property CVDisplayLinkRef displayLink;
-@property NSInteger score;
-@property BOOL isGameOver;
+@property (nonatomic, readwrite) BOOL pausing;
+@property (nonatomic, readwrite) BOOL paused;
 @end
 
 @implementation VideoView
@@ -33,8 +33,6 @@ extern unsigned char emu_keycode;
 {
     if ((self = [super initWithFrame:frame]) != nil) {
         [self setWantsLayer:YES];
-        _score = -1;
-        _isGameOver = -1 ? YES : NO;
         _videoLayer = [VideoLayer layer];
         [self setLayer:_videoLayer];
         CVDisplayLinkCreateWithActiveCGDisplays(&_displayLink);
@@ -55,8 +53,47 @@ extern unsigned char emu_keycode;
 
 - (void)vsync
 {
-    emu_vsync();
-    [self.videoLayer drawVRAM];
+    if (!_pausing) {
+        _paused = NO;
+        emu_vsync();
+        [self.videoLayer drawVRAM];
+    } else {
+        _paused = YES;
+    }
+}
+
+- (void)pauseWithCompletionHandler:(void (^)(void))completionHandler
+{
+    if (_pausing) {
+        completionHandler();
+        return;
+    }
+    __weak VideoView* wealSelf = self;
+    _paused = NO;
+    _pausing = YES;
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        while (NO == wealSelf.paused) usleep(100);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completionHandler();
+        });
+    });
+}
+
+- (void)resumeWithCompletionHandler:(void (^)(void))completionHandler
+{
+    if (!_pausing) {
+        completionHandler();
+        return;
+    }
+    __weak VideoView* wealSelf = self;
+    _paused = YES;
+    _pausing = NO;
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        while (YES == wealSelf.paused) usleep(100);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completionHandler();
+        });
+    });
 }
 
 - (BOOL)acceptsFirstResponder

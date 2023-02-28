@@ -77,8 +77,7 @@
                                                 <action selector="menuInsertDiskA:" target="Ady-hI-5gd" id="ymy-bJ-me4"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Eject Disk from A drive" id="JZR-Da-SrY">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                        <menuItem title="Eject Disk from A drive" keyEquivalent="e" id="JZR-Da-SrY">
                                             <connections>
                                                 <action selector="menuEjectDiskA:" target="Ady-hI-5gd" id="a7L-sh-8TW"/>
                                             </connections>

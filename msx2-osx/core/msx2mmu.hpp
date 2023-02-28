@@ -90,6 +90,7 @@ public:
     void reset()
     {
         memset(&this->ctx, 0, sizeof(this->ctx));
+        memset(this->ram, 0, sizeof(this->ram));
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 4; j++) {
                 this->ctx.cpos[i][j] = j;

@@ -597,29 +597,38 @@ public:
             ptr += 4;
             if (chunkSize < 0) break;
             if (0 == strcmp(chunk, "Z80")) {
+                putlog("extract Z80 (%d bytes)", chunkSize);
                 memcpy(&this->cpu->reg, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "MMU")) {
+                putlog("extract MMU (%d bytes)", chunkSize);
                 memcpy(&this->mmu.ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "R:0")) {
+                putlog("extract R:0 (%d bytes)", chunkSize);
                 memcpy(&this->mmu.ram, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "SRM")) {
+                putlog("extract SRM (%d bytes)", chunkSize);
                 memcpy(&this->mmu.sram, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "SCC")) {
+                putlog("extract SCC (%d bytes)", chunkSize);
                 memcpy(&this->scc.ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "PSG")) {
+                putlog("extract PSG (%d bytes)", chunkSize);
                 memcpy(&this->psg.ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "RTC")) {
+                putlog("extract RTC (%d bytes)", chunkSize);
                 memcpy(&this->clock.ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "KNJ")) {
+                putlog("extract KNJ (%d bytes)", chunkSize);
                 memcpy(&this->kanji.ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "VDP")) {
+                putlog("extract VDP (%d bytes)", chunkSize);
                 memcpy(&this->vdp.ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "FDP")) {
+                putlog("extract FDP (%d bytes)", chunkSize);
                 memcpy(&this->fdc.ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "OPL")) {
-                auto conv = this->ym2413->conv;
+                putlog("extract OPL (%d bytes)", chunkSize);
                 memcpy(this->ym2413, ptr, chunkSize);
-                this->ym2413->conv = conv;
             }
             ptr += chunkSize;
             size -= chunkSize;

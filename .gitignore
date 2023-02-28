@@ -23,3 +23,5 @@ a1ws*.rom
 a1ws*.dsk
 
 .DS_Store
+msx2-osx/bios2/*
+

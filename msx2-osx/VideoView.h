@@ -15,6 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readwrite) BOOL isFullScreen;
 - (id)initWithFrame:(CGRect)frame;
 - (void)releaseDisplayLink;
+- (void)pauseWithCompletionHandler:(void (^)(void))completionHandler;
+- (void)resumeWithCompletionHandler:(void (^)(void))completionHandler;
 @end
 
 NS_ASSUME_NONNULL_END

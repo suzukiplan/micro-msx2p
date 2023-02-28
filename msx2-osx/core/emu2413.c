@@ -472,16 +472,16 @@ static INLINE int get_parameter_rate(OPLL_SLOT *slot) {
 
   switch (slot->eg_state) {
   case ATTACK:
-    return slot->patch->AR;
+    return slot->patch.AR;
   case DECAY:
-    return slot->patch->DR;
+    return slot->patch.DR;
   case SUSTAIN:
-    return slot->patch->EG ? 0 : slot->patch->RR;
+    return slot->patch.EG ? 0 : slot->patch.RR;
   case RELEASE:
     if (slot->sus_flag) {
       return 5;
-    } else if (slot->patch->EG) {
-      return slot->patch->RR;
+    } else if (slot->patch.EG) {
+      return slot->patch.RR;
     } else {
       return 7;
     }
@@ -512,19 +512,19 @@ static void commit_slot_update(OPLL_SLOT *slot) {
 #endif
 
   if (slot->update_requests & UPDATE_WS) {
-    slot->wave_table = wave_table_map[slot->patch->WS];
+    slot->wave_table_idx = slot->patch.WS;
   }
 
   if (slot->update_requests & UPDATE_TLL) {
     if ((slot->type & 1) == 0) {
-      slot->tll = tll_table[slot->blk_fnum >> 5][slot->patch->TL][slot->patch->KL];
+      slot->tll = tll_table[slot->blk_fnum >> 5][slot->patch.TL][slot->patch.KL];
     } else {
-      slot->tll = tll_table[slot->blk_fnum >> 5][slot->volume][slot->patch->KL];
+      slot->tll = tll_table[slot->blk_fnum >> 5][slot->volume][slot->patch.KL];
     }
   }
 
   if (slot->update_requests & UPDATE_RKS) {
-    slot->rks = rks_table[slot->blk_fnum >> 8][slot->patch->KR];
+    slot->rks = rks_table[slot->blk_fnum >> 8][slot->patch.KR];
   }
 
   if (slot->update_requests & (UPDATE_RKS | UPDATE_EG)) {
@@ -553,7 +553,7 @@ static void reset_slot(OPLL_SLOT *slot, int number) {
   slot->number = number;
   slot->type = number % 2;
   slot->pg_keep = 0;
-  slot->wave_table = wave_table_map[0];
+  slot->wave_table_idx = 0;
   slot->pg_phase = 0;
   slot->output[0] = 0;
   slot->output[1] = 0;
@@ -569,7 +569,7 @@ static void reset_slot(OPLL_SLOT *slot, int number) {
   slot->volume = 0;
   slot->pg_out = 0;
   slot->eg_out = EG_MUTE;
-  slot->patch = &null_patch;
+  memcpy(&slot->patch, &null_patch, sizeof(OPLL_PATCH));
 }
 
 static INLINE void slotOn(OPLL *opll, int i) {
@@ -635,8 +635,8 @@ static INLINE void update_key_status(OPLL *opll) {
 
 static INLINE void set_patch(OPLL *opll, int32_t ch, int32_t num) {
   opll->patch_number[ch] = num;
-  MOD(opll, ch)->patch = &opll->patch[num * 2 + 0];
-  CAR(opll, ch)->patch = &opll->patch[num * 2 + 1];
+  memcpy(&MOD(opll, ch)->patch, &opll->patch[num * 2 + 0], sizeof(OPLL_PATCH));
+  memcpy(&CAR(opll, ch)->patch, &opll->patch[num * 2 + 1], sizeof(OPLL_PATCH));
   request_update(MOD(opll, ch), UPDATE_ALL);
   request_update(CAR(opll, ch), UPDATE_ALL);
 }
@@ -754,11 +754,11 @@ static void update_short_noise(OPLL *opll) {
 }
 
 static INLINE void calc_phase(OPLL_SLOT *slot, int32_t pm_phase, uint8_t reset) {
-  const int8_t pm = slot->patch->PM ? pm_table[(slot->fnum >> 6) & 7][(pm_phase >> 10) & 7] : 0;
+  const int8_t pm = slot->patch.PM ? pm_table[(slot->fnum >> 6) & 7][(pm_phase >> 10) & 7] : 0;
   if (reset) {
     slot->pg_phase = 0;
   }
-  slot->pg_phase += (((slot->fnum & 0x1ff) * 2 + pm) * ml_table[slot->patch->ML]) << slot->blk >> 2;
+  slot->pg_phase += (((slot->fnum & 0x1ff) * 2 + pm) * ml_table[slot->patch.ML]) << slot->blk >> 2;
   slot->pg_phase &= (DP_WIDTH - 1);
   slot->pg_out = slot->pg_phase >> DP_BASE_BITS;
 }
@@ -806,7 +806,7 @@ static INLINE uint8_t lookup_decay_step(OPLL_SLOT *slot, uint32_t counter) {
 }
 
 static INLINE void start_envelope(OPLL_SLOT *slot) {
-  if (min(15, slot->patch->AR + (slot->rks >> 2)) == 15) {
+  if (min(15, slot->patch.AR + (slot->rks >> 2)) == 15) {
     slot->eg_state = DECAY;
     slot->eg_out = 0;
   } else {
@@ -860,7 +860,7 @@ static INLINE void calc_envelope(OPLL_SLOT *slot, OPLL_SLOT *buddy, uint16_t eg_
   case DECAY:
     // DECAY to SUSTAIN transition must be checked at every cycle regardless of the conditions of the envelope rate and
     // counter. i.e. the transition is not synchronized with the progress of the envelope.
-    if ((slot->eg_out >> 3) == slot->patch->SL) {
+    if ((slot->eg_out >> 3) == slot->patch.SL) {
       slot->eg_state = SUSTAIN;
       request_update(slot, UPDATE_EG);
     }
@@ -918,10 +918,10 @@ static INLINE int16_t to_linear(uint16_t h, OPLL_SLOT *slot, int16_t am) {
 static INLINE int16_t calc_slot_car(OPLL *opll, int ch, int16_t fm) {
   OPLL_SLOT *slot = CAR(opll, ch);
 
-  uint8_t am = slot->patch->AM ? opll->lfo_am : 0;
+  uint8_t am = slot->patch.AM ? opll->lfo_am : 0;
 
   slot->output[1] = slot->output[0];
-  slot->output[0] = to_linear(slot->wave_table[(slot->pg_out + 2 * (fm >> 1)) & (PG_WIDTH - 1)], slot, am);
+  slot->output[0] = to_linear(wave_table_map[slot->wave_table_idx][(slot->pg_out + 2 * (fm >> 1)) & (PG_WIDTH - 1)], slot, am);
 
   return slot->output[0];
 }
@@ -929,11 +929,11 @@ static INLINE int16_t calc_slot_car(OPLL *opll, int ch, int16_t fm) {
 static INLINE int16_t calc_slot_mod(OPLL *opll, int ch) {
   OPLL_SLOT *slot = MOD(opll, ch);
 
-  int16_t fm = slot->patch->FB > 0 ? (slot->output[1] + slot->output[0]) >> (9 - slot->patch->FB) : 0;
-  uint8_t am = slot->patch->AM ? opll->lfo_am : 0;
+  int16_t fm = slot->patch.FB > 0 ? (slot->output[1] + slot->output[0]) >> (9 - slot->patch.FB) : 0;
+  uint8_t am = slot->patch.AM ? opll->lfo_am : 0;
 
   slot->output[1] = slot->output[0];
-  slot->output[0] = to_linear(slot->wave_table[(slot->pg_out + fm) & (PG_WIDTH - 1)], slot, am);
+  slot->output[0] = to_linear(wave_table_map[slot->wave_table_idx][(slot->pg_out + fm) & (PG_WIDTH - 1)], slot, am);
 
   return slot->output[0];
 }
@@ -941,7 +941,7 @@ static INLINE int16_t calc_slot_mod(OPLL *opll, int ch) {
 static INLINE int16_t calc_slot_tom(OPLL *opll) {
   OPLL_SLOT *slot = MOD(opll, 8);
 
-  return to_linear(slot->wave_table[slot->pg_out], slot, 0);
+  return to_linear(wave_table_map[slot->wave_table_idx][slot->pg_out], slot, 0);
 }
 
 /* Specify phase offset directly based on 10-bit (1024-length) sine table */
@@ -957,7 +957,7 @@ static INLINE int16_t calc_slot_snare(OPLL *opll) {
   else
     phase = (opll->noise & 1) ? _PD(0x0) : _PD(0x100);
 
-  return to_linear(slot->wave_table[phase], slot, 0);
+  return to_linear(wave_table_map[slot->wave_table_idx][phase], slot, 0);
 }
 
 static INLINE int16_t calc_slot_cym(OPLL *opll) {
@@ -965,7 +965,7 @@ static INLINE int16_t calc_slot_cym(OPLL *opll) {
 
   uint32_t phase = opll->short_noise ? _PD(0x300) : _PD(0x100);
 
-  return to_linear(slot->wave_table[phase], slot, 0);
+  return to_linear(wave_table_map[slot->wave_table_idx][phase], slot, 0);
 }
 
 static INLINE int16_t calc_slot_hat(OPLL *opll) {
@@ -978,7 +978,7 @@ static INLINE int16_t calc_slot_hat(OPLL *opll) {
   else
     phase = (opll->noise & 1) ? _PD(0x34) : _PD(0xd0);
 
-  return to_linear(slot->wave_table[phase], slot, 0);
+  return to_linear(wave_table_map[slot->wave_table_idx][phase], slot, 0);
 }
 
 #define _MO(x) (-(x) >> 1)
@@ -1044,14 +1044,16 @@ static void update_output(OPLL *opll) {
   update_noise(opll, 2);
 }
 
+static OPLL_RateConv *conv;
+
 INLINE static void mix_output(OPLL *opll) {
   int16_t out = 0;
   int i;
   for (i = 0; i < 14; i++) {
     out += opll->ch_out[i];
   }
-  if (opll->conv) {
-    OPLL_RateConv_putData(opll->conv, 0, out);
+  if (conv) {
+    OPLL_RateConv_putData(conv, 0, out);
   } else {
     opll->mix_out[0] = out;
   }
@@ -1067,9 +1069,9 @@ INLINE static void mix_output_stereo(OPLL *opll) {
     if (opll->pan[i] & 1)
       out[1] += (int16_t)(opll->ch_out[i] * opll->pan_fine[i][1]);
   }
-  if (opll->conv) {
-    OPLL_RateConv_putData(opll->conv, 0, out[0]);
-    OPLL_RateConv_putData(opll->conv, 1, out[1]);
+  if (conv) {
+    OPLL_RateConv_putData(conv, 0, out[0]);
+    OPLL_RateConv_putData(conv, 1, out[1]);
   }
 }
 
@@ -1097,7 +1099,10 @@ OPLL *OPLL_new(uint32_t clk, uint32_t rate) {
   opll->clk = clk;
   opll->rate = rate;
   opll->mask = 0;
-  opll->conv = NULL;
+    if (conv) {
+        OPLL_RateConv_delete(conv);
+        conv = NULL;
+    }
   opll->mix_out[0] = 0;
   opll->mix_out[1] = 0;
 
@@ -1108,9 +1113,9 @@ OPLL *OPLL_new(uint32_t clk, uint32_t rate) {
 }
 
 void OPLL_delete(OPLL *opll) {
-  if (opll->conv) {
-    OPLL_RateConv_delete(opll->conv);
-    opll->conv = NULL;
+  if (conv) {
+    OPLL_RateConv_delete(conv);
+    conv = NULL;
   }
   free(opll);
 }
@@ -1123,17 +1128,17 @@ static void reset_rate_conversion_params(OPLL *opll) {
   opll->out_step = f_inp;
   opll->inp_step = f_out;
 
-  if (opll->conv) {
-    OPLL_RateConv_delete(opll->conv);
-    opll->conv = NULL;
+  if (conv) {
+    OPLL_RateConv_delete(conv);
+    conv = NULL;
   }
 
   if (floor(f_inp) != f_out && floor(f_inp + 0.5) != f_out) {
-    opll->conv = OPLL_RateConv_new(f_inp, f_out, 2);
+    conv = OPLL_RateConv_new(f_inp, f_out, 2);
   }
 
-  if (opll->conv) {
-    OPLL_RateConv_reset(opll->conv);
+  if (conv) {
+    OPLL_RateConv_reset(conv);
   }
 }
 
@@ -1460,8 +1465,8 @@ int16_t OPLL_calc(OPLL *opll) {
     mix_output(opll);
   }
   opll->out_time -= opll->out_step;
-  if (opll->conv) {
-    opll->mix_out[0] = OPLL_RateConv_getData(opll->conv, 0);
+  if (conv) {
+    opll->mix_out[0] = OPLL_RateConv_getData(conv, 0);
   }
   return opll->mix_out[0];
 }
@@ -1473,9 +1478,9 @@ void OPLL_calcStereo(OPLL *opll, int32_t out[2]) {
     mix_output_stereo(opll);
   }
   opll->out_time -= opll->out_step;
-  if (opll->conv) {
-    out[0] = OPLL_RateConv_getData(opll->conv, 0);
-    out[1] = OPLL_RateConv_getData(opll->conv, 1);
+  if (conv) {
+    out[0] = OPLL_RateConv_getData(conv, 0);
+    out[1] = OPLL_RateConv_getData(conv, 1);
   } else {
     out[0] = opll->mix_out[0];
     out[1] = opll->mix_out[1];

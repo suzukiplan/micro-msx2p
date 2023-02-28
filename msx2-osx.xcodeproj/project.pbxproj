@@ -54,6 +54,18 @@
 		749112C829AC6F66004140F5 /* lz4.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112C029AC6F66004140F5 /* lz4.c */; };
 		749112C929AC6F66004140F5 /* xxhash.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112C329AC6F66004140F5 /* xxhash.c */; };
 		749112CA29AC6F66004140F5 /* lz4hc.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112C629AC6F66004140F5 /* lz4hc.c */; };
+		749112D829ACCE01004140F5 /* _FMBIOS.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112CC29ACCE01004140F5 /* _FMBIOS.ROM */; };
+		749112D929ACCE01004140F5 /* _KNJFNT16.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112CD29ACCE01004140F5 /* _KNJFNT16.ROM */; };
+		749112DA29ACCE01004140F5 /* _KNJDRV.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112CE29ACCE01004140F5 /* _KNJDRV.ROM */; };
+		749112DB29ACCE01004140F5 /* _DISK.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112CF29ACCE01004140F5 /* _DISK.ROM */; };
+		749112DC29ACCE01004140F5 /* _DISK2.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112D029ACCE01004140F5 /* _DISK2.ROM */; };
+		749112DD29ACCE01004140F5 /* _MSX2PEXT.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112D129ACCE01004140F5 /* _MSX2PEXT.ROM */; };
+		749112DE29ACCE01004140F5 /* _MSX2EXT.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112D229ACCE01004140F5 /* _MSX2EXT.ROM */; };
+		749112DF29ACCE01004140F5 /* _JAPMSX1.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112D329ACCE01004140F5 /* _JAPMSX1.ROM */; };
+		749112E029ACCE01004140F5 /* _MSX2.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112D429ACCE01004140F5 /* _MSX2.ROM */; };
+		749112E129ACCE01004140F5 /* _MSX2P_0.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112D529ACCE01004140F5 /* _MSX2P_0.ROM */; };
+		749112E229ACCE01004140F5 /* _FMPAC.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112D629ACCE01004140F5 /* _FMPAC.ROM */; };
+		749112E329ACCE01004140F5 /* _MSX2P_a.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 749112D729ACCE01004140F5 /* _MSX2P_a.ROM */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -129,6 +141,18 @@
 		749112C429AC6F66004140F5 /* lz4frame_static.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lz4frame_static.h; sourceTree = "<group>"; };
 		749112C529AC6F66004140F5 /* lz4hc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lz4hc.h; sourceTree = "<group>"; };
 		749112C629AC6F66004140F5 /* lz4hc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lz4hc.c; sourceTree = "<group>"; };
+		749112CC29ACCE01004140F5 /* _FMBIOS.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _FMBIOS.ROM; sourceTree = "<group>"; };
+		749112CD29ACCE01004140F5 /* _KNJFNT16.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _KNJFNT16.ROM; sourceTree = "<group>"; };
+		749112CE29ACCE01004140F5 /* _KNJDRV.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _KNJDRV.ROM; sourceTree = "<group>"; };
+		749112CF29ACCE01004140F5 /* _DISK.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _DISK.ROM; sourceTree = "<group>"; };
+		749112D029ACCE01004140F5 /* _DISK2.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _DISK2.ROM; sourceTree = "<group>"; };
+		749112D129ACCE01004140F5 /* _MSX2PEXT.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _MSX2PEXT.ROM; sourceTree = "<group>"; };
+		749112D229ACCE01004140F5 /* _MSX2EXT.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _MSX2EXT.ROM; sourceTree = "<group>"; };
+		749112D329ACCE01004140F5 /* _JAPMSX1.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _JAPMSX1.ROM; sourceTree = "<group>"; };
+		749112D429ACCE01004140F5 /* _MSX2.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _MSX2.ROM; sourceTree = "<group>"; };
+		749112D529ACCE01004140F5 /* _MSX2P_0.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _MSX2P_0.ROM; sourceTree = "<group>"; };
+		749112D629ACCE01004140F5 /* _FMPAC.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _FMPAC.ROM; sourceTree = "<group>"; };
+		749112D729ACCE01004140F5 /* _MSX2P_a.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = _MSX2P_a.ROM; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -161,6 +185,7 @@
 		748D22A9297E652600B504AF /* msx2-osx */ = {
 			isa = PBXGroup;
 			children = (
+				749112CB29ACCDD4004140F5 /* bios2 */,
 				749112BD29AC6F0D004140F5 /* lz4 */,
 				748D22CD297E7E0000B504AF /* bios */,
 				748D22BD297E66C600B504AF /* core */,
@@ -260,6 +285,25 @@
 			path = lz4;
 			sourceTree = "<group>";
 		};
+		749112CB29ACCDD4004140F5 /* bios2 */ = {
+			isa = PBXGroup;
+			children = (
+				749112CF29ACCE01004140F5 /* _DISK.ROM */,
+				749112D029ACCE01004140F5 /* _DISK2.ROM */,
+				749112CC29ACCE01004140F5 /* _FMBIOS.ROM */,
+				749112CE29ACCE01004140F5 /* _KNJDRV.ROM */,
+				749112CD29ACCE01004140F5 /* _KNJFNT16.ROM */,
+				749112D329ACCE01004140F5 /* _JAPMSX1.ROM */,
+				749112D429ACCE01004140F5 /* _MSX2.ROM */,
+				749112D529ACCE01004140F5 /* _MSX2P_0.ROM */,
+				749112D729ACCE01004140F5 /* _MSX2P_a.ROM */,
+				749112D229ACCE01004140F5 /* _MSX2EXT.ROM */,
+				749112D129ACCE01004140F5 /* _MSX2PEXT.ROM */,
+				749112D629ACCE01004140F5 /* _FMPAC.ROM */,
+			);
+			path = bios2;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -319,25 +363,36 @@
 			files = (
 				748D22E72980CB8400B504AF /* MSX2J.ROM in Resources */,
 				7407A1D629834DB500D59AA5 /* cbios_sub.rom in Resources */,
+				749112D829ACCE01004140F5 /* _FMBIOS.ROM in Resources */,
 				748D22D8297E7E2E00B504AF /* KNJDRV.ROM in Resources */,
 				748D22E5297FB69800B504AF /* cbios_main_msx2_jp.rom in Resources */,
 				741A1E2F2991F219001AE497 /* a1wsdsk2.dsk in Resources */,
+				749112E229ACCE01004140F5 /* _FMPAC.ROM in Resources */,
 				741A1E332991F219001AE497 /* a1wsext.rom in Resources */,
+				749112E129ACCE01004140F5 /* _MSX2P_0.ROM in Resources */,
 				748D22DF297E7E2E00B504AF /* MSX2.ROM in Resources */,
 				748D22DC297E7E2E00B504AF /* KNJFNT16.ROM in Resources */,
+				749112E329ACCE01004140F5 /* _MSX2P_a.ROM in Resources */,
+				749112DE29ACCE01004140F5 /* _MSX2EXT.ROM in Resources */,
 				741A1E212991C885001AE497 /* FSA1WSX_KANJI.ROM in Resources */,
 				741A1E2E2991F219001AE497 /* a1wsdisk.rom in Resources */,
+				749112D929ACCE01004140F5 /* _KNJFNT16.ROM in Resources */,
 				748D22DD297E7E2E00B504AF /* MSX2P.ROM in Resources */,
 				741A1E222991C885001AE497 /* FSA1WSX_MSX2P.ROM in Resources */,
 				741A1E322991F219001AE497 /* a1wsdsk1.dsk in Resources */,
+				749112E029ACCE01004140F5 /* _MSX2.ROM in Resources */,
+				749112DB29ACCE01004140F5 /* _DISK.ROM in Resources */,
 				741A1E352991F219001AE497 /* a1wsfirm.rom in Resources */,
 				741A1E17298FCEDB001AE497 /* tm1pdesk1.rom in Resources */,
 				748D22DA297E7E2E00B504AF /* FMBIOS.ROM in Resources */,
+				749112DA29ACCE01004140F5 /* _KNJDRV.ROM in Resources */,
+				749112DD29ACCE01004140F5 /* _MSX2PEXT.ROM in Resources */,
 				741A1E1F2991C885001AE497 /* FSA1WSX_DISK.ROM in Resources */,
 				741A1E14298FCEDB001AE497 /* tm1pbios.rom in Resources */,
 				741A1E342991F219001AE497 /* a1wsbios.rom in Resources */,
 				748D22DE297E7E2E00B504AF /* DISK.ROM in Resources */,
 				741A1E302991F219001AE497 /* a1wsmus.rom in Resources */,
+				749112DF29ACCE01004140F5 /* _JAPMSX1.ROM in Resources */,
 				7407A1D529834DB500D59AA5 /* cbios_logo_msx2.rom in Resources */,
 				741A1E13298FCEDB001AE497 /* tm1pkdr.rom in Resources */,
 				741A1E202991C885001AE497 /* FSA1WSX_MSX2PEXT.ROM in Resources */,
@@ -347,6 +402,7 @@
 				741A1E1E2991C885001AE497 /* FSA1WSX_MSX2PMUS.ROM in Resources */,
 				748D22E0297E7E2E00B504AF /* MSX2EXT.ROM in Resources */,
 				741A1E312991F219001AE497 /* a1wskdr.rom in Resources */,
+				749112DC29ACCE01004140F5 /* _DISK2.ROM in Resources */,
 				741A1E2D2991F219001AE497 /* a1wskfn.rom in Resources */,
 				748D22D9297E7E2E00B504AF /* MSX2PEXT.ROM in Resources */,
 				748D22B4297E652800B504AF /* Main.storyboard in Resources */,

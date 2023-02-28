@@ -15,6 +15,7 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
     OpenFileTypeRom,
     OpenFileTypeDiskA,
     OpenFileTypeDiskB,
+    OpenfileTypeQuickSave,
 };
 
 @interface ViewController () <NSWindowDelegate>
@@ -71,7 +72,7 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
                        tm1pdesk1.bytes,
                        tm1pdesk2.bytes,
                        font.bytes, font.length);
-#elif 1
+#elif 0
     NSData* msx2p = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wsbios" ofType:@"rom"]];
     NSData* msx2pext = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wsext" ofType:@"rom"]];
     NSData* msx2pmus = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wsmus" ofType:@"rom"]];
@@ -87,18 +88,18 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
                           kanji.bytes,
                           firm.bytes);
 #else
-    NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2P" ofType:@"ROM"]];
-    NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2PEXT" ofType:@"ROM"]];
-    NSData* biosDisk = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DISK" ofType:@"ROM"]];
-    NSData* biosFm = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FMBIOS" ofType:@"ROM"]];
-    NSData* biosKnj = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJDRV" ofType:@"ROM"]];
-    NSData* biosFont = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJFNT16" ofType:@"ROM"]];
-    emu_init_bios(biosMain.bytes, biosMain.length,
-                  biosExt.bytes, biosExt.length,
-                  biosDisk.bytes, biosDisk.length,
-                  biosFm.bytes, biosFm.length,
-                  biosKnj.bytes, biosKnj.length,
-                  biosFont.bytes, biosFont.length);
+    NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"_MSX2P_a" ofType:@"ROM"]];
+    NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"_MSX2PEXT" ofType:@"ROM"]];
+    NSData* biosDisk = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FSA1WSX_DISK" ofType:@"ROM"]];
+    NSData* biosFm = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"_FMPAC" ofType:@"ROM"]];
+    NSData* biosKnj = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"_KNJDRV" ofType:@"ROM"]];
+    NSData* biosFont = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"_KNJFNT16" ofType:@"ROM"]];
+    emu_init_bios(biosMain.bytes,
+                  biosExt.bytes,
+                  biosDisk.bytes,
+                  biosFm.bytes,
+                  biosKnj.bytes,
+                  biosFont.bytes);
 #endif
     
     self.view.frame = CGRectMake(0, 0, VRAM_WIDTH * 2, VRAM_HEIGHT * 2);
@@ -191,28 +192,56 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
 - (IBAction)menuQuickSave:(id)sender
 {
     NSLog(@"menuQuickSave");
-    size_t size;
-    emu_quickSave(&size);
-    NSLog(@"save data size = %lu", size);
+    __weak ViewController* weakSelf = self;
+    [_video pauseWithCompletionHandler:^{
+        NSLog(@"paused");
+        size_t size;
+        const void* rawData = emu_quickSave(&size);
+        NSData* data = [NSData dataWithBytes:rawData length:size];
+        NSLog(@"save data size = %lu", size);
+        [weakSelf _saveData:data];
+    }];
 }
 
 - (IBAction)menuQuickLoad:(id)sender
 {
     NSLog(@"menuQuickLoad");
+    [self _openWithType:OpenfileTypeQuickSave];
+}
+
+- (void)_saveData:(NSData*)data
+{
+    [_video pauseWithCompletionHandler:^{
+        NSSavePanel* panel = [NSSavePanel savePanel];
+        panel.canCreateDirectories = YES;
+        panel.showsTagField = YES;
+        __weak ViewController* weakSelf = self;
+        [panel beginWithCompletionHandler:^(NSModalResponse result) {
+            if (result) {
+                [data writeToURL:panel.URL atomically:YES];
+            }
+            [weakSelf.video resumeWithCompletionHandler:^{}];
+        }];
+    }];
 }
 
 
 - (void)_openWithType:(OpenFileType)type
 {
-    NSOpenPanel* panel = [NSOpenPanel openPanel];
-    panel.allowsMultipleSelection = NO;
-    panel.canChooseDirectories = NO;
-    panel.canCreateDirectories = YES;
-    panel.canChooseFiles = YES;
     __weak ViewController* weakSelf = self;
-    [panel beginWithCompletionHandler:^(NSModalResponse result) {
-        if (!result) return;
-        [weakSelf _openURL:panel.URL type:type];
+    [_video pauseWithCompletionHandler:^{
+        NSOpenPanel* panel = [NSOpenPanel openPanel];
+        panel.allowsMultipleSelection = NO;
+        panel.canChooseDirectories = NO;
+        panel.canCreateDirectories = YES;
+        panel.canChooseFiles = YES;
+        [panel beginWithCompletionHandler:^(NSModalResponse result) {
+            if (!result) {
+                [weakSelf.video resumeWithCompletionHandler:^{}];
+                return;
+            }
+            [weakSelf _openURL:panel.URL type:type];
+        }];
     }];
 }
 
@@ -247,16 +276,12 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
         case OpenFileTypeDiskB:
             emu_insertDisk(1, data.bytes, data.length);
             break;
+        case OpenfileTypeQuickSave:
+            emu_quickLoad(data.bytes, data.length);
+            break;
     }
+    [_video resumeWithCompletionHandler:^{}];
 }
-
-/*
-- (BOOL)application:(AppDelegate*)app didOpenFile:(NSString*)file
-{
-    [self _openURL:[NSURL fileURLWithPath:file] type:OpenFileTypeRom];
-    return YES;
-}
- */
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification
 {

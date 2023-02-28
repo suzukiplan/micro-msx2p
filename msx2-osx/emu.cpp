@@ -10,70 +10,65 @@ unsigned char emu_key;
 unsigned char emu_keycode;
 };
 
-struct BIOS {
-    unsigned char main[0x8000];
-    unsigned char logo[0x4000];
-    unsigned char ext[0x4000];
-    unsigned char knj[0x8000];
-    unsigned char disk[0x4000];
-    unsigned char fm[0x4000];
-    unsigned char font[0x40000];
-};
-static struct BIOS bios;
 static MSX2 msx2(0);
 static unsigned char* rom;
-static unsigned char ram[0x10000];
 static void* spu;
 pthread_mutex_t sound_locker;
 static short sound_buffer[65536 * 2];
 static unsigned short sound_cursor;
 
-extern "C" void emu_init_bios(const void* main, size_t mainSize,
-                              const void* ext, size_t extSize,
-                              const void* disk, size_t diskSize,
-                              const void* fm, size_t fmSize,
-                              const void* knj, size_t knjSize,
-                              const void* font, size_t fontSize)
+extern "C" void emu_init_bios(const void* main,
+                              const void* sub,
+                              const void* disk,
+                              const void* fm,
+                              const void* knj,
+                              const void* font)
 {
+    static struct StaticData {
+        unsigned char main[0x8000];
+        unsigned char sub[0x4000];
+        unsigned char fm[0x4000];
+        unsigned char disk[0x4000];
+        unsigned char knj[0x8000];
+        unsigned char font[0x40000];
+        unsigned char empty[0x4000];
+    } data;
+    memcpy(data.main, main, sizeof(data.main));
+    memcpy(data.sub, sub, sizeof(data.sub));
+    memcpy(data.fm, fm, sizeof(data.fm));
+    memcpy(data.disk, disk, sizeof(data.disk));
+    memcpy(data.font, font, sizeof(data.font));
+    memcpy(data.knj, knj, sizeof(data.knj));
     msx2.setupSecondaryExist(false, false, false, true);
-    if (main && 0x8000 == mainSize) {
-        memcpy(bios.main, main, 0x8000);
-        msx2.setup(0, 0, 0, bios.main, 0x8000, "MAIN");
-    }
-    msx2.setupRAM(3, 3);
-    if (ext && 0x4000 == extSize) {
-        memcpy(bios.ext, ext, 0x4000);
-        msx2.setup(3, 0, 0, bios.ext, 0x4000, "SUB");
-    }
-    if (knj && 0x8000 == knjSize) {
-        memcpy(bios.knj, knj, 0x8000);
-        msx2.setup(3, 0, 2, bios.knj, 0x8000, "KNJ");
-    }
-    if (disk && 0x4000 <= diskSize) {
-        memcpy(bios.disk, disk, 0x4000);
-        msx2.setup(3, 1, 2, bios.disk, 0x4000, "DISK");
-    }
-    if (fm && 0x4000 <= fmSize) {
-        memcpy(bios.fm, fm, 0x4000);
-        msx2.setup(3, 2, 2, bios.fm, 0x4000, "FM");
-    }
-    if (font && 0 < fontSize) {
-        msx2.loadFont(font, fontSize);
-    }
+    msx2.setup(0, 0, 0, data.main, sizeof(data.main), "MAIN");
+    msx2.setupRAM(3, 0);
+    msx2.setup(3, 1, 0, data.sub, sizeof(data.sub), "SUB");
+    msx2.setup(3, 1, 2, data.knj, sizeof(data.knj), "KNJ");
+    msx2.setup(3, 2, 0, data.empty, sizeof(data.empty), "DISK");
+    msx2.setup(3, 2, 2, data.disk, sizeof(data.disk), "DISK");
+    msx2.setup(3, 2, 4, data.empty, sizeof(data.empty), "DISK");
+    msx2.setup(3, 2, 6, data.empty, sizeof(data.empty), "DISK");
+    msx2.setup(3, 3, 2, data.fm, sizeof(data.fm), "FM");
+    msx2.loadFont(data.font, sizeof(data.font));
     emu_reset();
 }
 
-extern "C" void emu_init_cbios(const void* main, size_t mainSize,
-                               const void* logo, size_t logoSize,
-                               const void* sub, size_t subSize)
+extern "C" void emu_init_cbios(const void* main,
+                               const void* logo,
+                               const void* sub)
 {
-    memcpy(bios.main, main, 0x8000);
-    memcpy(bios.ext, sub, 0x4000);
-    memcpy(bios.logo, logo, 0x4000);
+    static struct StaticData {
+        unsigned char main[0x8000];
+        unsigned char ext[0x4000];
+        unsigned char logo[0x4000];
+    } data;
+    memcpy(data.main, main, 0x8000);
+    memcpy(data.ext, sub, 0x4000);
+    memcpy(data.logo, logo, 0x4000);
     msx2.setupSecondaryExist(false, false, false, true);
-    msx2.setup(0, 0, 0, bios.main, 0x8000, "MAIN");
-    msx2.setup(0, 0, 4, bios.logo, 0x4000, "LOGO");
-    msx2.setup(3, 0, 0, bios.ext, 0x4000, "SUB");
+    msx2.setup(0, 0, 0, data.main, 0x8000, "MAIN");
+    msx2.setup(0, 0, 4, data.logo, 0x4000, "LOGO");
+    msx2.setup(3, 0, 0, data.ext, 0x4000, "SUB");
     msx2.setupRAM(3, 3);
     emu_reset();
 }
@@ -191,7 +186,6 @@ void emu_loadRom(const void* rom_, size_t romSize, const char* fileName)
 extern "C" void emu_reset()
 {
     msx2.reset();
-    memset(ram, 0xFF, sizeof(ram));
 }
 
 static void sound_callback(void* buffer, size_t size)
@@ -317,4 +311,9 @@ void emu_ejectDisk(int driveId)
 const void* emu_quickSave(size_t* size)
 {
     return msx2.quickSave(size);
+}
+
+void emu_quickLoad(const void* data, size_t size)
+{
+    msx2.quickLoad(data, size);
 }
