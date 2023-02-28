@@ -606,6 +606,7 @@ public:
             } else if (0 == strcmp(chunk, "MMU")) {
                 putlog("extract MMU (%d bytes)", chunkSize);
                 memcpy(&this->mmu.ctx, ptr, chunkSize);
+                this->mmu.bankSwitchover();
             } else if (0 == strcmp(chunk, "PAC")) {
                 putlog("extract PAC (%d bytes)", chunkSize);
                 memcpy(&this->mmu.pac, ptr, chunkSize);
