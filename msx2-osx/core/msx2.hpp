@@ -290,6 +290,7 @@ public:
         initKeyCode('\r', 7, 7);
         initKeyCode('\n', 7, 7);
         initKeyCode(' ', 0, 8);
+        initKeyCode(0x1B, 2, 7);
         this->reset();
     }
     
@@ -572,6 +573,8 @@ public:
         this->writeSaveChunk("KNJ", &this->kanji.ctx, (int)sizeof(this->kanji.ctx));
         this->writeSaveChunk("VDP", &this->vdp.ctx, (int)sizeof(this->vdp.ctx));
         this->writeSaveChunk("FDC", &this->fdc.ctx, (int)sizeof(this->fdc.ctx));
+        this->writeSaveChunk("JCT", &this->fdc.journalCount, (int)sizeof(this->fdc.journalCount));
+        this->writeSaveChunk("JDT", &this->fdc.journal, (int)sizeof(this->fdc.journal[0]) * this->fdc.journalCount);
         this->writeSaveChunk("OPL", this->ym2413, (int)sizeof(OPLL));
         *size = LZ4_compress_default(this->quickSaveBuffer,
                                      this->quickSaveBufferCompressed,
@@ -626,6 +629,13 @@ public:
             } else if (0 == strcmp(chunk, "FDC")) {
                 putlog("extract FDC (%d bytes)", chunkSize);
                 memcpy(&this->fdc.ctx, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "JCT")) {
+                putlog("extract JCT (%d bytes)", chunkSize);
+                memcpy(&this->fdc.journalCount, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "JDT")) {
+                putlog("extract JDT (%d bytes)", chunkSize);
+                memset(&this->fdc.journal, 0, sizeof(this->fdc.journal));
+                memcpy(&this->fdc.journal, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "OPL")) {
                 putlog("extract OPL (%d bytes)", chunkSize);
                 memcpy(this->ym2413, ptr, chunkSize);

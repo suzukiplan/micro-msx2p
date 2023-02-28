@@ -300,7 +300,7 @@ extern "C" void emu_startDebug()
 
 void emu_insertDisk(int driveId, const void* data, size_t size)
 {
-    msx2.insertDisk(driveId, data, size, true);
+    msx2.insertDisk(driveId, data, size, false);
 }
 
 void emu_ejectDisk(int driveId)

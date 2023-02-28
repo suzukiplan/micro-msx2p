@@ -9,6 +9,7 @@ private:
     static const int NUMBER_OF_SECTORS = 9;
     static const int SECTOR_SIZE = 512;
     static const int SECTOR_LIMIT = 4096;
+    static const int JOURNAL_LIMIT = 4096;
     static const int CMD_UNKNOWN = 0;
     static const int CMD_READ_DATA = 1;
     static const int CMD_WRITE_DATA = 2;
@@ -100,9 +101,18 @@ public:
         unsigned char sectorBuf[SECTOR_SIZE];
     } ctx;
     
+    struct DiskWriteJournal {
+        unsigned int crc;
+        int sector;
+        unsigned char buf[SECTOR_SIZE];
+    } journal[JOURNAL_LIMIT];
+    int journalCount = 0;
+
     TC8566AF() {
         memset(&this->drives, 0, sizeof(this->drives));
         memset(&this->CB, 0, sizeof(this->CB));
+        memset(&this->journal, 0, sizeof(this->journal));
+        this->journalCount = 0;
         this->reset();
     }
     
@@ -158,6 +168,11 @@ public:
             si++;
             if (SECTOR_LIMIT == si) {
                 break; // size over
+            }
+        }
+        for (int i = 0; i < JOURNAL_LIMIT; i++) {
+            if (this->ctx.crc[driveId] == this->journal[i].crc) {
+                memcpy(this->drives[driveId].sectors[this->journal[i].sector], this->journal[i].buf, SECTOR_SIZE);
             }
         }
     }
@@ -256,6 +271,29 @@ private:
             this->CB.diskWriteListener(this->CB.arg, driveId, offset);
         }
         memcpy(this->drives[driveId].sectors[offset], this->ctx.sectorBuf, SECTOR_SIZE);
+        bool journalNotFound = true;
+        for (int i = 0; i < this->journalCount; i++) {
+            if (this->journal[i].crc == this->ctx.crc[driveId]) {
+                if (this->journal[i].sector == offset) {
+                    // update journal
+                    memcpy(this->journal[i].buf, this->ctx.sectorBuf, SECTOR_SIZE);
+                    journalNotFound = false;
+                    break;
+                }
+            }
+        }
+        if (journalNotFound) {
+            if (this->journalCount < JOURNAL_LIMIT) {
+                // create new journal
+                printf("create new journal: crc=%X, secotr=%d\n", this->ctx.crc[driveId], offset);
+                this->journal[this->journalCount].crc = this->ctx.crc[driveId];
+                this->journal[this->journalCount].sector = offset;
+                memcpy(this->journal[this->journalCount].buf, this->ctx.sectorBuf, SECTOR_SIZE);
+                this->journalCount++;
+            } else {
+                puts("journal capacity over!");
+            }
+        }
         return 1;
     }
 
