@@ -49,9 +49,10 @@ public:
         unsigned char pri[4];
         unsigned char sec[4];
         unsigned char mmap[4];
+        unsigned char reserved[4];
         unsigned char cpos[2][4]; // cartridge position register (0x2000 * n)
         unsigned char isSelectSRAM[8];
-        unsigned char reserved[4 + 32];
+        unsigned char pac[0x2000]; // FM-Pac SRAM area
     } ctx;
 
     bool sccEnabled;
@@ -271,14 +272,24 @@ public:
         int idx = addr / 0x2000;
         auto s = &this->slots[pri][sec];
         auto ptr = s->data[idx].ptr;
-        if (ptr && s->data[idx].isDiskBios) {
-            if (0x3FF0 <= (addr & 0x3FFF)) {
-                return CB.diskRead(CB.arg, addr & 0x3FFF);
+        if (ptr) {
+            if (s->data[idx].isDiskBios) {
+                if (0x3FF0 <= (addr & 0x3FFF)) {
+                    return CB.diskRead(CB.arg, addr & 0x3FFF);
+                }
+            } else if (s->data[idx].isFmBios && this->isEnabledPacSRAM()) {
+                if ((addr & 0x3FFF) < 0x1FFE) {
+                    return this->ctx.pac[addr &0x1FFF];
+                }
             }
         }
         return ptr ? ptr[addr & 0x1FFF] : 0xFF;
     }
     
+    inline bool isEnabledPacSRAM() {
+        return this->ctx.pac[0x1FFE] == 0x4D && this->ctx.pac[0x1FFF] == 0x69;
+    }
+
     inline void write(unsigned short addr, unsigned char value)
     {
         if (addr == 0xFFFF) {
@@ -296,7 +307,16 @@ public:
         } else if (data->isDiskBios) {
             CB.diskWrite(CB.arg, addr & 0x3FFF, value);
         } else if (data->isFmBios) {
-            CB.fmWrite(CB.arg, addr & 0x3FFF, value);
+            switch (addr & 0x3FFF) {
+                case 0x1FFE: this->ctx.pac[0x1FFE] = value; break;
+                case 0x1FFF: this->ctx.pac[0x1FFF] = value; break;
+                default:
+                    if (this->isEnabledPacSRAM() && (addr & 0x3FFF) < 0x2000) {
+                        this->ctx.pac[addr & 0x1FFF] = value;
+                    } else {
+                        this->CB.fmWrite(CB.arg, addr & 0x3FFF, value);
+                    }
+            }
         } else if (data->isCartridge) {
             switch (this->cartridge.romType) {
                 case MSX2_ROM_TYPE_NORMAL: return;
