@@ -99,6 +99,12 @@ class V9958
         this->reset();
     }
 
+    void updateAllPalettes() {
+        for (int i = 0; i < 16; i++) {
+            this->updatePaletteCacheFromRegister(i);
+        }
+    }
+
     void reset()
     {
         static unsigned int rgb[16] = {0x000000, 0x000000,

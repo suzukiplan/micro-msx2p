@@ -626,6 +626,7 @@ public:
             } else if (0 == strcmp(chunk, "VDP")) {
                 putlog("extract VDP (%d bytes)", chunkSize);
                 memcpy(&this->vdp.ctx, ptr, chunkSize);
+                this->vdp.updateAllPalettes();
             } else if (0 == strcmp(chunk, "FDC")) {
                 putlog("extract FDC (%d bytes)", chunkSize);
                 memcpy(&this->fdc.ctx, ptr, chunkSize);
