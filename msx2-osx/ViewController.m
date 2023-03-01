@@ -15,7 +15,12 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
     OpenFileTypeRom,
     OpenFileTypeDiskA,
     OpenFileTypeDiskB,
-    OpenfileTypeQuickSave,
+    OpenFileTypeQuickSave,
+};
+
+typedef NS_ENUM(NSInteger, SaveFileType) {
+    SaveFileTypeQuick,
+    SaveFileTypeRAM,
 };
 
 @interface ViewController () <NSWindowDelegate>
@@ -199,23 +204,40 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
         const void* rawData = emu_quickSave(&size);
         NSData* data = [NSData dataWithBytes:rawData length:size];
         NSLog(@"save data size = %lu", size);
-        [weakSelf _saveData:data];
+        [weakSelf _saveData:data type:SaveFileTypeQuick];
     }];
 }
 
 - (IBAction)menuQuickLoad:(id)sender
 {
     NSLog(@"menuQuickLoad");
-    [self _openWithType:OpenfileTypeQuickSave];
+    [self _openWithType:OpenFileTypeQuickSave];
 }
 
-- (void)_saveData:(NSData*)data
+- (IBAction)menuSaveRamDump:(id)sender
+{
+    NSLog(@"menuSaveRamDump");
+    __weak ViewController* weakSelf = self;
+    [_video pauseWithCompletionHandler:^{
+        NSData* data = [NSData dataWithBytes:emu_getRAM() length:0x10000];
+        [weakSelf _saveData:data type:SaveFileTypeRAM];
+    }];
+}
+
+- (void)_saveData:(NSData*)data type:(SaveFileType)type
 {
     [_video pauseWithCompletionHandler:^{
         NSSavePanel* panel = [NSSavePanel savePanel];
         panel.canCreateDirectories = YES;
         panel.showsTagField = YES;
-        panel.nameFieldStringValue = @"savedata.dat";
+        switch (type) {
+            case SaveFileTypeQuick:
+                panel.nameFieldStringValue = @"save.dat";
+                break;
+            case SaveFileTypeRAM:
+                panel.nameFieldStringValue = @"ram.bin";
+                break;
+        }
         panel.level = NSModalPanelWindowLevel;
         __weak ViewController* weakSelf = self;
         [panel beginWithCompletionHandler:^(NSModalResponse result) {
@@ -278,7 +300,7 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
         case OpenFileTypeDiskB:
             emu_insertDisk(1, data.bytes, data.length);
             break;
-        case OpenfileTypeQuickSave:
+        case OpenFileTypeQuickSave:
             emu_quickLoad(data.bytes, data.length);
             break;
     }

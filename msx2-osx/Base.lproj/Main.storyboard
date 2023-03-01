@@ -105,6 +105,12 @@
                                                 <action selector="menuQuickLoad:" target="Ady-hI-5gd" id="LWJ-X8-Rg9"/>
                                             </connections>
                                         </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="E6P-K4-hGX"/>
+                                        <menuItem title="Save RAM dump" keyEquivalent="d" id="ReL-2z-v0n">
+                                            <connections>
+                                                <action selector="menuSaveRamDump:" target="Ady-hI-5gd" id="QIA-PI-YAV"/>
+                                            </connections>
+                                        </menuItem>
                                     </items>
                                 </menu>
                             </menuItem>

@@ -36,6 +36,7 @@ void emu_dumpVideoMemory(void);
 void emu_startDebug(void);
 const void* emu_quickSave(size_t* size);
 void emu_quickLoad(const void* data, size_t size);
+const void* emu_getRAM(void);
 
 #ifdef __cplusplus
 };

@@ -317,3 +317,8 @@ void emu_quickLoad(const void* data, size_t size)
 {
     msx2.quickLoad(data, size);
 }
+
+const void* emu_getRAM(void)
+{
+    return msx2.mmu.ram;
+}

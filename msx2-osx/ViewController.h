@@ -16,5 +16,6 @@
 -(IBAction)menuEjectDiskB:(id)sender;
 -(IBAction)menuQuickSave:(id)sender;
 -(IBAction)menuQuickLoad:(id)sender;
+-(IBAction)menuSaveRamDump:(id)sender;
 @end
 
