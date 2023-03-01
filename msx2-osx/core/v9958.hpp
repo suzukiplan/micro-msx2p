@@ -414,7 +414,7 @@ class V9958
                 this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
             }
         }
-        if (0 == x) {
+        if (208 == x) {
             if (this->isIE1()) {
                 int lineNumber = scanline - 1;
                 if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
