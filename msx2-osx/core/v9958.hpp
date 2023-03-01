@@ -1683,6 +1683,48 @@ class V9958
         this->ctx.commandPending += n;
     }
 
+    inline unsigned short getSX() {
+        return (this->ctx.reg[33] & 1) * 256 + this->ctx.reg[32];
+    }
+
+    inline unsigned short getSY() {
+        return (this->ctx.reg[35] & 3) * 256 + this->ctx.reg[34];
+    }
+
+    inline unsigned short getDX() {
+        return (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+    }
+
+    inline unsigned short getDY() {
+        return (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+    }
+
+    inline unsigned short getNX() {
+        unsigned short nx = this->getMAJ();
+        return 0 == nx ? 512 : nx;
+    }
+
+    inline unsigned short getNY() {
+        unsigned short ny = this->getMIN();
+        return 0 == ny ? 1024 : ny;
+    }
+
+    inline unsigned short getMAJ() {
+        return (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+    }
+
+    inline unsigned short getMIN() {
+        return (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+    }
+
+    inline int getDIX() {
+        return this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+    }
+
+    inline int getDIY() {
+        return this->ctx.reg[45] & 0b00001000 ? -1 : 1;
+    }
+
     inline void executeCommandHMMC(bool resetPosition)
     {
         if (!this->isBitmapMode()) {
@@ -1692,15 +1734,13 @@ class V9958
         int dpb = this->getDotPerByteX();
         int lineBytes = this->getScreenWidth() / dpb;
         if (resetPosition) {
-            this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
-            this->ctx.commandDY = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
-            this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
-            this->ctx.commandNY = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
-            if (0 == ctx.commandNX) ctx.commandNX = 512;
-            if (0 == ctx.commandNY) ctx.commandNY = 1024;
+            this->ctx.commandDX = this->getDX();
+            this->ctx.commandDY = this->getDY();
+            this->ctx.commandNX = this->getNX();
+            this->ctx.commandNY = this->getNY();
         }
-        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
+        int diy = this->getDIY();
+        int dix = dpb * this->getDIX();
         int addr = this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<HMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.reg[44], getScreenMode());
@@ -1709,9 +1749,8 @@ class V9958
         this->ctx.commandDX += dix;
         this->ctx.commandNX -= dpb;
         if (this->ctx.commandNX <= 0) {
-            this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
-            this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
-            if (0 == ctx.commandNX) ctx.commandNX = 512;
+            this->ctx.commandDX = this->getDX();
+            this->ctx.commandNX = this->getNX();
             this->ctx.commandDY += diy;
             this->ctx.commandNY--;
             if (this->ctx.commandNY <= 0) {
@@ -1733,13 +1772,12 @@ class V9958
         int screenWidth = this->getScreenWidth();
         int dpb = this->getDotPerByteX();
         int lineBytes = screenWidth / dpb;
-        int sy = (this->ctx.reg[35] & 3) * 256 + this->ctx.reg[34];
-        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
-        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
-        int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
-        if (0 == ny) ny = 1024;
-        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int sy = this->getSY();
+        int dx = this->getDX();
+        int dy = this->getDY();
+        int ny = this->getNY();
+        int diy = this->getDIY();
+        int dix = this->getDIX();
         int addrS = dx / dpb + sy * lineBytes;
         int addrD = dx / dpb + dy * lineBytes;
 #ifdef COMMAND_DEBUG
@@ -1768,16 +1806,14 @@ class V9958
         int screenWidth = this->getScreenWidth();
         int dpb = this->getDotPerByteX();
         int lineBytes = screenWidth / dpb;
-        int sx = (this->ctx.reg[33] & 1) * 256 + this->ctx.reg[32];
-        int sy = (this->ctx.reg[35] & 3) * 256 + this->ctx.reg[34];
-        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
-        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
-        int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
-        int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
-        if (0 == nx) nx = 512;
-        if (0 == ny) ny = 1024;
-        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int sx = this->getSX();
+        int sy = this->getSY();
+        int dx = this->getDX();
+        int dy = this->getDY();
+        int nx = this->getNX();
+        int ny = this->getNY();
+        int diy = this->getDIY();
+        int dix = this->getDIX();
         int addrS = sx / dpb + sy * lineBytes;
         int addrD = dx / dpb + dy * lineBytes;
 #ifdef COMMAND_DEBUG
@@ -1803,15 +1839,13 @@ class V9958
         int screenWidth = this->getScreenWidth();
         int dpb = this->getDotPerByteX();
         int lineBytes = screenWidth / dpb;
-        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
-        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
-        int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
-        int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
-        if (0 == nx) nx = 512;
-        if (0 == ny) ny = 1024;
+        int dx = this->getDX();
+        int dy = this->getDY();
+        int nx = this->getNX();
+        int ny = this->getNY();
         unsigned char clr = this->ctx.reg[44];
-        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int diy = this->getDIY();
+        int dix = this->getDIX();
         int addr = dx / dpb + dy * lineBytes;
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<HMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, CLR=$%02X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addr, clr, getScreenMode());
@@ -1921,15 +1955,13 @@ class V9958
         int dpb = this->getDotPerByteX();
         int lineBytes = this->getScreenWidth() / dpb;
         if (resetPosition) {
-            this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
-            this->ctx.commandDY = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
-            this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
-            this->ctx.commandNY = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
-            if (0 == this->ctx.commandNX) this->ctx.commandNX = 512;
-            if (0 == this->ctx.commandNY) this->ctx.commandNY = 1024;
+            this->ctx.commandDX = this->getDX();
+            this->ctx.commandDY = this->getDY();
+            this->ctx.commandNX = this->getNX();
+            this->ctx.commandNY = this->getNY();
         }
-        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int diy = this->getDIY();
+        int dix = this->getDIX();
         int addr = this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
         int dst = this->ctx.reg[44];
         if (2 == dpb) dst &= 0x0F;
@@ -1941,9 +1973,8 @@ class V9958
         this->ctx.commandDX += dix;
         this->ctx.commandNX--;
         if (this->ctx.commandNX <= 0) {
-            this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
-            this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
-            if (0 == ctx.commandNX) ctx.commandNX = 512;
+            this->ctx.commandDX = this->getDX();
+            this->ctx.commandNX = this->getNX();
             this->ctx.commandDY += diy;
             this->ctx.commandNY--;
             if (this->ctx.commandNY <= 0) {
@@ -1972,16 +2003,14 @@ class V9958
         int screenWidth = this->getScreenWidth();
         int dpb = this->getDotPerByteX();
         int lineBytes = screenWidth / dpb;
-        int sx = (this->ctx.reg[33] & 1) * 256 + this->ctx.reg[32];
-        int sy = (this->ctx.reg[35] & 3) * 256 + this->ctx.reg[34];
-        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
-        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
-        int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
-        int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
-        if (0 == nx) nx = 512;
-        if (0 == ny) ny = 1024;
-        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = dpb * (this->ctx.reg[45] & 0b00000100 ? -1 : 1);
+        int sx = this->getSX();
+        int sy = this->getSY();
+        int dx = this->getDX();
+        int dy = this->getDY();
+        int nx = this->getNX();
+        int ny = this->getNY();
+        int diy = this->getDIY();
+        int dix = dpb * (this->getDIX());
         int addrS = sx / dpb + sy * lineBytes;
         int addrD = dx / dpb + dy * lineBytes;
 #ifdef COMMAND_DEBUG
@@ -2025,16 +2054,14 @@ class V9958
         int screenWidth = this->getScreenWidth();
         int dpb = this->getDotPerByteX();
         int lineBytes = screenWidth / dpb;
-        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
-        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
-        int nx = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
-        int ny = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
-        if (0 == nx) nx = 512;
-        if (0 == ny) ny = 1024;
+        int dx = this->getDX();
+        int dy = this->getDY();
+        int nx = this->getNX();
+        int ny = this->getNY();
         const int nxc = nx;
         unsigned char clr = this->ctx.reg[44];
-        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int diy = this->getDIY();
+        int dix = this->getDIX();
         int addr = dx / dpb + dy * lineBytes;
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<LMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, CLR=$%02X, LO=$%02X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addr, clr, ctx.commandL, getScreenMode());
@@ -2059,10 +2086,10 @@ class V9958
     {
         int dpb = this->getDotPerByteX();
         int lineBytes = this->getScreenWidth() / dpb;
-        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
-        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
-        int maj = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
-        int min = (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        int dx = this->getDX();
+        int dy = this->getDY();
+        int maj = this->getMAJ();
+        int min = this->getMIN();
         unsigned char clr = this->ctx.reg[44];
         switch (this->getScreenMode()) {
             case 0b00011: clr &= 0x0F; break; // GRAPHIC4
@@ -2071,8 +2098,8 @@ class V9958
             case 0b00111: break; // GRAPHIC7
             default: return;
         }
-        int diy = this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-        int dix = this->ctx.reg[45] & 0b00000100 ? -1 : 1;
+        int diy = this->getDIY();
+        int dix = this->getDIX();
         int m = this->ctx.reg[45] & 0b00000001;
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<LINE>: DX=%d, DY=%d, Maj=%d, Min=%d, DIX=%d, DIY=%d, MAJ=%s, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, maj, min, dix, diy, m ? "Y" : "X", clr, ctx.commandL, getScreenMode());
@@ -2114,8 +2141,8 @@ class V9958
     {
         int dpb = this->getDotPerByteX();
         int lineBytes = this->getScreenWidth() / dpb;
-        int dx = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
-        int dy = (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+        int dx = this->getDX();
+        int dy = this->getDY();
         unsigned char clr = this->ctx.reg[44];
         switch (this->getScreenMode()) {
             case 0b00011: clr &= 0x0F; break; // GRAPHIC4
