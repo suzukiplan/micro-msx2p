@@ -1840,6 +1840,15 @@ class V9958
         int dix = this->getDIX();
         int addrS = sx / dpb + sy * lineBytes;
         int addrD = dx / dpb + dy * lineBytes;
+        if (0 < dix) {
+            if (512 < sx + nx) {
+                nx = 512 - sx;
+            }
+        } else {
+            if (sx - nx < 0) {
+                nx = sx;
+            }
+        }
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<HMMM>: SX=%d, SY=%d, DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR(S)=$%05X, ADDR(D)=$%05X (SCREEN: %d)\n", sx, sy, dx, dy, nx, ny, dix, diy, addrS, addrD, getScreenMode());
 #endif
@@ -2051,7 +2060,7 @@ class V9958
         this->ctx.stat[7] = this->readLogicalPixel(addr, dpb, ctx.commandSX);
         this->ctx.commandSX += dix;
         this->ctx.commandNX--;
-        if (this->ctx.commandNX <= 0) {
+        if (this->ctx.commandNX <= 0 || 512 <= this->ctx.commandSX || this->ctx.commandSX < 0) {
             this->ctx.commandSX = this->getSX();
             this->ctx.commandNX = this->getNX();
             this->ctx.commandSY += diy;
@@ -2082,6 +2091,15 @@ class V9958
         int ny = this->getNY();
         int diy = this->getDIY();
         int dix = dpb * (this->getDIX());
+        if (0 < dix) {
+            if (512 < sx + nx) {
+                nx = 512 - sx;
+            }
+        } else {
+            if (sx - nx < 0) {
+                nx = sx;
+            }
+        }
         int addrS = sx / dpb + sy * lineBytes;
         int addrD = dx / dpb + dy * lineBytes;
 #ifdef COMMAND_DEBUG
