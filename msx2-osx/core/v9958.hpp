@@ -55,6 +55,8 @@ class V9958
         unsigned char reverseVdpR9Bit4;
         unsigned char reverseVdpR9Bit5;
         unsigned char hardwareResetFlag;
+        unsigned short commandSX;
+        unsigned short commandSY;
         unsigned short commandDX;
         unsigned short commandDY;
         unsigned short commandNX;
@@ -386,7 +388,7 @@ class V9958
         int x = this->ctx.countH - 24;
         int y = this->ctx.countV - 16;
         int x2 = x << 1;
-        int scanline = y - 24 - this->getAdjustY();
+        int scanline = y - 24 + this->getAdjustY();
         if (0 <= y && y < 240 && 0 <= x && x < 284) {
             auto renderPosition = &this->display[y * 284 * 2 * 2];
             if (this->isInterlaceMode() && (this->ctx.counter & 1)) {
@@ -488,7 +490,8 @@ class V9958
                 break;
             case 7:
                 if (this->ctx.command == 0b1010) {
-                    result = executeCommandLMCM();
+                    result = this->ctx.stat[7];
+                    executeCommandLMCM(false);
                 }
                 break;
         }
@@ -1541,6 +1544,7 @@ class V9958
                 case 0b1011: this->executeCommandLMMC(true); break;
                 case 0b1001: this->executeCommandLMMM(); break;
                 case 0b1000: this->executeCommandLMMV(); break;
+                case 0b1010: this->executeCommandLMCM(true); break;
                 case 0b0111: this->executeCommandLINE(); break;
                 case 0b0110: this->executeCommandSRCH(); break;
                 case 0b0101: this->executeCommandPSET(); break;
@@ -1684,19 +1688,31 @@ class V9958
     }
 
     inline unsigned short getSX() {
-        return (this->ctx.reg[33] & 1) * 256 + this->ctx.reg[32];
+        unsigned short result = this->ctx.reg[33] & 1;
+        result <<= 8;
+        result |= this->ctx.reg[32];
+        return result;
     }
 
     inline unsigned short getSY() {
-        return (this->ctx.reg[35] & 3) * 256 + this->ctx.reg[34];
+        unsigned short result = this->ctx.reg[35] & 3;
+        result <<= 8;
+        result |= this->ctx.reg[34];
+        return result;
     }
 
     inline unsigned short getDX() {
-        return (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
+        unsigned short result = this->ctx.reg[37] & 1;
+        result <<= 8;
+        result |= this->ctx.reg[36];
+        return result;
     }
 
     inline unsigned short getDY() {
-        return (this->ctx.reg[39] & 3) * 256 + this->ctx.reg[38];
+        unsigned short result = this->ctx.reg[39] & 3;
+        result <<= 8;
+        result |= this->ctx.reg[38];
+        return result;
     }
 
     inline unsigned short getNX() {
@@ -1710,11 +1726,17 @@ class V9958
     }
 
     inline unsigned short getMAJ() {
-        return (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+        unsigned short result = this->ctx.reg[41] & 1;
+        result <<= 8;
+        result |= this->ctx.reg[40];
+        return result;
     }
 
     inline unsigned short getMIN() {
-        return (this->ctx.reg[43] & 3) * 256 + this->ctx.reg[42];
+        unsigned short result = this->ctx.reg[43] & 3;
+        result <<= 8;
+        result |= this->ctx.reg[42];
+        return result;
     }
 
     inline int getDIX() {
@@ -1758,9 +1780,11 @@ class V9958
                 puts("End HMMC");
 #endif
                 this->ctx.command = 0;
+                this->ctx.stat[2] &= 0b11111110;
+                return;
             }
         }
-        this->incrementCommandPending(8);
+        this->incrementCommandPending(1);
     }
 
     inline void executeCommandYMMM()
@@ -1851,16 +1875,29 @@ class V9958
         printf("ExecuteCommand<HMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, CLR=$%02X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addr, clr, getScreenMode());
 #endif
         this->incrementCommandPending(1);
+        if (dix < 0) addr -= nx / dpb;
         while (0 < ny) {
             addr &= 0x1FFFF;
-            if (0 < dix) {
-                memset(&this->ctx.ram[addr], clr, nx / dpb);
-            } else {
-                memset(&this->ctx.ram[addr + nx / dpb], clr, nx);
-            }
+            memset(&this->ctx.ram[addr], clr, nx / dpb);
             addr += lineBytes * diy;
             ny--;
             this->incrementCommandPending(nx);
+        }
+    }
+
+    inline unsigned char readLogicalPixel(int addr, int dpb, int sx) {
+        unsigned char src = this->ctx.ram[addr & 0x1FFFF];
+        switch (dpb) {
+            case 1: return src;
+            case 2: return sx & 1 ? src & 0x0F : (src & 0xF0) >> 4;
+            case 4:
+                switch (sx & 3) {
+                    case 3: return src & 0b00000011;
+                    case 2: return (src & 0b00001100) >> 2;
+                    case 1: return (src & 0b00110000) >> 4;
+                    default: return (src & 0b11000000) >> 6;
+                }
+            default: return 0;
         }
     }
 
@@ -1982,16 +2019,50 @@ class V9958
                 puts("End LMMC");
 #endif
                 this->ctx.command = 0;
+                this->ctx.stat[2] &= 0b11111110;
+                return;
+            }
+        }
+        this->incrementCommandPending(1);
+    }
+
+    inline void executeCommandLMCM(bool resetPosition)
+    {
+        if (!this->isBitmapMode()) {
+            printf("Error: LMCM was executed in invalid screen mode (%d)\n", this->getScreenMode());
+            exit(-1);
+        }
+        int dpb = this->getDotPerByteX();
+        int lineBytes = this->getScreenWidth() / dpb;
+        if (resetPosition) {
+            this->ctx.commandSX = this->getSX();
+            this->ctx.commandSY = this->getSY();
+            this->ctx.commandNX = this->getNX();
+            this->ctx.commandNY = this->getNY();
+        } else if (0 == this->ctx.commandNY) {
+            return;
+        }
+        int diy = this->getDIY();
+        int dix = this->getDIX();
+        int addr = this->ctx.commandSX / dpb + this->ctx.commandSY * lineBytes;
+#ifdef COMMAND_DEBUG
+        printf("ExecuteCommand<LMCM>: SX=%d, SY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, LO=%X (SCREEN: %d)\n", ctx.commandSX, ctx.commandSY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.commandL, getScreenMode());
+#endif
+        this->ctx.stat[7] = this->readLogicalPixel(addr, dpb, ctx.commandSX);
+        this->ctx.commandSX += dix;
+        this->ctx.commandNX--;
+        if (this->ctx.commandNX <= 0) {
+            this->ctx.commandSX = this->getSX();
+            this->ctx.commandNX = this->getNX();
+            this->ctx.commandSY += diy;
+            this->ctx.commandNY--;
+            if (this->ctx.commandNY <= 0) {
+#ifdef COMMAND_DEBUG
+                puts("End LMCM");
+#endif
             }
         }
         this->incrementCommandPending(8);
-    }
-
-    inline unsigned char executeCommandLMCM()
-    {
-        puts("execute LMCM (not implemented yet");
-        exit(-1);
-        return 0;
     }
 
     inline void executeCommandLMMM()
