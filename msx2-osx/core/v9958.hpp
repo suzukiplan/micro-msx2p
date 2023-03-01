@@ -447,7 +447,6 @@ class V9958
             this->ctx.commandPending--;
             if (0 == this->ctx.commandPending) {
                 this->ctx.stat[2] &= 0b11111110;
-                this->ctx.command = 0;
             }
         }
     }
@@ -1712,6 +1711,7 @@ class V9958
         if (this->ctx.commandNX <= 0) {
             this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
             this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+            if (0 == ctx.commandNX) ctx.commandNX = 512;
             this->ctx.commandDY += diy;
             this->ctx.commandNY--;
             if (this->ctx.commandNY <= 0) {
@@ -1719,9 +1719,9 @@ class V9958
                 puts("End HMMC");
 #endif
                 this->ctx.command = 0;
-                this->ctx.stat[2] &= 0b11111110;
             }
         }
+        this->incrementCommandPending(8);
     }
 
     inline void executeCommandYMMM()
@@ -1943,6 +1943,7 @@ class V9958
         if (this->ctx.commandNX <= 0) {
             this->ctx.commandDX = (this->ctx.reg[37] & 1) * 256 + this->ctx.reg[36];
             this->ctx.commandNX = (this->ctx.reg[41] & 1) * 256 + this->ctx.reg[40];
+            if (0 == ctx.commandNX) ctx.commandNX = 512;
             this->ctx.commandDY += diy;
             this->ctx.commandNY--;
             if (this->ctx.commandNY <= 0) {
@@ -1950,9 +1951,9 @@ class V9958
                 puts("End LMMC");
 #endif
                 this->ctx.command = 0;
-                this->ctx.stat[2] &= 0b11111110;
             }
         }
+        this->incrementCommandPending(8);
     }
 
     inline unsigned char executeCommandLMCM()
