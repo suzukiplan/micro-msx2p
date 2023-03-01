@@ -29,7 +29,7 @@ class V9958
         void (*vramWriteListener)(void* arg, int addr, unsigned char value);
         void* arg;
     } debug;
-    const int adjust[16] = { 0, -1, -2, -3, -4, -5, -6, -7, 1, 2, 3, 4, 5, 6, 7, 8 };
+    const int adjust[16] = { 0, 1, 2, 3, 4, 5, 6, 7, -8, -7, -6, -5, -4, -3, -2, -1 };
 
   public:
     bool renderLimitOverSprites = true;
@@ -408,7 +408,7 @@ class V9958
             if (0 == x) {
                 this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
             } else if (283 == x) {
-                this->renderScanline(scanline, &renderPosition[13 * 2 + this->getAdjustX()]);
+                this->renderScanline(scanline, &renderPosition[13 * 2 - this->getAdjustX() * 2]);
                 this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
             }
         }
