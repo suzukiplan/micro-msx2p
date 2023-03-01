@@ -64,6 +64,7 @@ public:
         memset(&this->slots, 0, sizeof(this->slots));
         memset(&this->secondaryExist, 0, sizeof(this->secondaryExist));
         memset(this->sram, 0, sizeof(this->sram));
+        memset(this->pac, 0, sizeof(this->pac));
         this->sramEnabled = false;
     }
     
