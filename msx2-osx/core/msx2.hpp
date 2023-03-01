@@ -106,7 +106,7 @@ public:
 #if 0
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
-            //printf("Update VDP register #%d = $%02X (PC:$%04X,bobo:%d)\n", rn, value, this_->cpu->reg.PC, this_->vdp.ctx.bobo);
+            //this_->putlog("Update VDP register #%d = $%02X", rn, value);
             int ax = this_->vdp.getAdjustX();
             int ay = this_->vdp.getAdjustY();
             int screenMode = this_->vdp.getScreenMode();

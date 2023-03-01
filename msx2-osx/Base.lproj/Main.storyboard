@@ -111,6 +111,23 @@
                                                 <action selector="menuSaveRamDump:" target="Ady-hI-5gd" id="QIA-PI-YAV"/>
                                             </connections>
                                         </menuItem>
+                                        <menuItem title="Save VRAM dump" keyEquivalent="v" id="CmZ-YE-oAx">
+                                            <connections>
+                                                <action selector="menuSaveVramDump:" target="Ady-hI-5gd" id="dyW-Gn-IO3"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Application" id="Yt6-n4-uVA">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Application" id="yU2-xe-Duw">
+                                    <items>
+                                        <menuItem title="Pause / Resume" keyEquivalent="p" id="Cmp-Z1-hyl">
+                                            <connections>
+                                                <action selector="menuPause:" target="Ady-hI-5gd" id="mDt-n4-eyt"/>
+                                            </connections>
+                                        </menuItem>
                                     </items>
                                 </menu>
                             </menuItem>

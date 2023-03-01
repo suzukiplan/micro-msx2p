@@ -322,3 +322,8 @@ const void* emu_getRAM(void)
 {
     return msx2.mmu.ram;
 }
+
+const void* emu_getVRAM(void)
+{
+    return msx2.vdp.ctx.ram;
+}

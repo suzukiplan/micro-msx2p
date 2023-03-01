@@ -13,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface VideoView : NSView
 @property (nonatomic, readwrite) BOOL isFullScreen;
+@property (nonatomic, readonly) BOOL pausing;
 - (id)initWithFrame:(CGRect)frame;
 - (void)releaseDisplayLink;
 - (void)pauseWithCompletionHandler:(void (^)(void))completionHandler;

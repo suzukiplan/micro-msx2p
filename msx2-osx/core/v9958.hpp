@@ -538,7 +538,6 @@ class V9958
             this->ctx.reg[16]++;
             this->ctx.reg[16] &= 0b00001111;
         } else {
-            this->ctx.pal[pn][1] = 0;
             updatePaletteCacheFromRegister(pn);
         }
     }
@@ -1765,12 +1764,14 @@ class V9958
         int dix = dpb * this->getDIX();
         int addr = this->ctx.commandDX / dpb + this->ctx.commandDY * lineBytes;
 #ifdef COMMAND_DEBUG
-        printf("ExecuteCommand<HMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.reg[44], getScreenMode());
+        if (resetPosition) {
+            printf("ExecuteCommand<HMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, ctx.reg[44], getScreenMode());
+        }
 #endif
         this->ctx.ram[addr & 0x1FFFF] = this->ctx.reg[44];
         this->ctx.commandDX += dix;
         this->ctx.commandNX -= dpb;
-        if (this->ctx.commandNX <= 0) {
+        if (this->ctx.commandNX <= 0 || this->getScreenWidth() <= this->ctx.commandDX || this->ctx.commandDX < 0) {
             this->ctx.commandDX = this->getDX();
             this->ctx.commandNX = this->getNX();
             this->ctx.commandDY += diy;
@@ -1841,8 +1842,8 @@ class V9958
         int addrS = sx / dpb + sy * lineBytes;
         int addrD = dx / dpb + dy * lineBytes;
         if (0 < dix) {
-            if (512 < sx + nx) {
-                nx = 512 - sx;
+            if (screenWidth < sx + nx) {
+                nx = screenWidth - sx;
             }
         } else {
             if (sx - nx < 0) {
@@ -1880,6 +1881,15 @@ class V9958
         int diy = this->getDIY();
         int dix = this->getDIX();
         int addr = dx / dpb + dy * lineBytes;
+        if (0 < dix) {
+            if (screenWidth < dx + nx) {
+                nx = screenWidth - dx;
+            }
+        } else {
+            if (dx - nx < 0) {
+                nx = dx;
+            }
+        }
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<HMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, CLR=$%02X (SCREEN: %d)\n", dx, dy, nx, ny, dix, diy, addr, clr, getScreenMode());
 #endif
@@ -2018,7 +2028,7 @@ class V9958
         renderLogicalPixel(addr, dpb, ctx.commandDX, dst, ctx.commandL);
         this->ctx.commandDX += dix;
         this->ctx.commandNX--;
-        if (this->ctx.commandNX <= 0) {
+        if (this->ctx.commandNX <= 0 || this->getScreenWidth() <= this->ctx.commandDX || this->ctx.commandDX < 0) {
             this->ctx.commandDX = this->getDX();
             this->ctx.commandNX = this->getNX();
             this->ctx.commandDY += diy;
@@ -2060,7 +2070,7 @@ class V9958
         this->ctx.stat[7] = this->readLogicalPixel(addr, dpb, ctx.commandSX);
         this->ctx.commandSX += dix;
         this->ctx.commandNX--;
-        if (this->ctx.commandNX <= 0 || 512 <= this->ctx.commandSX || this->ctx.commandSX < 0) {
+        if (this->ctx.commandNX <= 0 || this->getScreenWidth() <= this->ctx.commandSX || this->ctx.commandSX < 0) {
             this->ctx.commandSX = this->getSX();
             this->ctx.commandNX = this->getNX();
             this->ctx.commandSY += diy;
@@ -2092,8 +2102,8 @@ class V9958
         int diy = this->getDIY();
         int dix = dpb * (this->getDIX());
         if (0 < dix) {
-            if (512 < sx + nx) {
-                nx = 512 - sx;
+            if (screenWidth < sx + nx) {
+                nx = screenWidth - sx;
             }
         } else {
             if (sx - nx < 0) {

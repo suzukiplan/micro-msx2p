@@ -21,6 +21,7 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
 typedef NS_ENUM(NSInteger, SaveFileType) {
     SaveFileTypeQuick,
     SaveFileTypeRAM,
+    SaveFileTypeVRAM,
 };
 
 @interface ViewController () <NSWindowDelegate>
@@ -224,6 +225,29 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     }];
 }
 
+- (IBAction)menuSaveVramDump:(id)sender
+{
+    NSLog(@"menuSaveVramDump");
+    __weak ViewController* weakSelf = self;
+    [_video pauseWithCompletionHandler:^{
+        NSData* data = [NSData dataWithBytes:emu_getVRAM() length:0x20000];
+        [weakSelf _saveData:data type:SaveFileTypeVRAM];
+    }];
+}
+
+- (IBAction)menuPause:(id)sender
+{
+    if (_video.pausing) {
+        [_video resumeWithCompletionHandler:^{
+            NSLog(@"Resumed");
+        }];
+    } else {
+        [_video pauseWithCompletionHandler:^{
+            NSLog(@"Paused");
+        }];
+    }
+}
+
 - (void)_saveData:(NSData*)data type:(SaveFileType)type
 {
     [_video pauseWithCompletionHandler:^{
@@ -236,6 +260,9 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
                 break;
             case SaveFileTypeRAM:
                 panel.nameFieldStringValue = @"ram.bin";
+                break;
+            case SaveFileTypeVRAM:
+                panel.nameFieldStringValue = @"vram.bin";
                 break;
         }
         panel.level = NSModalPanelWindowLevel;
