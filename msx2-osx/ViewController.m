@@ -22,6 +22,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     SaveFileTypeQuick,
     SaveFileTypeRAM,
     SaveFileTypeVRAM,
+    SaveFileTypeBitmapVRAM,
 };
 
 @interface ViewController () <NSWindowDelegate>
@@ -235,6 +236,25 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     }];
 }
 
+- (IBAction)menuSaveVramBitmap:(id)sender
+{
+    NSLog(@"menuSaveVramBitmap");
+    __weak ViewController* weakSelf = self;
+    [_video pauseWithCompletionHandler:^{
+        size_t size;
+        const void* raw = emu_getBitmapVRAM(&size);
+        if (!raw) {
+            [weakSelf.video resumeWithCompletionHandler:^{
+                NSLog(@"unsupported");
+            }];
+        } else {
+            NSLog(@"bitmap size: %lu bytes", size);
+            NSData* data = [NSData dataWithBytes:raw length:size];
+            [weakSelf _saveData:data type:SaveFileTypeBitmapVRAM];
+        }
+    }];
+}
+
 - (IBAction)menuPause:(id)sender
 {
     if (_video.pausing) {
@@ -264,6 +284,9 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
             case SaveFileTypeVRAM:
                 panel.nameFieldStringValue = @"vram.bin";
                 break;
+            case SaveFileTypeBitmapVRAM:
+                panel.nameFieldStringValue = @"vram.bmp";
+                break;
         }
         panel.level = NSModalPanelWindowLevel;
         __weak ViewController* weakSelf = self;
@@ -271,7 +294,9 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
             if (result) {
                 [data writeToURL:panel.URL atomically:YES];
             }
-            [weakSelf.video resumeWithCompletionHandler:^{}];
+            [weakSelf.video resumeWithCompletionHandler:^{
+                NSLog(@"resumed");
+            }];
         }];
     }];
 }

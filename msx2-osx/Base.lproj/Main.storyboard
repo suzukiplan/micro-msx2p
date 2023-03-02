@@ -116,6 +116,11 @@
                                                 <action selector="menuSaveVramDump:" target="Ady-hI-5gd" id="dyW-Gn-IO3"/>
                                             </connections>
                                         </menuItem>
+                                        <menuItem title="Save VRAM bitmap" keyEquivalent="b" id="D0l-AZ-0vW">
+                                            <connections>
+                                                <action selector="menuSaveVramBitmap:" target="Ady-hI-5gd" id="wtg-jT-3zZ"/>
+                                            </connections>
+                                        </menuItem>
                                     </items>
                                 </menu>
                             </menuItem>

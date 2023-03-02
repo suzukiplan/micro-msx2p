@@ -38,6 +38,7 @@ const void* emu_quickSave(size_t* size);
 void emu_quickLoad(const void* data, size_t size);
 const void* emu_getRAM(void);
 const void* emu_getVRAM(void);
+const void* emu_getBitmapVRAM(size_t* size);
 
 #ifdef __cplusplus
 };

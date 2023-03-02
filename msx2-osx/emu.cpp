@@ -327,3 +327,78 @@ const void* emu_getVRAM(void)
 {
     return msx2.vdp.ctx.ram;
 }
+
+typedef struct BitmapHeader_ {
+    int isize;             /* 情報ヘッダサイズ */
+    int width;             /* 幅 */
+    int height;            /* 高さ */
+    unsigned short planes; /* プレーン数 */
+    unsigned short bits;   /* 色ビット数 */
+    unsigned int ctype;    /* 圧縮形式 */
+    unsigned int gsize;    /* 画像データサイズ */
+    int xppm;              /* X方向解像度 */
+    int yppm;              /* Y方向解像度 */
+    unsigned int cnum;     /* 使用色数 */
+    unsigned int inum;     /* 重要色数 */
+} BitmapHeader;
+
+const void* emu_getBitmapVRAM(size_t* size) {
+    static unsigned char buf[14 + 40 + 4 * 256 + 256 * 1024];
+    auto screenMode = msx2.vdp.getScreenMode();
+    switch (screenMode) {
+        case 0b00011: // Graphic4
+        {
+            int iSize = (int)sizeof(buf);
+            *size = iSize;
+            memset(buf, 0, sizeof(buf));
+            int ptr = 0;
+            buf[ptr++] = 'B';
+            buf[ptr++] = 'M';
+            memcpy(&buf[ptr], &iSize, 4);
+            ptr += 4;
+            ptr += 4;
+            iSize = 40 + 256 * 4;
+            memcpy(&buf[ptr], &iSize, 4);
+            ptr += 4;
+            BitmapHeader header;
+            header.isize = 40;
+            header.width = 256;
+            header.height = 1024;
+            header.planes = 1;
+            header.bits = 8;
+            header.ctype = 0;
+            header.gsize = 256 * 1024;
+            header.xppm = 1;
+            header.yppm = 1;
+            header.cnum = 0;
+            header.inum = 0;
+            memcpy(&buf[ptr], &header, sizeof(header));
+            ptr += sizeof(header);
+            for (int i = 0; i < 16; i++) {
+                unsigned short pal = msx2.vdp.palette[i];
+                buf[ptr++] = (unsigned char)((pal & 0b0000000000011111) << 3);
+                buf[ptr++] = (unsigned char)((pal & 0b0000001111100000) >> 2);
+                buf[ptr++] = (unsigned char)((pal & 0b0111110000000000) >> 7);
+                buf[ptr++] = 0x00;
+            }
+            for (int i = 16; i < 256; i++) {
+                buf[ptr++] = 0x00;
+                buf[ptr++] = 0x00;
+                buf[ptr++] = 0x00;
+                buf[ptr++] = 0x00;
+            }
+            for (int vptr = 1023 * 0x80; 0 <= vptr; vptr -= 0x80) {
+                for (int i = 0; i < 256; i++) {
+                    unsigned char v = msx2.vdp.ctx.ram[vptr + i / 2];
+                    v >>= i & 1 ? 0 : 4;
+                    v &= 0x0F;
+                    buf[ptr++] = v;
+                }
+            }
+            return buf;
+        }
+        default:
+            printf("Unsupported screen mode: %d\n", screenMode);
+    }
+    return nullptr;
+}

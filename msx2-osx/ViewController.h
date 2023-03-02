@@ -18,6 +18,7 @@
 -(IBAction)menuQuickLoad:(id)sender;
 -(IBAction)menuSaveRamDump:(id)sender;
 -(IBAction)menuSaveVramDump:(id)sender;
+-(IBAction)menuSaveVramBitmap:(id)sender;
 -(IBAction)menuPause:(id)sender;
 @end
 
