@@ -27,10 +27,9 @@ private:
         bool exist;
         int x;
         int y;
-    } keyCodes[0x80];
+    } keyCodes[0x100];
     
-    void initKeyCode(char code, int x, int y) {
-        code &= 0x7F;
+    void initKeyCode(unsigned char code, int x, int y) {
         keyCodes[code].exist = true;
         keyCodes[code].x = x;
         keyCodes[code].y = y;
@@ -292,6 +291,11 @@ public:
         initKeyCode(' ', 0, 8);
         initKeyCode(0x1B, 2, 7); // ESC
         initKeyCode(0x7F, 5, 7); // DEL as Back Space
+        initKeyCode(0xF1, 5, 6); // f1
+        initKeyCode(0xF2, 6, 6); // f2
+        initKeyCode(0xF3, 7, 6); // f3
+        initKeyCode(0xF4, 0, 7); // f4
+        initKeyCode(0xF5, 1, 7); // f5
         this->reset();
     }
     
