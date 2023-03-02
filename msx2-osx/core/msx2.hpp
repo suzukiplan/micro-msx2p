@@ -511,7 +511,6 @@ public:
             case 0xD9: this->kanji.outPortD9(value); break;
             case 0xDA: this->kanji.outPortDA(value); break;
             case 0xDB: this->kanji.outPortDB(value); break;
-            case 0xF3: this->vdp.outPortF3(value); break;
             case 0xF4: this->vdp.outPortF4(value); break;
             case 0xF5: {
 #if 0

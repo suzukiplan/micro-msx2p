@@ -553,6 +553,7 @@ class V9958
         }
     }
 
+#if 0 // このポートを実装すると一部ゲーム（例: DiskStation5号のマクロスのdemo）で表示がバグるので実装しない
     inline void outPortF3(unsigned char value) {
         /*
          b0    M3
@@ -577,6 +578,7 @@ class V9958
         r8 |= value & 0b00100000;
         this->updateRegister(8, r8);
     }
+#endif
 
     inline void outPortF4(unsigned char value) {
         this->ctx.hardwareResetFlag = value;
