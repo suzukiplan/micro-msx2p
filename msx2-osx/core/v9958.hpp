@@ -2102,7 +2102,7 @@ class V9958
         int nx = this->getNX();
         int ny = this->getNY();
         int diy = this->getDIY();
-        int dix = dpb * (this->getDIX());
+        int dix = this->getDIX();
         if (0 < dix) {
             if (screenWidth < sx + nx) {
                 nx = screenWidth - sx;
@@ -2120,25 +2120,45 @@ class V9958
         int base = 0 < dix ? 0 : -nx / dpb;
         this->incrementCommandPending(1);
         while (0 < ny) {
-            for (int i = 0; i < nx / dpb; i++) {
-                switch (dpb) {
-                    case 1:
+            switch (dpb) {
+                case 1:
+                    for (int i = 0; i < nx; i++) {
                         this->renderLogicalPixel(addrD + base + i, dpb, 0, ctx.ram[addrS + base + i], ctx.commandL);
                         this->incrementCommandPending(1);
-                        break;
-                    case 2:
-                        this->renderLogicalPixel(addrD + base + i, dpb, 0, (ctx.ram[addrS + base + i] & 0xF0) >> 4, ctx.commandL);
-                        this->renderLogicalPixel(addrD + base + i, dpb, 1, ctx.ram[addrS + base + i] & 0x0F, ctx.commandL);
-                        this->incrementCommandPending(2);
-                        break;
-                    case 4:
-                        this->renderLogicalPixel(addrD + base + i, dpb, 0, (ctx.ram[addrS + base + i] & 0xC0) >> 6, ctx.commandL);
-                        this->renderLogicalPixel(addrD + base + i, dpb, 1, (ctx.ram[addrS + base + i] & 0x30) >> 4, ctx.commandL);
-                        this->renderLogicalPixel(addrD + base + i, dpb, 2, (ctx.ram[addrS + base + i] & 0x0C) >> 2, ctx.commandL);
-                        this->renderLogicalPixel(addrD + base + i, dpb, 3, ctx.ram[addrS + base + i] & 0x03, ctx.commandL);
-                        this->incrementCommandPending(4);
-                        break;
-                }
+                    }
+                    break;
+                case 2:
+                    for (int i = dx & 1; i < nx + (dx & 1); i++) {
+                        if (i & 1) {
+                            this->renderLogicalPixel(addrD + base + i / 2, dpb, 1, ctx.ram[addrS + base + i / 2] & 0x0F, ctx.commandL);
+                        } else {
+                            this->renderLogicalPixel(addrD + base + i / 2, dpb, 0, (ctx.ram[addrS + base + i / 2] & 0xF0) >> 4, ctx.commandL);
+                        }
+                    }
+                    this->incrementCommandPending(2);
+                    break;
+                case 4:
+                    for (int i = dx & 3; i < nx + (dx & 3); i++) {
+                        switch (i % 4) {
+                            case 0:
+                                this->renderLogicalPixel(addrD + base + i / 4, dpb, 0, (ctx.ram[addrS + base + i / 4] & 0xC0) >> 6, ctx.commandL);
+                                this->incrementCommandPending(1);
+                                break;
+                            case 1:
+                                this->renderLogicalPixel(addrD + base + i / 4, dpb, 1, (ctx.ram[addrS + base + i / 4] & 0x30) >> 4, ctx.commandL);
+                                this->incrementCommandPending(1);
+                                break;
+                            case 2:
+                                this->renderLogicalPixel(addrD + base + i / 4, dpb, 2, (ctx.ram[addrS + base + i / 4] & 0x0C) >> 2, ctx.commandL);
+                                this->incrementCommandPending(1);
+                                break;
+                            case 3:
+                                this->renderLogicalPixel(addrD + base + i / 4, dpb, 3, ctx.ram[addrS + base + i / 4] & 0x03, ctx.commandL);
+                                this->incrementCommandPending(1);
+                                break;
+                        }
+                    }
+                    break;
             }
             ny--;
             addrS += diy * lineBytes;
