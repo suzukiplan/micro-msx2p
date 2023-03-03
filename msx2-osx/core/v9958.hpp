@@ -6,7 +6,8 @@
 
 class V9958
 {
-  private:
+private:
+    unsigned short yjkColor[32][64][64];
     const unsigned char regMask[64] = {
         0x7e, 0x7b, 0x7f, 0xff, 0x3f, 0xff, 0x3f, 0xff,
         0xfb, 0xbf, 0x07, 0x03, 0xff, 0xff, 0x07, 0x0f,
@@ -21,6 +22,8 @@ class V9958
     void* arg;
     void (*detectInterrupt)(void* arg, int ie);
     void (*detectBreak)(void* arg);
+    inline int min(int a, int b) { return a < b ? a : b; }
+    inline int max(int a, int b) { return a > b ? a : b; }
 
     struct DebugTool {
         void (*registerUpdateListener)(void* arg, int number, unsigned char value);
@@ -31,12 +34,12 @@ class V9958
     } debug;
     const int adjust[16] = { 0, 1, 2, 3, 4, 5, 6, 7, -8, -7, -6, -5, -4, -3, -2, -1 };
 
-  public:
+public:
     bool renderLimitOverSprites = true;
     unsigned short display[568 * 480];
     unsigned short palette[16];
     unsigned char lastRenderScanline;
-
+    
     struct Context {
         int bobo;
         int countH;
@@ -98,7 +101,29 @@ class V9958
         this->arg = arg;
         this->detectInterrupt = detectInterrupt;
         this->detectBreak = detectBreak;
+        this->initYjkColorTable();
         this->reset();
+    }
+
+    void initYjkColorTable() {
+        for (int y = 0; y < 32; y++) {
+            for (int J = 0; J < 64; J++) {
+                for (int K = 0; K < 64; K++) {
+                    int j = (J & 0x1f) - (J & 0x20);
+                    int k = (K & 0x1f) - (K & 0x20);
+                    int r = 255 * (y + j) / 31;
+                    int g = 255 * (y + k) / 31;
+                    int b = 255 * ((5 * y - 2 * j - k) / 4) / 31;
+                    r = this->min(255, this->max(0, r));
+                    g = this->min(255, this->max(0, g));
+                    b = this->min(255, this->max(0, b));
+                    r = (r & 0b11111000) << (7 + colorMode);
+                    g = (g & 0b11111000) << (2 + colorMode);
+                    b = (b & 0b11111000) >> 3;
+                    this->yjkColor[y][J][K] = r | g | b;
+                }
+            }
+        }
     }
 
     void updateAllPalettes() {
@@ -183,6 +208,8 @@ class V9958
     inline bool isIE2() { return ctx.reg[0] & 0b00100000 ? true : false; }
     inline bool isEnabledMouse() { return ctx.reg[8] & 0b10000000 ? true : false; }
     inline bool isEnabledLightPen() { return ctx.reg[8] & 0b01000000 ? true : false; }
+    inline bool isYAE() { return ctx.reg[25] & 0b00010000 ? true : false; }
+    inline bool isYJK() { return ctx.reg[25] & 0b00001000 ? true : false; }
     inline bool isMaskLeft8px() { return ctx.reg[25] & 0b00000010 ? true : false; }
     inline bool getSP2() { return ctx.reg[25] & 0b00000001; }
     inline int getOnTime() { return (ctx.reg[13] & 0xF0) >> 4; }
@@ -1029,10 +1056,35 @@ class V9958
         int curD = 0;
         int curP = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 256;
         curP += this->getNameTableAddress();
-        for (int i = 0; i < 256; i++) {
-            renderPosition[curD] = convertColor_8bit_to_16bit(this->ctx.ram[curP++]);
-            renderPosition[curD + 1] = renderPosition[curD];
-            curD += 2;
+        if (this->isYJK()) {
+            for (int i = 0; i < 256; i += 4) {
+                unsigned char y[4];
+                y[0] = this->ctx.ram[curP++];
+                y[1] = this->ctx.ram[curP++];
+                y[2] = this->ctx.ram[curP++];
+                y[3] = this->ctx.ram[curP++];
+                unsigned char k = (y[1] & 0b00000111) << 3;
+                k |= y[0] & 0b00000111;
+                unsigned char j = (y[3] & 0b00000111) << 3;
+                j |= y[2] & 0b00000111;
+                for (int n = 0; n < 4; n++) {
+                    y[n] &= 0b11111000;
+                    y[n] >>= 3;
+                    if (this->isYAE() && (y[n] & 1)) {
+                        renderPosition[curD] = this->palette[(y[n] >> 1) & 0x0F];
+                    } else {
+                        renderPosition[curD] = this->yjkColor[y[n]][j][k];
+                    }
+                    renderPosition[curD + 1] = renderPosition[curD];
+                    curD += 2;
+                }
+            }
+        } else {
+            for (int i = 0; i < 256; i++) {
+                renderPosition[curD] = convertColor_8bit_to_16bit(this->ctx.ram[curP++]);
+                renderPosition[curD + 1] = renderPosition[curD];
+                curD += 2;
+            }
         }
         renderSpritesMode2(lineNumber, renderPosition);
     }
