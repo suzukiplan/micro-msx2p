@@ -439,7 +439,9 @@ class V9958
                     }
                     break;
                 case 262:
-                    this->ctx.stat[0] &= 0x7F;
+                    if (this->isIE1()) {
+                        this->ctx.stat[0] &= 0x7F;
+                    }
                     this->ctx.counter++;
                     this->ctx.countV -= 262;
                     this->detectBreak(this->arg);
