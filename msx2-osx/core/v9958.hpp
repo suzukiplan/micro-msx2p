@@ -1688,7 +1688,7 @@ class V9958
     }
 
     inline void incrementCommandPending(int n) {
-        this->ctx.commandPending += n;
+        this->ctx.commandPending += n * 16;
     }
 
     inline unsigned short getSX() {
