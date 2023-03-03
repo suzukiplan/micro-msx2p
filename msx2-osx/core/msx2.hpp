@@ -49,6 +49,7 @@ public:
     struct Context {
         unsigned char io[256];
         unsigned char key;
+        unsigned char reserved[3];
     } ctx;
     
     ~MSX2() {
@@ -565,6 +566,7 @@ public:
     
     const void* quickSave(size_t* size) {
         this->quickSaveBufferSize = 0;
+        this->writeSaveChunk("BRD", &this->ctx, (int)sizeof(this->ctx));
         this->writeSaveChunk("Z80", &this->cpu->reg, (int)sizeof(this->cpu->reg));
         this->writeSaveChunk("MMU", &this->mmu.ctx, (int)sizeof(this->mmu.ctx));
         this->writeSaveChunk("PAC", &this->mmu.pac, (int)sizeof(this->mmu.pac));
@@ -606,7 +608,10 @@ public:
             memcpy(&chunkSize, ptr, 4);
             ptr += 4;
             if (chunkSize < 0) break;
-            if (0 == strcmp(chunk, "Z80")) {
+            if (0 == strcmp(chunk, "BRD")) {
+                putlog("extract BRD (%d bytes)", chunkSize);
+                memcpy(&this->ctx, ptr, chunkSize);
+            } else if (0 == strcmp(chunk, "Z80")) {
                 putlog("extract Z80 (%d bytes)", chunkSize);
                 memcpy(&this->cpu->reg, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "MMU")) {
