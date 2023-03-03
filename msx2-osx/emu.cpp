@@ -347,6 +347,7 @@ const void* emu_getBitmapVRAM(size_t* size) {
     switch (screenMode) {
         case 0b00011: // Graphic4
         {
+            puts("VRAM Type: Graphic4");
             static unsigned char buf[14 + 40 + 4 * 256 + 256 * 1024];
             int iSize = (int)sizeof(buf);
             *size = iSize;
@@ -399,6 +400,7 @@ const void* emu_getBitmapVRAM(size_t* size) {
         }
         case 0b00111: // Graphic7
         {
+            puts("VRAM Type: Graphic7");
             static unsigned char buf[14 + 40 + 4 * 256 + 256 * 512];
             int iSize = (int)sizeof(buf);
             *size = iSize;
