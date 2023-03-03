@@ -334,11 +334,12 @@ public:
         } else {
             snprintf(addr, sizeof(addr), "[PC=%04X,SP=%04X]", this->cpu->reg.PC, this->cpu->reg.SP);
         }
-        printf("%7d %s %d-%d:%d-%d:%d-%d:%d-%d V:%03d %s\n", ++seqno, addr,
+        printf("%7d %s %d-%d:%d-%d:%d-%d:%d-%d F:%02d,V:%03d %s\n", ++seqno, addr,
                this->mmu.ctx.pri[0], this->mmu.ctx.sec[0],
                this->mmu.ctx.pri[1], this->mmu.ctx.sec[1],
                this->mmu.ctx.pri[2], this->mmu.ctx.sec[2],
                this->mmu.ctx.pri[3], this->mmu.ctx.sec[3],
+               this->vdp.ctx.counter % 100,
                this->vdp.lastRenderScanline, buf);
     }
     
