@@ -947,17 +947,37 @@ public:
 
     inline void renderScanlineModeG4(int lineNumber, unsigned short* renderPosition)
     {
-        int curD = 0;
-        int curP = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 128 + this->getNameTableAddress();
-        if (this->isEvenOrderMode() && curP & 0x8000) {
-            curP &= 0x17FFF;
-            curP |= (this->ctx.counter & 1) << 15;
+        int curD = this->ctx.reg[27] & 0b00000111;
+        int addr = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 128 + this->getNameTableAddress();
+        int sp2 = this->getSP2();
+        int x = this->ctx.reg[26] & 0b00111111;
+        if (sp2) {
+            x &= 0b00111111;
+            if (x < 32) {
+                addr &= 0x17FFF;
+            } else {
+                addr |= 0x8000;
+            }
+        } else {
+            x &= 0b00011111;
+        }
+        x <<= 2;
+        if (this->isEvenOrderMode() && addr & 0x8000) {
+            addr &= 0x17FFF;
+            addr |= (this->ctx.counter & 1) << 15;
         }
         for (int i = 0; i < 128; i++) {
-            this->renderPixel2(&renderPosition[curD], (this->ctx.ram[curP] & 0xF0) >> 4);
+            this->renderPixel2(&renderPosition[curD], (this->ctx.ram[addr + x] & 0xF0) >> 4);
             curD += 2;
-            this->renderPixel2(&renderPosition[curD], this->ctx.ram[curP++] & 0x0F);
+            if (512 <= curD) break;
+            this->renderPixel2(&renderPosition[curD], this->ctx.ram[addr + x] & 0x0F);
             curD += 2;
+            if (512 <= curD) break;
+            x++;
+            x &= 0x7F;
+            if (0 == x && sp2) {
+                addr ^= 0x8000;
+            }
         }
         renderSpritesMode2(lineNumber, renderPosition);
     }
