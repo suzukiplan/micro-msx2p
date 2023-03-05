@@ -1862,7 +1862,6 @@ public:
                 return;
             }
         }
-        this->incrementCommandPending(1);
     }
 
     inline void executeCommandYMMM()
@@ -2119,7 +2118,6 @@ public:
                 return;
             }
         }
-        this->incrementCommandPending(1);
     }
 
     inline void executeCommandLMCM(bool resetPosition)
