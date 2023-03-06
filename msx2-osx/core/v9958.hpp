@@ -798,6 +798,8 @@ public:
                     case 0b00111: // GRAPHIC7
                         this->renderScanlineModeG7(lineNumber, renderPosition);
                         break;
+                    case 0b11000: // ???
+                        break;
                     default:
                         printf("UNSUPPORTED SCREEN MODE! (%d)\n", this->getScreenMode());
                         exit(-1);
@@ -1815,6 +1817,10 @@ public:
         return result;
     }
 
+    inline int getEQ() {
+        return this->ctx.reg[45] & 0b00000010 ? 1 : 0;
+    }
+
     inline int getDIX() {
         return this->ctx.reg[45] & 0b00000100 ? -1 : 1;
     }
@@ -2298,7 +2304,6 @@ public:
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<LINE>: DX=%d, DY=%d, Maj=%d, Min=%d, DIX=%d, DIY=%d, MAJ=%s, CLR=$%02X, LO=%X (SCREEN: %d)\n", dx, dy, maj, min, dix, diy, m ? "Y" : "X", clr, ctx.commandL, getScreenMode());
 #endif
-
         const double majF = (double)maj;
         const double minF = (double)min;
         this->incrementCommandPending(1);
@@ -2327,8 +2332,47 @@ public:
 
     inline void executeCommandSRCH()
     {
-        puts("execute SRCH (not implemented yet");
-        exit(-1);
+        int dpb = this->getDotPerByteX();
+        int lineBytes = this->getScreenWidth() / dpb;
+        int sx = this->getSX();
+        int sy = this->getSY();
+        unsigned char clr = this->ctx.reg[44];
+        switch (dpb) {
+            case 1: break;
+            case 2: clr &= 0x0F;
+            case 4: clr &= 0x03;
+            default: return;
+        }
+        int dix = this->getDIX();
+        int eq = this->getEQ();
+        int addr = (sy * lineBytes + sx / dpb) & 0x1FFFF;
+//#ifdef COMMAND_DEBUG
+        printf("ExecuteCommand<SRCH>: ADDR=$%X, SX=%d, SY=%d, CLR=%d, DIX=%d, EQ=%d (SCREEN: %d)\n", addr, sx, sy, clr, dix, eq, getScreenMode());
+//#endif
+        bool found = false;
+        while (0 <= sx && sx < 512) {
+            unsigned char px = this->readLogicalPixel(addr, dpb, sx);
+            if (eq) {
+                if (px == clr) {
+                    found = true;
+                    break;
+                }
+            } else {
+                if (px != clr) {
+                    found = true;
+                    break;
+                }
+            }
+            this->incrementCommandPending(1);
+        }
+        this->ctx.stat[2] &= 0b11100010;
+        if (found) {
+            this->ctx.stat[2] |= 0b00011100;
+            this->ctx.stat[8] = sx & 0xFF;
+            this->ctx.stat[9] = ((sx & 0x300) >> 8) | 0xFC;
+        } else {
+            this->ctx.stat[2] |= 0b00001100;
+        }
     }
 
     inline void executeCommandPSET()
