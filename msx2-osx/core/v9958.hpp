@@ -460,15 +460,14 @@ public:
             this->ctx.countH -= 342;
             switch (++this->ctx.countV) {
                 case 251:
-                    this->ctx.stat[0] |= 0x80;
+                    this->ctx.stat[0] |= 0b10000000; // set F flag
+                    this->ctx.stat[2] |= 0b01000000; // set VR flag
                     if (this->isIE0()) {
                         this->detectInterrupt(this->arg, 0);
                     }
                     break;
                 case 262:
-                    if (this->isIE1()) {
-                        this->ctx.stat[0] &= 0x7F;
-                    }
+                    this->ctx.stat[2] &= 0b10111111; // clear VR flag
                     this->ctx.counter++;
                     this->ctx.countV -= 262;
                     this->detectBreak(this->arg);
@@ -500,17 +499,15 @@ public:
         unsigned char result = this->ctx.stat[sn];
         switch (sn) {
             case 0:
-                this->ctx.stat[sn] &= 0b01011111;
+                this->ctx.stat[0] &= 0b00011111;
                 break;
             case 1:
-                if (this->isIE1()) {
-                    this->ctx.stat[1] &= 0b11111110;
-                }
+                this->ctx.stat[1] &= 0b01111110;
                 result &= 0b11000001;
                 result |= 0b00000100;
                 break;
             case 2:
-                result |= 0b10001100;
+                result |= 0b00001100;
                 break;
             case 5:
                 this->ctx.stat[3] = 0;
@@ -764,7 +761,6 @@ public:
     {
         if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
             this->lastRenderScanline = lineNumber;
-            this->ctx.stat[2] &= 0b10111111; // reset VR flag
             if (this->isEnabledScreen()) {
                 // 00 000 : GRAPHIC1    256x192             Mode1   chr           16KB
                 // 00 001 : GRAPHIC2    256x192             Mode1   chr           16KB
@@ -815,8 +811,6 @@ public:
             if (!this->isInterlaceMode()) {
                 memcpy(renderPosition + 568, renderPosition, 568 * 2);
             }
-        } else {
-            this->ctx.stat[2] |= 0b01000000; // set VR flag
         }
     }
 
@@ -1854,6 +1848,7 @@ public:
         this->ctx.ram[addr & 0x1FFFF] = this->ctx.reg[44];
         this->ctx.commandDX += dix;
         this->ctx.commandNX -= dpb;
+        this->ctx.stat[2] |= 0b10000000;
         if (this->ctx.commandNX <= 0 || this->getScreenWidth() <= this->ctx.commandDX || this->ctx.commandDX < 0) {
             this->ctx.commandDX = this->getDX();
             this->ctx.commandNX = this->getNX();
@@ -1864,7 +1859,7 @@ public:
                 puts("End HMMC");
 #endif
                 this->ctx.command = 0;
-                this->ctx.stat[2] &= 0b11111110;
+                this->ctx.stat[2] &= 0b01111110;
                 return;
             }
         }
@@ -2104,6 +2099,7 @@ public:
         int dst = this->ctx.reg[44];
         if (2 == dpb) dst &= 0x0F;
         else if (4 == dpb) dst &= 0b11;
+        this->ctx.stat[2] |= 0b10000000;
 #ifdef COMMAND_DEBUG
         printf("ExecuteCommand<LMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, ADDR=$%05X, VAL=$%02X, LO=%X (SCREEN: %d)\n", ctx.commandDX, ctx.commandDY, ctx.commandNX, ctx.commandNY, dix, diy, addr, dst, ctx.commandL, getScreenMode());
 #endif
@@ -2120,7 +2116,7 @@ public:
                 puts("End LMMC");
 #endif
                 this->ctx.command = 0;
-                this->ctx.stat[2] &= 0b11111110;
+                this->ctx.stat[2] &= 0b01111110;
                 return;
             }
         }
