@@ -520,7 +520,7 @@ public:
                 this->ctx.stat[0] &= 0b00011111;
                 break;
             case 1:
-                this->ctx.stat[1] &= 0b01111110;
+                this->ctx.stat[1] &= 0b11111110;
                 result &= 0b11000001;
                 result |= 0b00000100;
                 break;
