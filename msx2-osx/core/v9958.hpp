@@ -1756,7 +1756,6 @@ public:
     inline void commandMoveD() {
         this->ctx.cmd.dx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
-        this->ctx.stat[2] |= 0b10000000;
         if (this->ctx.cmd.nx <= 0 || 512 <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0) {
             this->ctx.cmd.dx = this->getDX();
             this->ctx.cmd.nx = this->getNX();
@@ -1771,7 +1770,6 @@ public:
     inline void commandMoveS() {
         this->ctx.cmd.sx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
-        this->ctx.stat[2] |= 0b10000000;
         if (this->ctx.cmd.nx <= 0 || 512 <= this->ctx.cmd.sx || this->ctx.cmd.sx < 0) {
             this->ctx.cmd.sx = this->getSX();
             this->ctx.cmd.nx = this->getNX();
@@ -1787,7 +1785,6 @@ public:
         this->ctx.cmd.dx += this->ctx.cmd.dix;
         this->ctx.cmd.sx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
-        this->ctx.stat[2] |= 0b10000000;
         if (this->ctx.cmd.nx <= 0 || 512 <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0 || 512 <= this->ctx.cmd.sx || this->ctx.cmd.sx < 0) {
             this->ctx.cmd.dx = this->getDX();
             this->ctx.cmd.sx = this->getSX();
@@ -1803,9 +1800,7 @@ public:
 
     inline void commandMoveDSY() {
         this->ctx.cmd.dx += this->ctx.cmd.dix;
-        this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
-        this->ctx.stat[2] |= 0b10000000;
-        if (this->ctx.cmd.nx <= 0 || 512 <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0) {
+        if (512 <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0) {
             this->ctx.cmd.dx = this->getDX();
             this->ctx.cmd.nx = this->getNX();
             this->ctx.cmd.dy += this->ctx.cmd.diy;
