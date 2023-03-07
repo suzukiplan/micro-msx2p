@@ -585,8 +585,6 @@ public:
             updatePaletteCacheFromRegister(pn);
             this->ctx.reg[16]++;
             this->ctx.reg[16] &= 0b00001111;
-        } else {
-            updatePaletteCacheFromRegister(pn);
         }
     }
 
@@ -596,7 +594,7 @@ public:
         if (17 != (r17 & 0b00111111)) {
             this->updateRegister(r17 & 0b00111111, value);
         }
-        if (0 == (r17 & 0b11000000)) {
+        if (0 == (r17 & 0b10000000)) {
             this->ctx.reg[17] = (r17 + 1) & 0b00111111;
         }
     }
