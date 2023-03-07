@@ -1763,9 +1763,6 @@ public:
             this->ctx.cmd.dy += this->ctx.cmd.diy;
             this->ctx.cmd.ny--;
             if (this->ctx.cmd.ny <= 0 || 1024 <= this->ctx.cmd.dy || this->ctx.cmd.dy < 0) {
-#ifdef COMMAND_DEBUG
-                puts("End Command");
-#endif
                 this->setCommandEnd();
             }
         }
@@ -1781,9 +1778,6 @@ public:
             this->ctx.cmd.sy += this->ctx.cmd.diy;
             this->ctx.cmd.ny--;
             if (this->ctx.cmd.ny <= 0 || 1024 <= this->ctx.cmd.sy || this->ctx.cmd.sy < 0) {
-#ifdef COMMAND_DEBUG
-                puts("End Command");
-#endif
                 this->setCommandEnd();
             }
         }
@@ -1802,9 +1796,6 @@ public:
             this->ctx.cmd.sy += this->ctx.cmd.diy;
             this->ctx.cmd.ny--;
             if (this->ctx.cmd.ny <= 0 || 1024 <= this->ctx.cmd.dy || this->ctx.cmd.dy < 0 || 1024 <= this->ctx.cmd.sy || this->ctx.cmd.sy < 0) {
-#ifdef COMMAND_DEBUG
-                puts("End Command");
-#endif
                 this->setCommandEnd();
             }
         }
@@ -1821,9 +1812,6 @@ public:
             this->ctx.cmd.sy += this->ctx.cmd.diy;
             this->ctx.cmd.ny--;
             if (this->ctx.cmd.ny <= 0 || 1024 <= this->ctx.cmd.dy || this->ctx.cmd.dy < 0 || 1024 <= this->ctx.cmd.sy || this->ctx.cmd.sy < 0) {
-#ifdef COMMAND_DEBUG
-                puts("End Command");
-#endif
                 this->setCommandEnd();
             }
         }
@@ -2189,9 +2177,6 @@ public:
                 }
             }
         } else {
-#ifdef COMMAND_DEBUG
-            puts("End Command");
-#endif
             this->setCommandEnd();
         }
         this->setCommandWait();
@@ -2220,9 +2205,6 @@ public:
             unsigned char px = this->readLogicalPixel(addr, dpb, this->ctx.cmd.sx);
             if (this->getEQ()) {
                 if (px == clr) {
-#ifdef COMMAND_DEBUG
-                    puts("End Command (found)");
-#endif
                     this->ctx.stat[2] |= 0b00011100;
                     this->ctx.stat[8] = this->ctx.cmd.sx & 0xFF;
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
@@ -2232,9 +2214,6 @@ public:
                 }
             } else {
                 if (px != clr) {
-#ifdef COMMAND_DEBUG
-                    puts("End Command (found)");
-#endif
                     this->ctx.stat[2] |= 0b00011100;
                     this->ctx.stat[8] = this->ctx.cmd.sx & 0xFF;
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
@@ -2245,9 +2224,6 @@ public:
             }
             this->ctx.cmd.sx += this->ctx.cmd.dix;
         } else {
-#ifdef COMMAND_DEBUG
-            puts("End Command (not found)");
-#endif
             this->ctx.stat[2] &= 0b11100010;
             this->ctx.stat[2] |= 0b00001100;
             this->setCommandEnd();
@@ -2266,9 +2242,6 @@ public:
             printf("ExecuteCommand<PSET>: DX=%d, DY=%d, CLR=$%02X, LO=%X (SCREEN: %d)\n", ctx.cmd.dx, ctx.cmd.dy, ctx.reg[44], ctx.commandL, getScreenMode());
 #endif
         }
-#ifdef COMMAND_DEBUG
-        puts("End Command");
-#endif
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->renderLogicalPixel(addr, dpb, this->ctx.cmd.dx, this->ctx.reg[44], ctx.commandL);
         this->setCommandEnd();
