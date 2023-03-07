@@ -816,6 +816,7 @@ public:
                         this->renderScanlineModeG7(lineNumber, renderPosition);
                         break;
                     case 0b11000: // ???
+                    case 0b11011: // ???
                         break;
                     default:
                         printf("UNSUPPORTED SCREEN MODE! (%d)\n", this->getScreenMode());
@@ -1625,7 +1626,6 @@ public:
     inline void executeCommand(int cm, int lo)
     {
         if (cm) {
-            if (this->ctx.stat[2] & 0b00000001) return; // already executing
             this->ctx.command = cm;
             this->ctx.commandL = lo;
             this->ctx.stat[2] |= 0b00000001;
@@ -1647,8 +1647,7 @@ public:
                     exit(-1);
             }
         } else {
-            this->ctx.stat[2] &= 0b11111110;
-            this->ctx.command = 0;
+            this->setCommandEnd();
         }
     }
 
@@ -2248,9 +2247,9 @@ public:
 #ifdef COMMAND_DEBUG
             puts("End Command (not found)");
 #endif
-            this->ctx.command = 0;
             this->ctx.stat[2] &= 0b11100010;
             this->ctx.stat[2] |= 0b00001100;
+            this->setCommandEnd();
             this->setCommandWait();
         }
     }
