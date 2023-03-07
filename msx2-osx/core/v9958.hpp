@@ -466,16 +466,17 @@ public:
             } else if (283 == x) {
                 this->renderScanline(scanline, &renderPosition[13 * 2 - this->getAdjustX() * 2]);
                 this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
+                this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
             }
         }
         if (215 == x) {
-            if (this->isIE1()) {
-                int lineNumber = scanline - 1;
-                if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
-                    lineNumber += this->ctx.reg[23];
-                    lineNumber &= 0xFF;
-                    if (lineNumber == this->ctx.reg[19]) {
-                        this->ctx.stat[1] |= 0b00000001;
+            int lineNumber = scanline - 1;
+            if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
+                lineNumber += this->ctx.reg[23];
+                lineNumber &= 0xFF;
+                if (lineNumber == this->ctx.reg[19]) {
+                    this->ctx.stat[1] |= 0b00000001; // Set FH flag
+                    if (this->isIE1()) {
                         this->detectInterrupt(this->arg, 1);
                     }
                 }
@@ -523,8 +524,7 @@ public:
                 this->ctx.stat[0] &= 0b00011111;
                 break;
             case 1:
-                this->ctx.stat[1] &= 0b11111110;
-                result &= 0b01000001;
+                this->ctx.stat[1] &= this->isIE1() ? 0b01000000 : 0b01000001;
                 result |= this->ctx.cmd.wait ? 0b00000100 : 0b10000100;
                 break;
             case 2:
