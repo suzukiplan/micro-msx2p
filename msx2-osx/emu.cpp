@@ -342,6 +342,72 @@ typedef struct BitmapHeader_ {
     unsigned int inum;     /* 重要色数 */
 } BitmapHeader;
 
+const void* emu_getBitmapSprite(size_t* size) {
+    static const unsigned char bit[8] = {
+        0b10000000,
+        0b01000000,
+        0b00100000,
+        0b00010000,
+        0b00001000,
+        0b00000100,
+        0b00000010,
+        0b00000001};
+    static unsigned char buf[14 + 40 + 4 * 256 + 128 * 128];
+    int sg = msx2.vdp.getSpriteGeneratorTable();
+    unsigned char* vram = msx2.vdp.ctx.ram;
+    int iSize = (int)sizeof(buf);
+    *size = iSize;
+    memset(buf, 0, sizeof(buf));
+    int ptr = 0;
+    buf[ptr++] = 'B';
+    buf[ptr++] = 'M';
+    memcpy(&buf[ptr], &iSize, 4);
+    ptr += 4;
+    ptr += 4;
+    iSize = 40 + 256 * 4;
+    memcpy(&buf[ptr], &iSize, 4);
+    ptr += 4;
+    BitmapHeader header;
+    header.isize = 40;
+    header.width = 128;
+    header.height = -128;
+    header.planes = 1;
+    header.bits = 8;
+    header.ctype = 0;
+    header.gsize = 128 * 128;
+    header.xppm = 1;
+    header.yppm = 1;
+    header.cnum = 0;
+    header.inum = 0;
+    memcpy(&buf[ptr], &header, sizeof(header));
+    ptr += sizeof(header);
+    for (int i = 0; i < 256; i++) {
+        if (i == 1) {
+            buf[ptr++] = 0xFF;
+            buf[ptr++] = 0xFF;
+            buf[ptr++] = 0xFF;
+            buf[ptr++] = 0x00;
+        } else {
+            buf[ptr++] = 0x00;
+            buf[ptr++] = 0x00;
+            buf[ptr++] = 0x00;
+            buf[ptr++] = 0x00;
+        }
+    }
+    for (int i = 0; i < 256; i++) {
+        for (int y = 0; y < 8; y++) {
+            unsigned char ptn = vram[sg + i * 8 + y];
+            for (int x = 0; x < 8; x++) {
+                if (ptn & bit[x]) {
+                    buf[ptr + i % 16 * 8 + i / 16 * 128 * 8 + y * 128 + x] = 1;
+                }
+            }
+        }
+    }
+    *size = sizeof(buf);
+    return buf;
+}
+
 const void* emu_getBitmapVRAM(size_t* size) {
     auto screenMode = msx2.vdp.getScreenMode();
     switch (screenMode) {

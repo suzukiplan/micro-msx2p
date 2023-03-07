@@ -19,6 +19,7 @@
 -(IBAction)menuSaveRamDump:(id)sender;
 -(IBAction)menuSaveVramDump:(id)sender;
 -(IBAction)menuSaveVramBitmap:(id)sender;
+-(IBAction)menuSaveSpritePattern:(id)sender;
 -(IBAction)menuPause:(id)sender;
 @end
 

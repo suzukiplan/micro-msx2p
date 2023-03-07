@@ -121,6 +121,11 @@
                                                 <action selector="menuSaveVramBitmap:" target="Ady-hI-5gd" id="wtg-jT-3zZ"/>
                                             </connections>
                                         </menuItem>
+                                        <menuItem title="Save Sprite Pattern" keyEquivalent="p" id="URz-nq-hv5">
+                                            <connections>
+                                                <action selector="menuSaveSpritePattern:" target="Ady-hI-5gd" id="GIo-Hp-STo"/>
+                                            </connections>
+                                        </menuItem>
                                     </items>
                                 </menu>
                             </menuItem>
