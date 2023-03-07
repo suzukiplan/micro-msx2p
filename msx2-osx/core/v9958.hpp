@@ -1647,6 +1647,7 @@ public:
                     exit(-1);
             }
         } else {
+            this->ctx.cmd.wait = 0;
             this->setCommandEnd();
         }
     }
