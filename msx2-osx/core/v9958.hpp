@@ -41,7 +41,7 @@ public:
     unsigned char lastRenderScanline;
     
     struct CommandContext {
-        int type;
+        int wait;
         int sx;
         int sy;
         int dx;
@@ -397,7 +397,10 @@ public:
     inline void tick()
     {
         // execute command
-        if (this->ctx.command && 0 == (this->ctx.countH & 15)) {
+        if (this->ctx.cmd.wait) {
+            this->ctx.cmd.wait--;
+        }
+        if (this->ctx.command && 0 == this->ctx.cmd.wait) {
             switch (this->ctx.command) {
                 case 0b1110: this->executeCommandYMMM(false); break;
                 case 0b1101: this->executeCommandHMMM(false); break;
@@ -521,8 +524,8 @@ public:
                 break;
             case 1:
                 this->ctx.stat[1] &= 0b11111110;
-                result &= 0b11000001;
-                result |= 0b00000100;
+                result &= 0b01000001;
+                result |= this->ctx.cmd.wait ? 0b00000100 : 0b10000100;
                 break;
             case 2:
                 result |= 0b00001100;
@@ -757,12 +760,12 @@ public:
         if (!prevIE0 && this->isIE0() && this->ctx.stat[0] & 0x80) {
             this->detectInterrupt(this->arg, 0);
         }
-        if (44 == rn && this->ctx.command) {
+        if (44 == rn && this->ctx.command && 0 == this->ctx.cmd.wait) {
             switch (this->ctx.command) {
                 case 0b1111: this->executeCommandHMMC(false); break;
                 case 0b1011: this->executeCommandLMMC(false); break;
             }
-        } else if (46 == rn) {
+        } else if (46 == rn && 0 == this->ctx.cmd.wait) {
             this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
         } else if (14 == rn) {
             this->ctx.reg[14] &= 0b00000111;
@@ -1763,8 +1766,7 @@ public:
 #ifdef COMMAND_DEBUG
                 puts("End Command");
 #endif
-                this->ctx.command = 0;
-                this->ctx.stat[2] &= 0b01111110;
+                this->setCommandEnd();
             }
         }
     }
@@ -1782,8 +1784,7 @@ public:
 #ifdef COMMAND_DEBUG
                 puts("End Command");
 #endif
-                this->ctx.command = 0;
-                this->ctx.stat[2] &= 0b01111110;
+                this->setCommandEnd();
             }
         }
     }
@@ -1804,8 +1805,7 @@ public:
 #ifdef COMMAND_DEBUG
                 puts("End Command");
 #endif
-                this->ctx.command = 0;
-                this->ctx.stat[2] &= 0b01111110;
+                this->setCommandEnd();
             }
         }
     }
@@ -1824,10 +1824,18 @@ public:
 #ifdef COMMAND_DEBUG
                 puts("End Command");
 #endif
-                this->ctx.command = 0;
-                this->ctx.stat[2] &= 0b01111110;
+                this->setCommandEnd();
             }
         }
+    }
+
+    inline void setCommandEnd() {
+        this->ctx.command = 0;
+        this->ctx.stat[2] &= 0b11111110;
+    }
+
+    inline void setCommandWait() {
+        this->ctx.cmd.wait = 24;
     }
 
     inline void executeCommandHMMC(bool setup)
@@ -1853,6 +1861,7 @@ public:
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->ctx.ram[addr] = this->ctx.reg[44];
         this->commandMoveD();
+        this->setCommandWait();
     }
 
     inline void executeCommandYMMM(bool setup)
@@ -1879,6 +1888,7 @@ public:
         int addrD = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->ctx.ram[addrD] = this->ctx.ram[addrS];
         this->commandMoveDSY();
+        this->setCommandWait();
     }
 
     inline void executeCommandHMMM(bool setup)
@@ -1907,6 +1917,7 @@ public:
         int addrD = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->ctx.ram[addrD] = this->ctx.ram[addrS];
         this->commandMoveDS();
+        this->setCommandWait();
     }
 
     inline void executeCommandHMMV(bool setup)
@@ -1932,6 +1943,7 @@ public:
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->ctx.ram[addr & 0x1FFFF] = this->ctx.reg[44];
         this->commandMoveD();
+        this->setCommandWait();
     }
 
     inline unsigned char readLogicalPixel(int addr, int dpb, int sx) {
@@ -2054,9 +2066,9 @@ public:
 #endif
         }
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
-        this->ctx.stat[2] |= 0b10000000;
         renderLogicalPixel(addr, dpb, this->ctx.cmd.dx, this->ctx.reg[44], this->ctx.commandL);
         this->commandMoveD();
+        this->setCommandWait();
     }
 
     inline void executeCommandLMCM(bool setup)
@@ -2079,9 +2091,9 @@ public:
 #endif
         }
         int addr = this->ctx.cmd.sx / dpb + this->ctx.cmd.sy * lineBytes;
-        this->ctx.stat[2] |= 0b10000000;
         this->ctx.stat[7] = this->readLogicalPixel(addr, dpb, ctx.cmd.sx);
         this->commandMoveS();
+        this->setCommandWait();
     }
 
     inline void executeCommandLMMM(bool setup)
@@ -2110,6 +2122,7 @@ public:
         int addrD = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->renderLogicalPixel(addrD, dpb, this->ctx.cmd.dx, this->readLogicalPixel(addrS, dpb, ctx.cmd.sx), ctx.commandL);
         this->commandMoveDS();
+        this->setCommandWait();
     }
 
     inline void executeCommandLMMV(bool setup)
@@ -2135,6 +2148,7 @@ public:
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->renderLogicalPixel(addr, dpb, this->ctx.cmd.dx, this->ctx.reg[44], ctx.commandL);
         this->commandMoveD();
+        this->setCommandWait();
     }
 
     inline void executeCommandLINE(bool setup)
@@ -2178,9 +2192,9 @@ public:
 #ifdef COMMAND_DEBUG
             puts("End Command");
 #endif
-            this->ctx.command = 0;
-            this->ctx.stat[2] &= 0b01111110;
+            this->setCommandEnd();
         }
+        this->setCommandWait();
     }
 
     inline void executeCommandSRCH(bool setup)
@@ -2212,8 +2226,8 @@ public:
                     this->ctx.stat[2] |= 0b00011100;
                     this->ctx.stat[8] = this->ctx.cmd.sx & 0xFF;
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
-                    this->ctx.command = 0;
-                    this->ctx.stat[2] &= 0b01111110;
+                    this->setCommandEnd();
+                    this->setCommandWait();
                     return;
                 }
             } else {
@@ -2224,8 +2238,8 @@ public:
                     this->ctx.stat[2] |= 0b00011100;
                     this->ctx.stat[8] = this->ctx.cmd.sx & 0xFF;
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
-                    this->ctx.command = 0;
-                    this->ctx.stat[2] &= 0b01111110;
+                    this->setCommandEnd();
+                    this->setCommandWait();
                     return;
                 }
             }
@@ -2237,6 +2251,7 @@ public:
             this->ctx.command = 0;
             this->ctx.stat[2] &= 0b11100010;
             this->ctx.stat[2] |= 0b00001100;
+            this->setCommandWait();
         }
     }
 
@@ -2256,8 +2271,8 @@ public:
 #endif
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->renderLogicalPixel(addr, dpb, this->ctx.cmd.dx, this->ctx.reg[44], ctx.commandL);
-        this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b01111110;
+        this->setCommandEnd();
+        this->setCommandWait();
     }
 
     inline void executeCommandPOINT(bool setup)
