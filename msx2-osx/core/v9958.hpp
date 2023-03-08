@@ -21,6 +21,7 @@ private:
     int colorMode;
     void* arg;
     void (*detectInterrupt)(void* arg, int ie);
+    void (*cancelInterrupt)(void* arg, int ie);
     void (*detectBreak)(void* arg);
     inline int min(int a, int b) { return a < b ? a : b; }
     inline int max(int a, int b) { return a > b ? a : b; }
@@ -105,11 +106,12 @@ public:
         this->reset();
     }
 
-    void initialize(int colorMode, void* arg, void (*detectInterrupt)(void*, int), void (*detectBreak)(void*))
+    void initialize(int colorMode, void* arg, void (*detectInterrupt)(void*, int), void (*cancelInterrupt)(void*, int), void (*detectBreak)(void*))
     {
         this->colorMode = colorMode;
         this->arg = arg;
         this->detectInterrupt = detectInterrupt;
+        this->cancelInterrupt = cancelInterrupt;
         this->detectBreak = detectBreak;
         this->initYjkColorTable();
         this->reset();
@@ -750,13 +752,16 @@ public:
     inline void updateRegister(int rn, unsigned char value)
     {
         value &= this->regMask[rn];
-        bool prevIE0 = this->isIE0();
         if (debug.registerUpdateListener) {
             debug.registerUpdateListener(debug.arg, rn, value);
         }
         this->ctx.reg[rn] = value;
-        if (!prevIE0 && this->isIE0() && this->ctx.stat[0] & 0x80) {
-            this->detectInterrupt(this->arg, 0);
+        if (1 == rn && this->ctx.stat[0] & 0x80) {
+            if (this->isIE0()) {
+                this->detectInterrupt(this->arg, 0);
+            } else {
+                this->cancelInterrupt(this->arg, 0);
+            }
         }
         if (44 == rn && this->ctx.command && 0 == this->ctx.cmd.wait) {
             switch (this->ctx.command) {

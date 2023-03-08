@@ -72,6 +72,8 @@ public:
             //((MSX2*)arg)->putlog("Detect IE%d (vf:%d, hf:%d)", ie, ((MSX2*)arg)->vdp.ctx.stat[0] & 0x80 ? 1 : 0,((MSX2*)arg)->vdp.ctx.stat[1] & 0x01);
             ((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07);
+        }, [](void* arg, int ie) {
+            ((MSX2*)arg)->cpu->cancelIRQ();
         }, [](void* arg) {
             ((MSX2*)arg)->cpu->requestBreak();
         });
