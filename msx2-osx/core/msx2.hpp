@@ -344,7 +344,7 @@ public:
                this->mmu.ctx.pri[2], this->mmu.ctx.sec[2],
                this->mmu.ctx.pri[3], this->mmu.ctx.sec[3],
                this->vdp.ctx.counter % 100,
-               this->vdp.lastRenderScanline, buf);
+               this->vdp.ctx.countV, buf);
     }
     
     void loadFont(const void* font, size_t fontSize) {
