@@ -2,7 +2,7 @@
 #define INCLUDE_V9958_HPP
 
 #include <string.h>
-#define COMMAND_DEBUG
+//#define COMMAND_DEBUG
 
 class V9958
 {
@@ -1875,7 +1875,7 @@ public:
     }
 
     inline void setCommandWait() {
-        this->ctx.cmd.wait = 8;
+        this->ctx.cmd.wait = 24;
     }
 
     inline void executeCommandHMMC(bool setup)
