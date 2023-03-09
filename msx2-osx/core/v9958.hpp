@@ -2,7 +2,7 @@
 #define INCLUDE_V9958_HPP
 
 #include <string.h>
-//#define COMMAND_DEBUG
+#define COMMAND_DEBUG
 
 class V9958
 {
@@ -1701,11 +1701,21 @@ public:
         return result;
     }
 
+    inline void setSX(int sx) {
+        this->ctx.reg[33] = (sx & 0x100) >> 8;
+        this->ctx.reg[32] = sx & 0xFF;
+    }
+
     inline unsigned short getSY() {
         unsigned short result = this->ctx.reg[35] & 3;
         result <<= 8;
         result |= this->ctx.reg[34];
         return result;
+    }
+
+    inline void setSY(int sy) {
+        this->ctx.reg[35] = (sy & 0x300) >> 8;
+        this->ctx.reg[34] = sy & 0xFF;
     }
 
     inline unsigned short getDX() {
@@ -1715,6 +1725,11 @@ public:
         return result;
     }
 
+    inline void setDX(int dx) {
+        this->ctx.reg[37] = (dx & 0x100) >> 8;
+        this->ctx.reg[36] = dx & 0xFF;
+    }
+
     inline unsigned short getDY() {
         unsigned short result = this->ctx.reg[39] & 3;
         result <<= 8;
@@ -1722,11 +1737,18 @@ public:
         return result;
     }
 
+    inline void setDY(int dy) {
+        this->ctx.reg[39] = (dy & 0x300) >> 8;
+        this->ctx.reg[38] = dy & 0xFF;
+    }
+
+    inline void setNX(int nx) { this->setMAJ(nx); }
     inline unsigned short getNX() {
         unsigned short nx = this->getMAJ();
         return 0 == nx ? 512 : nx;
     }
 
+    inline void setNY(int ny) { this->setMIN(ny); }
     inline unsigned short getNY() {
         unsigned short ny = this->getMIN();
         return 0 == ny ? 1024 : ny;
@@ -1739,11 +1761,21 @@ public:
         return result;
     }
 
+    inline void setMAJ(int maj) {
+        this->ctx.reg[41] = (maj & 0x100) >> 8;
+        this->ctx.reg[40] = maj & 0xFF;
+    }
+
     inline unsigned short getMIN() {
         unsigned short result = this->ctx.reg[43] & 3;
         result <<= 8;
         result |= this->ctx.reg[42];
         return result;
+    }
+
+    inline void setMIN(int min) {
+        this->ctx.reg[43] = (min & 0x300) >> 8;
+        this->ctx.reg[42] = min & 0xFF;
     }
 
     inline int getEQ() {
@@ -1769,6 +1801,10 @@ public:
             this->ctx.cmd.dy += this->ctx.cmd.diy;
             this->ctx.cmd.ny--;
             if (this->ctx.cmd.ny <= 0 || 1024 <= this->ctx.cmd.dy || this->ctx.cmd.dy < 0) {
+                this->setDX(this->ctx.cmd.dx);
+                this->setDY(this->ctx.cmd.dy);
+                this->setNX(this->ctx.cmd.nx);
+                this->setNY(this->ctx.cmd.ny);
                 this->setCommandEnd();
             }
         }
@@ -1783,6 +1819,10 @@ public:
             this->ctx.cmd.sy += this->ctx.cmd.diy;
             this->ctx.cmd.ny--;
             if (this->ctx.cmd.ny <= 0 || 1024 <= this->ctx.cmd.sy || this->ctx.cmd.sy < 0) {
+                this->setSX(this->ctx.cmd.sx);
+                this->setSY(this->ctx.cmd.sy);
+                this->setNX(this->ctx.cmd.nx);
+                this->setNY(this->ctx.cmd.ny);
                 this->setCommandEnd();
             }
         }
@@ -1800,6 +1840,12 @@ public:
             this->ctx.cmd.sy += this->ctx.cmd.diy;
             this->ctx.cmd.ny--;
             if (this->ctx.cmd.ny <= 0 || 1024 <= this->ctx.cmd.dy || this->ctx.cmd.dy < 0 || 1024 <= this->ctx.cmd.sy || this->ctx.cmd.sy < 0) {
+                this->setDX(this->ctx.cmd.dx);
+                this->setDY(this->ctx.cmd.dy);
+                this->setSX(this->ctx.cmd.sx);
+                this->setSY(this->ctx.cmd.sy);
+                this->setNX(this->ctx.cmd.nx);
+                this->setNY(this->ctx.cmd.ny);
                 this->setCommandEnd();
             }
         }
@@ -1814,6 +1860,10 @@ public:
             this->ctx.cmd.sy += this->ctx.cmd.diy;
             this->ctx.cmd.ny--;
             if (this->ctx.cmd.ny <= 0 || 1024 <= this->ctx.cmd.dy || this->ctx.cmd.dy < 0 || 1024 <= this->ctx.cmd.sy || this->ctx.cmd.sy < 0) {
+                this->setDX(this->ctx.cmd.dx);
+                this->setDY(this->ctx.cmd.dy);
+                this->setSY(this->ctx.cmd.sy);
+                this->setNY(this->ctx.cmd.ny);
                 this->setCommandEnd();
             }
         }
@@ -1825,7 +1875,7 @@ public:
     }
 
     inline void setCommandWait() {
-        this->ctx.cmd.wait = 24;
+        this->ctx.cmd.wait = 8;
     }
 
     inline void executeCommandHMMC(bool setup)
@@ -2179,6 +2229,10 @@ public:
                 }
             }
         } else {
+            this->setDX(this->ctx.cmd.dx);
+            this->setDY(this->ctx.cmd.dy);
+            this->setMAJ(this->ctx.cmd.maj);
+            this->setMIN(this->ctx.cmd.min);
             this->setCommandEnd();
         }
         this->setCommandWait();
@@ -2210,6 +2264,7 @@ public:
                     this->ctx.stat[2] |= 0b00011100;
                     this->ctx.stat[8] = this->ctx.cmd.sx & 0xFF;
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
+                    this->setSX(this->ctx.cmd.sx);
                     this->setCommandEnd();
                     this->setCommandWait();
                     return;
@@ -2219,6 +2274,7 @@ public:
                     this->ctx.stat[2] |= 0b00011100;
                     this->ctx.stat[8] = this->ctx.cmd.sx & 0xFF;
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
+                    this->setSX(this->ctx.cmd.sx);
                     this->setCommandEnd();
                     this->setCommandWait();
                     return;
@@ -2228,6 +2284,7 @@ public:
         } else {
             this->ctx.stat[2] &= 0b11100010;
             this->ctx.stat[2] |= 0b00001100;
+            this->setSX(this->ctx.cmd.sx);
             this->setCommandEnd();
             this->setCommandWait();
         }
