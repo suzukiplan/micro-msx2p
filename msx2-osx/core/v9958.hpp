@@ -446,8 +446,10 @@ public:
         int y = this->ctx.countV - 16;
         int x2 = x << 1;
         int scanline = y - this->getTopBorder() + this->getAdjustY();
-        if (0 <= y && y < 240 && 0 <= x && x < 284) {
+        if (0 == scanline && 0 == x) {
             this->ctx.stat[2] &= 0b10111111; // clear VR flag
+        }
+        if (0 <= y && y < 240 && 0 <= x && x < 284) {
             auto renderPosition = &this->display[y * 284 * 2 * 2];
             if (this->isInterlaceMode() && (this->ctx.counter & 1)) {
                 renderPosition += 568;
