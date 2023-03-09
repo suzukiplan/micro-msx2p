@@ -754,15 +754,16 @@ public:
 
     inline void updateRegister(int rn, unsigned char value)
     {
+        bool prevIE0 = this->isIE0();
         value &= this->regMask[rn];
         if (debug.registerUpdateListener) {
             debug.registerUpdateListener(debug.arg, rn, value);
         }
         this->ctx.reg[rn] = value;
         if (1 == rn && this->ctx.stat[0] & 0x80) {
-            if (this->isIE0()) {
+            if (!prevIE0 && this->isIE0()) {
                 this->detectInterrupt(this->arg, 0);
-            } else {
+            } else if (prevIE0 && !this->isIE0()){
                 this->cancelInterrupt(this->arg, 0);
             }
         }
