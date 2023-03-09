@@ -227,6 +227,7 @@ public:
     inline int getOnTime() { return (ctx.reg[13] & 0xF0) >> 4; }
     inline int getOffTime() { return ctx.reg[13] & 0x0F; }
     inline int getSyncMode() { return (ctx.reg[9] & 0b00110000) >> 4; }
+    inline int getTopBorder() { return this->ctx.reg[9] & 0b10000000 ? 14 : 24; }
     inline int getLineNumber() { return this->ctx.reg[9] & 0b10000000 ? 212 : 192; }
     inline int isInterlaceMode() { return this->ctx.reg[9] & 0b00001000 ? true : false; }
     inline int isEvenOrderMode() { return this->ctx.reg[9] & 0b00000100 ? true : false; }
@@ -444,26 +445,25 @@ public:
         int x = this->ctx.countH - 24;
         int y = this->ctx.countV - 16;
         int x2 = x << 1;
-        int scanline = y - 24 + this->getAdjustY();
+        int scanline = y - this->getTopBorder() + this->getAdjustY();
         if (0 <= y && y < 240 && 0 <= x && x < 284) {
+            this->ctx.stat[2] &= 0b10111111; // clear VR flag
             auto renderPosition = &this->display[y * 284 * 2 * 2];
             if (this->isInterlaceMode() && (this->ctx.counter & 1)) {
                 renderPosition += 568;
             }
-            switch (this->getScreenMode()) {
-                case 0b00100: // GRAPHIC5
-                    renderPosition[x2] = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
-                    renderPosition[x2 + 1] = this->palette[this->ctx.reg[7] & 0b00000011];
-                    break;
-                default:
-                    renderPosition[x2] = this->getBackdropColor();
-                    renderPosition[x2 + 1] = renderPosition[x2];
+            if (0b00100 == this->getScreenMode()) {
+                renderPosition[x2] = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
+                renderPosition[x2 + 1] = this->palette[this->ctx.reg[7] & 0b00000011];
+            } else {
+                renderPosition[x2] = this->getBackdropColor();
+                renderPosition[x2 + 1] = renderPosition[x2];
             }
             if (!this->isInterlaceMode()) {
                 renderPosition[x2 + 568] = renderPosition[x2];
                 renderPosition[x2 + 568 + 1] = renderPosition[x2 + 1];
             }
-            if (0 == x) {
+            if (13 == x) {
                 this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
             } else if (283 == x) {
                 this->renderScanline(scanline, &renderPosition[13 * 2 - this->getAdjustX() * 2]);
@@ -484,24 +484,25 @@ public:
                 }
             }
         }
+ 
+        // VSYNC
+        if (0 == x && scanline == this->getLineNumber() + this->getTopBorder()) {
+            this->ctx.stat[0] |= 0b10000000; // set F flag
+            this->ctx.stat[2] |= 0b01000000; // set VR flag
+            if (this->isIE0()) {
+                this->detectInterrupt(this->arg, 0);
+            }
+        }
+
         // increment H/V counter
         this->ctx.countH++;
         if (342 == this->ctx.countH) {
-            this->ctx.countH -= 342;
-            switch (++this->ctx.countV) {
-                case 251:
-                    this->ctx.stat[0] |= 0b10000000; // set F flag
-                    this->ctx.stat[2] |= 0b01000000; // set VR flag
-                    if (this->isIE0()) {
-                        this->detectInterrupt(this->arg, 0);
-                    }
-                    break;
-                case 262:
-                    this->ctx.stat[2] &= 0b10111111; // clear VR flag
-                    this->ctx.counter++;
-                    this->ctx.countV -= 262;
-                    this->detectBreak(this->arg);
-                    break;
+            this->ctx.countH = 0;
+            this->ctx.countV++;
+            if (262 == this->ctx.countV) {
+                this->ctx.counter++;
+                this->ctx.countV = 0;
+                this->detectBreak(this->arg);
             }
         }
     }
