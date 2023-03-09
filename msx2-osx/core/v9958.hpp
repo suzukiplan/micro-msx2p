@@ -2182,7 +2182,7 @@ public:
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<LMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%dCLR=$%02X, LO=$%02X (SCREEN: %d)\n", ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, this->ctx.reg[44], ctx.commandL, getScreenMode());
+            printf("ExecuteCommand<LMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, CLR=$%02X, LO=$%02X (SCREEN: %d)\n", ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, this->ctx.reg[44], ctx.commandL, getScreenMode());
 #endif
         }
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
