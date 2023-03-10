@@ -110,7 +110,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
                   biosFont.bytes);
 #endif
     
-    self.view.frame = CGRectMake(0, 0, VRAM_WIDTH * 2, VRAM_HEIGHT * 2);
+    self.view.frame = CGRectMake(0, 0, VRAM_WIDTH, VRAM_HEIGHT * 2);
     CALayer* layer = [CALayer layer];
     [layer setBackgroundColor:CGColorCreateGenericRGB(0.0, 0.0, 0.2525, 1.0)];
     [self.view setWantsLayer:YES];
@@ -142,7 +142,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
 - (NSRect)calcVramRect
 {
     // 幅を16とした時の高さのアスペクト比を計算
-    CGFloat aspectY = VRAM_HEIGHT / (VRAM_WIDTH / 16.0);
+    CGFloat aspectY = VRAM_HEIGHT * 2 / (VRAM_WIDTH / 16.0);
     // window中央にVRAMをaspect-fitで描画
     if (self.view.frame.size.height < self.view.frame.size.width) {
         CGFloat height = self.view.frame.size.height;

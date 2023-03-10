@@ -8,7 +8,7 @@
 #ifndef constants_h
 #define constants_h
 
-#define VRAM_WIDTH 284
+#define VRAM_WIDTH 568
 #define VRAM_HEIGHT 240
 
 #endif /* constants_h */

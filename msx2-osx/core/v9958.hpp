@@ -37,7 +37,7 @@ private:
 
 public:
     bool renderLimitOverSprites = true;
-    unsigned short display[568 * 480];
+    unsigned short display[568 * 240];
     unsigned short palette[16];
     unsigned char lastRenderScanline;
     
@@ -450,20 +450,13 @@ public:
             this->ctx.stat[2] &= 0b10111111; // clear VR flag
         }
         if (0 <= y && y < 240 && 0 <= x && x < 284) {
-            auto renderPosition = &this->display[y * 284 * 2 * 2];
-            if (this->isInterlaceMode() && (this->ctx.counter & 1)) {
-                renderPosition += 568;
-            }
+            auto renderPosition = &this->display[y * 568];
             if (0b00100 == this->getScreenMode()) {
                 renderPosition[x2] = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
                 renderPosition[x2 + 1] = this->palette[this->ctx.reg[7] & 0b00000011];
             } else {
                 renderPosition[x2] = this->getBackdropColor();
                 renderPosition[x2 + 1] = renderPosition[x2];
-            }
-            if (!this->isInterlaceMode()) {
-                renderPosition[x2 + 568] = renderPosition[x2];
-                renderPosition[x2 + 568 + 1] = renderPosition[x2 + 1];
             }
             if (13 == x) {
                 this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
@@ -840,9 +833,6 @@ public:
                     }
                 }
             } else return;
-            if (!this->isInterlaceMode()) {
-                memcpy(renderPosition + 568, renderPosition, 568 * 2);
-            }
         }
     }
 
