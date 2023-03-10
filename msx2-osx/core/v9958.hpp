@@ -529,11 +529,14 @@ public:
                 this->ctx.stat[0] &= 0b00011111;
                 break;
             case 1:
-                this->ctx.stat[1] &= this->isIE1() ? 0b01000000 : 0b01000001;
-                result |= this->ctx.cmd.wait ? 0b00000100 : 0b10000100;
+                this->ctx.stat[1] &= 0b11000000;
+                result |= 0b00000100;
                 break;
             case 2:
+                result &= 0b01111110;
                 result |= 0b00001100;
+                result |= this->ctx.cmd.wait ? 0b00000000 : 0b10000000;
+                result |= this->ctx.command ? 0b00000001 : 0b00000000;
                 break;
             case 5:
                 this->ctx.stat[3] = 0;
@@ -1635,7 +1638,6 @@ public:
         if (cm) {
             this->ctx.command = cm;
             this->ctx.commandL = lo;
-            this->ctx.stat[2] |= 0b00000001;
             switch (cm) {
                 case 0b1111: this->executeCommandHMMC(true); break;
                 case 0b1110: this->executeCommandYMMM(true); break;
@@ -1871,7 +1873,6 @@ public:
 
     inline void setCommandEnd() {
         this->ctx.command = 0;
-        this->ctx.stat[2] &= 0b11111110;
     }
 
     inline void setCommandWait() {
@@ -2261,7 +2262,7 @@ public:
             unsigned char px = this->readLogicalPixel(addr, dpb, this->ctx.cmd.sx);
             if (this->getEQ()) {
                 if (px == clr) {
-                    this->ctx.stat[2] |= 0b00011100;
+                    this->ctx.stat[2] |= 0b00010000;
                     this->ctx.stat[8] = this->ctx.cmd.sx & 0xFF;
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
                     this->setSX(this->ctx.cmd.sx);
@@ -2271,7 +2272,7 @@ public:
                 }
             } else {
                 if (px != clr) {
-                    this->ctx.stat[2] |= 0b00011100;
+                    this->ctx.stat[2] |= 0b00010000;
                     this->ctx.stat[8] = this->ctx.cmd.sx & 0xFF;
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
                     this->setSX(this->ctx.cmd.sx);
@@ -2282,8 +2283,7 @@ public:
             }
             this->ctx.cmd.sx += this->ctx.cmd.dix;
         } else {
-            this->ctx.stat[2] &= 0b11100010;
-            this->ctx.stat[2] |= 0b00001100;
+            this->ctx.stat[2] &= 0b11101111;
             this->setSX(this->ctx.cmd.sx);
             this->setCommandEnd();
             this->setCommandWait();
