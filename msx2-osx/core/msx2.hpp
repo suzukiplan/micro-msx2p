@@ -118,7 +118,7 @@ public:
             int patternGeneratorAddsress = this_->vdp.getPatternGeneratorAddress();
             int nameTableAddress = this_->vdp.getNameTableAddress();
             int colorTableAddress = this_->vdp.getColorTableAddress();
-            //bool ie0 = this_->vdp.isIE0();
+            bool ie0 = this_->vdp.isIE0();
             bool ie1 = this_->vdp.isIE1();
             int spriteSize = this_->vdp.getSpriteSize();
             bool spriteMag = this_->vdp.isSpriteMag();
@@ -165,11 +165,9 @@ public:
             if (r14 != this_->vdp.ctx.reg[14]) {
                 this_->putlog("AddressCounter R#14: $%02X -> $%02X", r14, this_->vdp.ctx.reg[14]);
             }
-            /*
              if (ie0 != this_->vdp.isIE0()) {
-             this_->putlog("Change EI0: %s", ie0 ? "OFF" : "ON");
+             this_->putlog("Change IE0 enabled: %s", ie0 ? "OFF" : "ON");
              }
-             */
             if (ie1 != this_->vdp.isIE1()) {
                 this_->putlog("Change IE1 enabled: %s", ie1 ? "OFF" : "ON");
             }
