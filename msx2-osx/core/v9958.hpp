@@ -443,14 +443,14 @@ public:
          * =================================================
          */
         // rendering
-        int x = this->ctx.countH - 24;
-        int y = this->ctx.countV - 16;
+        int x = this->ctx.countH;
+        int y = this->ctx.countV;
         int x2 = x << 1;
         int scanline = y - this->getTopBorder() + this->getAdjustY();
         if (0 == scanline && 0 == x) {
             this->ctx.stat[2] &= 0b10111111; // clear VR flag
         }
-        if (0 <= y && y < 240 && 0 <= x && x < 284) {
+        if (y < 240 && x < 284) {
             auto renderPosition = &this->display[y * 568];
             if (0b00100 == this->getScreenMode()) {
                 renderPosition[x2] = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
@@ -459,15 +459,17 @@ public:
                 renderPosition[x2] = this->getBackdropColor();
                 renderPosition[x2 + 1] = renderPosition[x2];
             }
-            if (13 == x) {
-                this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
-            } else if (283 == x) {
+            if (283 == x) {
                 this->renderScanline(scanline, &renderPosition[13 * 2 - this->getAdjustX() * 2]);
-                this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
-                this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
             }
         }
-        if (215 == x) {
+
+        if (0 == x) {
+            this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
+        } else if (283 == x) {
+            this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
+            this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
+        } else if (200 == x) {
             int lineNumber = scanline - 1;
             if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
                 lineNumber += this->ctx.reg[23];
@@ -492,10 +494,10 @@ public:
 
         // increment H/V counter
         this->ctx.countH++;
-        if (342 == this->ctx.countH) {
+        if (342 <= this->ctx.countH) {
             this->ctx.countH = 0;
             this->ctx.countV++;
-            if (262 == this->ctx.countV) {
+            if (262 <= this->ctx.countV) {
                 this->ctx.counter++;
                 this->ctx.countV = 0;
                 this->detectBreak(this->arg);
@@ -524,7 +526,7 @@ public:
                 this->checkIRQ();
                 break;
             case 1:
-                this->ctx.stat[1] &= 0b11000000;
+                this->ctx.stat[1] &= this->isIE1() ? 0b11000000 : 0b11000001;
                 result |= 0b00000100;
                 this->checkIRQ();
                 break;
