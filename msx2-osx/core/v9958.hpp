@@ -522,13 +522,21 @@ public:
         unsigned char result = this->ctx.stat[sn];
         switch (sn) {
             case 0:
-                this->ctx.stat[0] &= 0b00011111;
-                this->checkIRQ();
+                if (result & 0x80) {
+                    this->ctx.stat[0] &= 0b00011111;
+                    this->checkIRQ();
+                } else {
+                    this->ctx.stat[0] &= 0b00011111;
+                }
                 break;
             case 1:
-                this->ctx.stat[1] &= this->isIE1() ? 0b11000000 : 0b11000001;
+                if (result & 0x01 && this->isIE1()) {
+                    this->ctx.stat[1] &= 0b11000000;
+                    this->checkIRQ();
+                } else {
+                    this->ctx.stat[1] &= 0b11000001;
+                }
                 result |= 0b00000100;
-                this->checkIRQ();
                 break;
             case 2:
                 result &= 0b01111110;
