@@ -77,6 +77,8 @@ public:
         unsigned char reverseVdpR9Bit5;
         unsigned char hardwareResetFlag;
         unsigned int counter;
+        unsigned char lineIE1;
+        unsigned char reserved[7];
     } ctx;
 
     void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value)) {
@@ -218,6 +220,8 @@ public:
     inline bool isIE0() { return ctx.reg[1] & 0b00100000 ? true : false; }
     inline bool isIE1() { return ctx.reg[0] & 0b00010000 ? true : false; }
     inline bool isIE2() { return ctx.reg[0] & 0b00100000 ? true : false; }
+    inline bool isF() { return this->ctx.stat[0] & 0x80 ? true : false; }
+    inline bool isFH() { return this->ctx.stat[1] & 0x01 ? true : false; }
     inline bool isEnabledMouse() { return ctx.reg[8] & 0b10000000 ? true : false; }
     inline bool isEnabledLightPen() { return ctx.reg[8] & 0b01000000 ? true : false; }
     inline bool isYAE() { return ctx.reg[25] & 0b00010000 ? true : false; }
@@ -227,8 +231,7 @@ public:
     inline int getOnTime() { return (ctx.reg[13] & 0xF0) >> 4; }
     inline int getOffTime() { return ctx.reg[13] & 0x0F; }
     inline int getSyncMode() { return (ctx.reg[9] & 0b00110000) >> 4; }
-    inline int getTopBorder() { return this->ctx.reg[9] & 0b10000000 ? 14 : 24; }
-    inline int getBottomBorder() { return this->ctx.reg[9] & 0b10000000 ? 10 : 20; }
+    inline int getTopBorder() { return this->ctx.reg[9] & 0b10000000 ? 16 : 26; }
     inline int getLineNumber() { return this->ctx.reg[9] & 0b10000000 ? 212 : 192; }
     inline int isInterlaceMode() { return this->ctx.reg[9] & 0b00001000 ? true : false; }
     inline int isEvenOrderMode() { return this->ctx.reg[9] & 0b00000100 ? true : false; }
@@ -447,10 +450,10 @@ public:
         int y = this->ctx.countV;
         int x2 = x << 1;
         int scanline = y - this->getTopBorder() + this->getAdjustY();
-        if (0 == scanline && 0 == x) {
-            this->ctx.stat[2] &= 0b10111111; // clear VR flag
-        }
         if (y < 240 && x < 284) {
+            if (0 == y && 0 == x) {
+                this->ctx.stat[2] &= 0b10111111; // clear VR flag
+            }
             auto renderPosition = &this->display[y * 568];
             if (0b00100 == this->getScreenMode()) {
                 renderPosition[x2] = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
@@ -459,42 +462,34 @@ public:
                 renderPosition[x2] = this->getBackdropColor();
                 renderPosition[x2 + 1] = renderPosition[x2];
             }
-            if (283 == x) {
+            if (0 == x) {
+                this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
+            } else if (283 == x) {
                 this->renderScanline(scanline, &renderPosition[13 * 2 - this->getAdjustX() * 2]);
-            }
-        }
-
-        if (0 == x) {
-            this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
-        } else if (283 == x) {
-            this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
-            this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
-        } else if (200 == x) {
-            int lineNumber = scanline - 1;
-            if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
-                lineNumber += this->ctx.reg[23];
-                lineNumber &= 0xFF;
-                if (lineNumber == this->ctx.reg[19]) {
-                    if (0 == (this->ctx.stat[1] & 0x01)) {
-                        this->ctx.stat[1] |= 0x01; // Set FH flag
-                        this->checkIRQ();
-                    }
-                }
-            }
-        }
- 
-        // VSYNC
-        if (0 == this->ctx.countH && scanline == this->getLineNumber()) {
-            this->ctx.stat[2] |= 0b01000000; // set VR flag
-            if (0 == (this->ctx.stat[0] & 0x80)) {
-                this->ctx.stat[0] |= 0x80; // set F flag
-                this->checkIRQ();
+                this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
             }
         }
 
         // increment H/V counter
         this->ctx.countH++;
         if (342 <= this->ctx.countH) {
+            this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
+            // HSYNC
+            if (scanline == this->ctx.lineIE1) {
+                if (!this->isFH()) {
+                    this->ctx.stat[1] |= 0x01; // Set FH flag
+                    this->checkIRQ();
+                }
+            }
+            // VSYNC
+            if (scanline == this->getLineNumber()) {
+                this->ctx.stat[2] |= 0b01000000; // set VR flag
+                if (!this->isF()) {
+                    this->ctx.stat[0] |= 0x80; // set F flag
+                    this->checkIRQ();
+                }
+            }
+            // Move to the next scanline
             this->ctx.countH = 0;
             this->ctx.countV++;
             if (262 <= this->ctx.countV) {
@@ -522,7 +517,8 @@ public:
         unsigned char result = this->ctx.stat[sn];
         switch (sn) {
             case 0:
-                if (result & 0x80) {
+                if (this->isF()) {
+                    //printf("%d: reset F\n",ctx.countV);
                     this->ctx.stat[0] &= 0b00011111;
                     this->checkIRQ();
                 } else {
@@ -530,7 +526,8 @@ public:
                 }
                 break;
             case 1:
-                if (result & 0x01 && this->isIE1()) {
+                if (this->isFH() && this->isIE1()) {
+                    //printf("%d: reset FH\n",ctx.countV);
                     this->ctx.stat[1] &= 0b11000000;
                     this->checkIRQ();
                 } else {
@@ -733,9 +730,11 @@ public:
     }
 
     inline void checkIRQ() {
-        if (this->isIE0() && this->ctx.stat[0] & 0x80) {
+        if (this->isIE0() && this->isF()) {
+            //printf("%d: Detect Interrupt (F=%d, FH=%d)\n",ctx.countV,isF()?1:0,isFH()?1:0);
             this->detectInterrupt(this->arg, 0);
-        } else if (this->isIE1() && this->ctx.stat[1] & 0x01) {
+        } else if (this->isIE1() && this->isFH()) {
+            //printf("%d: Detect Interrupt (F=%d, FH=%d)\n",ctx.countV,isF()?1:0,isFH()?1:0);
             this->detectInterrupt(this->arg, 1);
         } else {
             this->cancelInterrupt(this->arg);
@@ -779,6 +778,8 @@ public:
             debug.registerUpdateListener(debug.arg, rn, value);
         }
         this->ctx.reg[rn] = value;
+//if(0==rn)printf("%d: IE1=%s\n",ctx.countV,isIE1()?"on":"off");
+//if(1==rn)printf("%d: IE0=%s\n",ctx.countV,isIE0()?"on":"off");
         if (0 == rn && mod & 0x10) {
             this->checkIRQ();
         } else if (1 == rn && mod & 0x20) {
@@ -798,6 +799,12 @@ public:
             this->ctx.latch2 = 0;
         } else if (8 == rn) {
             this->ctx.reg[8] &= 0b00111111; // force disable mouse & light-pen
+        } else if (19 == rn) {
+            this->ctx.lineIE1 = (value - this->ctx.reg[23]) & 0xFF;
+            //printf("%d: R#%d val=%d, lineIE1=%d\n",ctx.countV,rn,value,this->ctx.lineIE1);
+        } else if (23 == rn) {
+            this->ctx.lineIE1 = (this->ctx.reg[19] - value) & 0xFF;
+            //printf("%d: R#%d val=%d, lineIE1=%d\n",ctx.countV,rn,value,this->ctx.lineIE1);
         }
     }
 
