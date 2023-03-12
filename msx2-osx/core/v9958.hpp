@@ -21,7 +21,7 @@ private:
     int colorMode;
     void* arg;
     void (*detectInterrupt)(void* arg, int ie);
-    void (*cancelInterrupt)(void* arg, int ie);
+    void (*cancelInterrupt)(void* arg);
     void (*detectBreak)(void* arg);
     inline int min(int a, int b) { return a < b ? a : b; }
     inline int max(int a, int b) { return a > b ? a : b; }
@@ -106,7 +106,7 @@ public:
         this->reset();
     }
 
-    void initialize(int colorMode, void* arg, void (*detectInterrupt)(void*, int), void (*cancelInterrupt)(void*, int), void (*detectBreak)(void*))
+    void initialize(int colorMode, void* arg, void (*detectInterrupt)(void*, int), void (*cancelInterrupt)(void*), void (*detectBreak)(void*))
     {
         this->colorMode = colorMode;
         this->arg = arg;
@@ -228,6 +228,7 @@ public:
     inline int getOffTime() { return ctx.reg[13] & 0x0F; }
     inline int getSyncMode() { return (ctx.reg[9] & 0b00110000) >> 4; }
     inline int getTopBorder() { return this->ctx.reg[9] & 0b10000000 ? 14 : 24; }
+    inline int getBottomBorder() { return this->ctx.reg[9] & 0b10000000 ? 10 : 20; }
     inline int getLineNumber() { return this->ctx.reg[9] & 0b10000000 ? 212 : 192; }
     inline int isInterlaceMode() { return this->ctx.reg[9] & 0b00001000 ? true : false; }
     inline int isEvenOrderMode() { return this->ctx.reg[9] & 0b00000100 ? true : false; }
@@ -472,20 +473,20 @@ public:
                 lineNumber += this->ctx.reg[23];
                 lineNumber &= 0xFF;
                 if (lineNumber == this->ctx.reg[19]) {
-                    this->ctx.stat[1] |= 0b00000001; // Set FH flag
-                    if (this->isIE1()) {
-                        this->detectInterrupt(this->arg, 1);
+                    if (0 == (this->ctx.stat[1] & 0x01)) {
+                        this->ctx.stat[1] |= 0x01; // Set FH flag
+                        this->checkIRQ();
                     }
                 }
             }
         }
  
         // VSYNC
-        if (0 == x && scanline == this->getLineNumber() + this->getTopBorder()) {
-            this->ctx.stat[0] |= 0b10000000; // set F flag
+        if (0 == this->ctx.countH && scanline == this->getLineNumber()) {
             this->ctx.stat[2] |= 0b01000000; // set VR flag
-            if (this->isIE0()) {
-                this->detectInterrupt(this->arg, 0);
+            if (0 == (this->ctx.stat[0] & 0x80)) {
+                this->ctx.stat[0] |= 0x80; // set F flag
+                this->checkIRQ();
             }
         }
 
@@ -520,10 +521,12 @@ public:
         switch (sn) {
             case 0:
                 this->ctx.stat[0] &= 0b00011111;
+                this->checkIRQ();
                 break;
             case 1:
                 this->ctx.stat[1] &= 0b11000000;
                 result |= 0b00000100;
+                this->checkIRQ();
                 break;
             case 2:
                 result &= 0b01111110;
@@ -719,6 +722,16 @@ public:
         return answer[0];
     }
 
+    inline void checkIRQ() {
+        if (this->isIE0() && this->ctx.stat[0] & 0x80) {
+            this->detectInterrupt(this->arg, 0);
+        } else if (this->isIE1() && this->ctx.stat[1] & 0x01) {
+            this->detectInterrupt(this->arg, 1);
+        } else {
+            this->cancelInterrupt(this->arg);
+        }
+    }
+
     inline void updateAddress()
     {
         this->ctx.addr = this->ctx.tmpAddr[1] & 0b00111111;
@@ -750,20 +763,17 @@ public:
 
     inline void updateRegister(int rn, unsigned char value)
     {
-        bool prevIE0 = this->isIE0();
         value &= this->regMask[rn];
+        unsigned char mod = this->ctx.reg[rn] ^ value;
         if (debug.registerUpdateListener) {
             debug.registerUpdateListener(debug.arg, rn, value);
         }
         this->ctx.reg[rn] = value;
-        if (1 == rn && this->ctx.stat[0] & 0x80) {
-            if (!prevIE0 && this->isIE0()) {
-                this->detectInterrupt(this->arg, 0);
-            } else if (prevIE0 && !this->isIE0()){
-                this->cancelInterrupt(this->arg, 0);
-            }
-        }
-        if (44 == rn && this->ctx.command && 0 == this->ctx.cmd.wait) {
+        if (0 == rn && mod & 0x10) {
+            this->checkIRQ();
+        } else if (1 == rn && mod & 0x20) {
+            this->checkIRQ();
+        } else if (44 == rn && this->ctx.command && 0 == this->ctx.cmd.wait) {
             switch (this->ctx.command) {
                 case 0b1111: this->executeCommandHMMC(false); break;
                 case 0b1011: this->executeCommandLMMC(false); break;
