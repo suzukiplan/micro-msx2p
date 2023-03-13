@@ -420,61 +420,50 @@ public:
                 case 0b0100: this->executeCommandPOINT(false); break;
             }
         }
+
         /*
-         * =================================================
-         * Pixel (horizontal) display timings:
-         *   Left blanking:   2Hz (skip)
-         *     Color burst:  14Hz (skip)
-         *   Left blanking:   8Hz (skip)
-         *     Left border:  13Hz (RENDER)
-         *  Active display: 256Hz (RENDER)
-         *    Right border:  15Hz (RENDER)
-         *  Right blanking:   8Hz (skip)
-         * Horizontal sync:  26Hz (skip)
-         *           Total: 342Hz (render: 284 pixels)
-         * =================================================
-         * Scanline (vertical) display timings:
-         *    Top blanking:  13 lines (skip)
-         *      Top border:   3 lines (skip)
-         *      Top border:  24 lines (RENDER)
-         *  Active display: 192 lines (RENDER)
-         *  Active display:  20 lines (RENDER / *212 line mode)
-         *   Bottom border:   4 lines (RENDER)
-         * Bottom blanking:   3 lines (skip)
-         *   Vertical sync:   3 lines (skip)
-         *           Total: 262 lines (render: 240 lines)
-         * =================================================
+         * Line Clocks: 1368Hz
+         * 1. Sync Right  100Hz
+         * 2. Left Erase 102Hz (202)
+         * 3. Left Border 56Hz (258)
+         * 4. Active Display 1024Hz (1282)
+         * 5. Right Border 59Hz (1341)
+         * 6. Right Erase 27Hz (1368)
          */
         // rendering
-        int x = this->ctx.countH;
-        int y = this->ctx.countV;
-        int x2 = x << 1;
-        int scanline = y - this->getTopBorder() + this->getAdjustY();
-        if (y < 240 && x < 284) {
-            if (0 == y && 0 == x) {
-                this->ctx.stat[2] &= 0b10111111; // clear VR flag
-            }
-            auto renderPosition = &this->display[y * 568];
-            if (0b00100 == this->getScreenMode()) {
-                renderPosition[x2] = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
-                renderPosition[x2 + 1] = this->palette[this->ctx.reg[7] & 0b00000011];
-            } else {
-                renderPosition[x2] = this->getBackdropColor();
-                renderPosition[x2 + 1] = renderPosition[x2];
-            }
-            if (0 == x) {
-                this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
-            } else if (283 == x) {
-                this->renderScanline(scanline, &renderPosition[13 * 2 - this->getAdjustX() * 2]);
-                this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
+        int x = this->ctx.countH - 202;
+        if (0 <= x && 0 == x % 4) {
+            x /= 4;
+            int y = this->ctx.countV;
+            int x2 = x << 1;
+            int scanline = y - this->getTopBorder() + this->getAdjustY();
+            if (y < 240 && x < 284) {
+                if (0 == y && 0 == x) {
+                    this->ctx.stat[2] &= 0b10111111; // clear VR flag
+                }
+                auto renderPosition = &this->display[y * 568];
+                if (0b00100 == this->getScreenMode()) {
+                    renderPosition[x2] = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
+                    renderPosition[x2 + 1] = this->palette[this->ctx.reg[7] & 0b00000011];
+                } else {
+                    renderPosition[x2] = this->getBackdropColor();
+                    renderPosition[x2 + 1] = renderPosition[x2];
+                }
+                if (0 == x) {
+                    this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
+                } else if (283 == x) {
+                    this->renderScanline(scanline, &renderPosition[13 * 2 - this->getAdjustX() * 2]);
+                    this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
+                }
             }
         }
 
         // increment H/V counter
         this->ctx.countH++;
-        if (342 <= this->ctx.countH) {
+        if (1368 <= this->ctx.countH) {
             this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
             // HSYNC
+            int scanline = this->ctx.countV - this->getTopBorder() + this->getAdjustY();
             if (scanline == this->ctx.lineIE1) {
                 if (!this->isFH()) {
                     this->ctx.stat[1] |= 0x01; // Set FH flag
@@ -737,6 +726,7 @@ public:
             //printf("%d: Detect Interrupt (F=%d, FH=%d)\n",ctx.countV,isF()?1:0,isFH()?1:0);
             this->detectInterrupt(this->arg, 1);
         } else {
+            //printf("%d: Cancel Interrupt\n",ctx.countV);
             this->cancelInterrupt(this->arg);
         }
     }
@@ -778,8 +768,8 @@ public:
             debug.registerUpdateListener(debug.arg, rn, value);
         }
         this->ctx.reg[rn] = value;
-//if(0==rn)printf("%d: IE1=%s\n",ctx.countV,isIE1()?"on":"off");
-//if(1==rn)printf("%d: IE0=%s\n",ctx.countV,isIE0()?"on":"off");
+        //if(0==rn)printf("%d: IE1=%s\n",ctx.countV,isIE1()?"on":"off");
+        //if(1==rn)printf("%d: IE0=%s\n",ctx.countV,isIE0()?"on":"off");
         if (0 == rn && mod & 0x10) {
             this->checkIRQ();
         } else if (1 == rn && mod & 0x20) {

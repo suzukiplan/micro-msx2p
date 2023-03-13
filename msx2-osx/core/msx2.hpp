@@ -15,7 +15,7 @@
 class MSX2 {
 private:
     const int CPU_CLOCK = 3579545;
-    const int VDP_CLOCK = 5370863;
+    const int VDP_CLOCK = 21504960;
     const int PSG_CLOCK = 44100;
     short soundBuffer[65536];
     unsigned short soundBufferCursor;
