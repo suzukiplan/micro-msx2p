@@ -437,7 +437,7 @@ public:
             int scanline = y - this->getTopBorder() + this->getAdjustY();
             if (y < 240 && x < 284) {
                 if (0 == y && 0 == x) {
-                    this->ctx.stat[2] &= 0b10111111; // clear VR flag
+                    this->ctx.stat[2] &= 0b10111111; // Reset VR flag (Vertical Active)
                 }
                 auto renderPosition = &this->display[y * 568];
                 if (0b00100 == this->getScreenMode()) {
@@ -470,7 +470,7 @@ public:
             this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
             // VSYNC
             if (this->ctx.countV - this->getTopBorder() + this->getAdjustY() == this->getLineNumber()) {
-                this->ctx.stat[2] |= 0b01000000; // set VR flag
+                this->ctx.stat[2] |= 0b01000000; // set VR flag (Vertical Blanking)
                 if (!this->isF()) {
                     this->ctx.stat[0] |= 0x80; // set F flag
                     this->checkIRQ();
