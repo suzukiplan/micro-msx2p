@@ -423,17 +423,15 @@ public:
 
         /*
          * Line Clocks: 1368Hz
-         * 1. Sync Right  100Hz
-         * 2. Left Erase 102Hz (202)
-         * 3. Left Border 56Hz (258)
-         * 4. Active Display 1024Hz (1282)
-         * 5. Right Border 59Hz (1341)
-         * 6. Right Erase 27Hz (1368)
+         * 1. Active Display 1024Hz
+         * 2. Right Border 59Hz
+         * 3. Right Erase 27Hz
+         * 4. Sync Right  100Hz (1110)
+         * 5. Left Erase 102Hz
+         * 6. Left Border 56Hz
          */
-        // rendering
-        int x = this->ctx.countH - 202;
-        if (0 <= x && 0 == x % 4) {
-            x /= 4;
+        if (0 == this->ctx.countH % 4) {
+            int x = this->ctx.countH / 4;
             int y = this->ctx.countV;
             int x2 = x << 1;
             int scanline = y - this->getTopBorder() + this->getAdjustY();
@@ -460,28 +458,29 @@ public:
 
         // increment H/V counter
         this->ctx.countH++;
-        if (1368 <= this->ctx.countH) {
-            this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
+        if (798 == this->ctx.countH) {
             // HSYNC
-            int scanline = this->ctx.countV - this->getTopBorder() + this->getAdjustY();
-            if (scanline == this->ctx.lineIE1) {
+            if (this->ctx.countV - this->getTopBorder() + this->getAdjustY() - 1 == this->ctx.lineIE1) {
                 if (!this->isFH()) {
                     this->ctx.stat[1] |= 0x01; // Set FH flag
                     this->checkIRQ();
                 }
             }
+        } else if (1110 == this->ctx.countH) {
+            this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
             // VSYNC
-            if (scanline == this->getLineNumber()) {
+            if (this->ctx.countV - this->getTopBorder() + this->getAdjustY() == this->getLineNumber()) {
                 this->ctx.stat[2] |= 0b01000000; // set VR flag
                 if (!this->isF()) {
                     this->ctx.stat[0] |= 0x80; // set F flag
                     this->checkIRQ();
                 }
             }
+        } else if (1368 == this->ctx.countH) {
             // Move to the next scanline
             this->ctx.countH = 0;
             this->ctx.countV++;
-            if (262 <= this->ctx.countV) {
+            if (262 == this->ctx.countV) {
                 this->ctx.counter++;
                 this->ctx.countV = 0;
                 this->detectBreak(this->arg);
