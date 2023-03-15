@@ -431,11 +431,11 @@ public:
          * 6. Right Erase 27Hz
          */
         if (0 == this->ctx.countH % 4) {
-            int x = this->ctx.countH / 4;
+            int x = (this->ctx.countH - 202) / 4;
             int y = this->ctx.countV;
-            int x2 = x << 1;
-            int scanline = y - this->getTopBorder() + this->getAdjustY();
-            if (y < 240 && x < 284) {
+            if (y < 240 && 0 <= x && x < 284) {
+                int x2 = x << 1;
+                int scanline = y - this->getTopBorder() + this->getAdjustY();
                 if (0 == y && 0 == x) {
                     this->ctx.stat[2] &= 0b10111111; // Reset VR flag (Vertical Active)
                 }
@@ -458,7 +458,7 @@ public:
 
         // increment H/V counter
         this->ctx.countH++;
-        if (798 == this->ctx.countH) {
+        if (912 == this->ctx.countH) {
             // HSYNC
             if (this->ctx.countV - this->getTopBorder() + this->getAdjustY() - 1 == this->ctx.lineIE1) {
                 if (!this->isFH()) {
@@ -466,7 +466,7 @@ public:
                     this->checkIRQ();
                 }
             }
-        } else if (1110 == this->ctx.countH) {
+        } else if (1341 == this->ctx.countH) {
             this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
             // VSYNC
             if (this->ctx.countV - this->getTopBorder() + this->getAdjustY() == this->getLineNumber()) {
