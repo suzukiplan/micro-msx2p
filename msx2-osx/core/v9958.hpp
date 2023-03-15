@@ -423,12 +423,12 @@ public:
 
         /*
          * Line Clocks: 1368Hz
-         * 1. Active Display 1024Hz
-         * 2. Right Border 59Hz
-         * 3. Right Erase 27Hz
-         * 4. Sync Right  100Hz (1110)
-         * 5. Left Erase 102Hz
-         * 6. Left Border 56Hz
+         * 1. Sync Right  100Hz
+         * 2. Left Erase 102Hz
+         * 3. Left Border 56Hz
+         * 4. Active Display 1024Hz
+         * 5. Right Border 59Hz
+         * 6. Right Erase 27Hz
          */
         if (0 == this->ctx.countH % 4) {
             int x = this->ctx.countH / 4;
@@ -769,6 +769,7 @@ public:
         this->ctx.reg[rn] = value;
         //if(0==rn)printf("%d: IE1=%s\n",ctx.countV,isIE1()?"on":"off");
         //if(1==rn)printf("%d: IE0=%s\n",ctx.countV,isIE0()?"on":"off");
+        //if(15==rn)printf("%d: R#15 val=%d\n",ctx.countV,value);
         if (0 == rn && mod & 0x10) {
             this->checkIRQ();
         } else if (1 == rn && mod & 0x20) {
@@ -1786,21 +1787,14 @@ public:
         this->ctx.reg[42] = min & 0xFF;
     }
 
-    inline int getEQ() {
-        return this->ctx.reg[45] & 0b00000010 ? 1 : 0;
-    }
-
-    inline int getDIX() {
-        return this->ctx.reg[45] & 0b00000100 ? -1 : 1;
-    }
-
-    inline int getDIY() {
-        return this->ctx.reg[45] & 0b00001000 ? -1 : 1;
-    }
-
+    inline int getEQ() { return this->ctx.reg[45] & 0b00000010 ? 1 : 0; }
+    inline int getDIX() { return this->ctx.reg[45] & 0b00000100 ? -1 : 1; }
+    inline int getDIY() { return this->ctx.reg[45] & 0b00001000 ? -1 : 1; }
     inline int abs(int n) { return n < 0 ? -n : n; }
+    inline void setCommandEnd() { this->ctx.command = 0; }
+    inline void addCommandWait(int wait) { this->ctx.cmd.wait += wait; }
 
-    inline void commandMoveD() {
+    inline void commandMoveD(int waitY) {
         this->ctx.cmd.dx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
         if (this->ctx.cmd.nx <= 0 || 512 <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0) {
@@ -1814,11 +1808,13 @@ public:
                 this->setNX(this->ctx.cmd.nx);
                 this->setNY(this->ctx.cmd.ny);
                 this->setCommandEnd();
+            } else {
+                this->addCommandWait(waitY);
             }
         }
     }
 
-    inline void commandMoveS() {
+    inline void commandMoveS(int waitY) {
         this->ctx.cmd.sx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
         if (this->ctx.cmd.nx <= 0 || 512 <= this->ctx.cmd.sx || this->ctx.cmd.sx < 0) {
@@ -1832,11 +1828,13 @@ public:
                 this->setNX(this->ctx.cmd.nx);
                 this->setNY(this->ctx.cmd.ny);
                 this->setCommandEnd();
+            } else {
+                this->addCommandWait(waitY);
             }
         }
     }
 
-    inline void commandMoveDS() {
+    inline void commandMoveDS(int waitY) {
         this->ctx.cmd.dx += this->ctx.cmd.dix;
         this->ctx.cmd.sx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
@@ -1855,34 +1853,10 @@ public:
                 this->setNX(this->ctx.cmd.nx);
                 this->setNY(this->ctx.cmd.ny);
                 this->setCommandEnd();
+            } else {
+                this->addCommandWait(waitY);
             }
         }
-    }
-
-    inline void commandMoveDSY() {
-        this->ctx.cmd.dx += this->ctx.cmd.dix;
-        if (512 <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0) {
-            this->ctx.cmd.dx = this->getDX();
-            this->ctx.cmd.nx = this->getNX();
-            this->ctx.cmd.dy += this->ctx.cmd.diy;
-            this->ctx.cmd.sy += this->ctx.cmd.diy;
-            this->ctx.cmd.ny--;
-            if (this->ctx.cmd.ny <= 0 || 1024 <= this->ctx.cmd.dy || this->ctx.cmd.dy < 0 || 1024 <= this->ctx.cmd.sy || this->ctx.cmd.sy < 0) {
-                this->setDX(this->ctx.cmd.dx);
-                this->setDY(this->ctx.cmd.dy);
-                this->setSY(this->ctx.cmd.sy);
-                this->setNY(this->ctx.cmd.ny);
-                this->setCommandEnd();
-            }
-        }
-    }
-
-    inline void setCommandEnd() {
-        this->ctx.command = 0;
-    }
-
-    inline void setCommandWait() {
-        this->ctx.cmd.wait = 24;
     }
 
     inline void executeCommandHMMC(bool setup)
@@ -1902,13 +1876,12 @@ public:
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = dpb * this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<HMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, VAL=$%02X (SCREEN: %d)\n", ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, ctx.reg[44], getScreenMode());
+            printf("%d: ExecuteCommand<HMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, VAL=$%02X (SCREEN: %d)\n", ctx.countV, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, ctx.reg[44], getScreenMode());
 #endif
         }
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->ctx.ram[addr] = this->ctx.reg[44];
-        this->commandMoveD();
-        this->setCommandWait();
+        this->commandMoveD(0);
     }
 
     inline void executeCommandYMMM(bool setup)
@@ -1928,14 +1901,30 @@ public:
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = dpb * this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<YMMM>: SY=%d, DX=%d, DY=%d, NY=%d, DIX=%d, DIY=%d (SCREEN: %d)\n", ctx.cmd.sy, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, getScreenMode());
+            printf("%d: ExecuteCommand<YMMM>: SY=%d, DX=%d, DY=%d, NY=%d, DIX=%d, DIY=%d (SCREEN: %d)\n", ctx.countV, ctx.cmd.sy, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, getScreenMode());
 #endif
         }
         int addrS = this->ctx.cmd.dx / dpb + this->ctx.cmd.sy * lineBytes;
         int addrD = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
-        this->ctx.ram[addrD] = this->ctx.ram[addrS];
-        this->commandMoveDSY();
-        this->setCommandWait();
+        unsigned char d = this->ctx.ram[addrS];
+        this->addCommandWait(40);
+        this->ctx.ram[addrD] = d;
+        this->addCommandWait(24);
+        this->ctx.cmd.dx += this->ctx.cmd.dix;
+        if (512 <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0) {
+            this->ctx.cmd.dx = this->getDX();
+            this->ctx.cmd.nx = this->getNX();
+            this->ctx.cmd.dy += this->ctx.cmd.diy;
+            this->ctx.cmd.sy += this->ctx.cmd.diy;
+            this->ctx.cmd.ny--;
+            if (this->ctx.cmd.ny <= 0 || 1024 <= this->ctx.cmd.dy || this->ctx.cmd.dy < 0 || 1024 <= this->ctx.cmd.sy || this->ctx.cmd.sy < 0) {
+                this->setDX(this->ctx.cmd.dx);
+                this->setDY(this->ctx.cmd.dy);
+                this->setSY(this->ctx.cmd.sy);
+                this->setNY(this->ctx.cmd.ny);
+                this->setCommandEnd();
+            }
+        }
     }
 
     inline void executeCommandHMMM(bool setup)
@@ -1957,14 +1946,16 @@ public:
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = dpb * this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<HMMM>: SX=%d, SY=%d, DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d (SCREEN: %d)\n", ctx.cmd.sx, ctx.cmd.sy, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, getScreenMode());
+            printf("%d: ExecuteCommand<HMMM>: SX=%d, SY=%d, DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d (SCREEN: %d)\n", ctx.countV, ctx.cmd.sx, ctx.cmd.sy, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, getScreenMode());
 #endif
         }
         int addrS = this->ctx.cmd.sx / dpb + this->ctx.cmd.sy * lineBytes;
         int addrD = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
-        this->ctx.ram[addrD] = this->ctx.ram[addrS];
-        this->commandMoveDS();
-        this->setCommandWait();
+        unsigned char d = this->ctx.ram[addrS];
+        this->addCommandWait(64);
+        this->ctx.ram[addrD] = d;
+        this->addCommandWait(24);
+        this->commandMoveDS(64);
     }
 
     inline void executeCommandHMMV(bool setup)
@@ -1984,13 +1975,13 @@ public:
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = dpb * this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<HMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, CLR=$%02X (SCREEN: %d)\n", ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, this->ctx.reg[44], getScreenMode());
+            printf("%d: ExecuteCommand<HMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, CLR=$%02X (SCREEN: %d)\n", ctx.countV, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, this->ctx.reg[44], getScreenMode());
 #endif
         }
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->ctx.ram[addr & 0x1FFFF] = this->ctx.reg[44];
-        this->commandMoveD();
-        this->setCommandWait();
+        this->addCommandWait(48);
+        this->commandMoveD(56);
     }
 
     inline unsigned char readLogicalPixel(int addr, int dpb, int sx) {
@@ -2109,13 +2100,12 @@ public:
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<LMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, VAL=$%02X, LO=%X (SCREEN: %d)\n", ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, ctx.reg[44], ctx.commandL, getScreenMode());
+            printf("%d: ExecuteCommand<LMMC>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, VAL=$%02X, LO=%X (SCREEN: %d)\n", ctx.countV, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, ctx.reg[44], ctx.commandL, getScreenMode());
 #endif
         }
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         renderLogicalPixel(addr, dpb, this->ctx.cmd.dx, this->ctx.reg[44], this->ctx.commandL);
-        this->commandMoveD();
-        this->setCommandWait();
+        this->commandMoveD(0);
     }
 
     inline void executeCommandLMCM(bool setup)
@@ -2134,13 +2124,13 @@ public:
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<LMCM>: SX=%d, SY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, LO=%X (SCREEN: %d)\n", ctx.cmd.sx, ctx.cmd.sy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, ctx.commandL, getScreenMode());
+            printf("%d: ExecuteCommand<LMCM>: SX=%d, SY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, LO=%X (SCREEN: %d)\n", ctx.countV, ctx.cmd.sx, ctx.cmd.sy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, ctx.commandL, getScreenMode());
 #endif
         }
         int addr = this->ctx.cmd.sx / dpb + this->ctx.cmd.sy * lineBytes;
         this->ctx.stat[7] = this->readLogicalPixel(addr, dpb, ctx.cmd.sx);
-        this->commandMoveS();
-        this->setCommandWait();
+        this->addCommandWait(72);
+        this->commandMoveS(64);
     }
 
     inline void executeCommandLMMM(bool setup)
@@ -2162,14 +2152,17 @@ public:
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<LMMM>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, LO=%d (SCREEN: %d)\n", ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, ctx.commandL, getScreenMode());
+            printf("%d: ExecuteCommand<LMMM>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, LO=%d (SCREEN: %d)\n", ctx.countV, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, ctx.commandL, getScreenMode());
 #endif
         }
         int addrS = this->ctx.cmd.sx / dpb + this->ctx.cmd.sy * lineBytes;
         int addrD = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
-        this->renderLogicalPixel(addrD, dpb, this->ctx.cmd.dx, this->readLogicalPixel(addrS, dpb, ctx.cmd.sx), ctx.commandL);
-        this->commandMoveDS();
-        this->setCommandWait();
+        unsigned char d = this->readLogicalPixel(addrS, dpb, ctx.cmd.sx);
+        this->addCommandWait(64);
+        this->renderLogicalPixel(addrD, dpb, this->ctx.cmd.dx, d, ctx.commandL);
+        this->addCommandWait(32);
+        this->addCommandWait(24);
+        this->commandMoveDS(64);
     }
 
     inline void executeCommandLMMV(bool setup)
@@ -2189,13 +2182,14 @@ public:
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<LMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, CLR=$%02X, LO=$%02X (SCREEN: %d)\n", ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, this->ctx.reg[44], ctx.commandL, getScreenMode());
+            printf("%d: ExecuteCommand<LMMV>: DX=%d, DY=%d, NX=%d, NY=%d, DIX=%d, DIY=%d, CLR=$%02X, LO=$%02X (SCREEN: %d)\n", ctx.countV, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.nx, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, this->ctx.reg[44], ctx.commandL, getScreenMode());
 #endif
         }
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->renderLogicalPixel(addr, dpb, this->ctx.cmd.dx, this->ctx.reg[44], ctx.commandL);
-        this->commandMoveD();
-        this->setCommandWait();
+        this->addCommandWait(72);
+        this->addCommandWait(24);
+        this->commandMoveD(64);
     }
 
     inline void executeCommandLINE(bool setup)
@@ -2212,15 +2206,18 @@ public:
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<LINE>: DX=%d, DY=%d, Maj=%d, Min=%d, DIX=%d, DIY=%d, MAJ=%s, CLR=$%02X, LO=%X (SCREEN: %d)\n", ctx.cmd.dx, ctx.cmd.dy, (int)ctx.cmd.maj, (int)ctx.cmd.min, ctx.cmd.dix, ctx.cmd.diy, this->ctx.reg[45] & 1 ? "Y" : "X", this->ctx.reg[44], ctx.commandL, getScreenMode());
+            printf("%d: ExecuteCommand<LINE>: DX=%d, DY=%d, Maj=%d, Min=%d, DIX=%d, DIY=%d, MAJ=%s, CLR=$%02X, LO=%X (SCREEN: %d)\n", ctx.countV, ctx.cmd.dx, ctx.cmd.dy, (int)ctx.cmd.maj, (int)ctx.cmd.min, ctx.cmd.dix, ctx.cmd.diy, this->ctx.reg[45] & 1 ? "Y" : "X", this->ctx.reg[44], ctx.commandL, getScreenMode());
 #endif
         }
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->renderLogicalPixel(addr, dpb, this->ctx.cmd.dx, this->ctx.reg[44], ctx.commandL);
+        this->addCommandWait(84);
+        this->addCommandWait(24);
         if (0 < this->ctx.cmd.maj) {
             this->ctx.cmd.maj--;
             if (this->ctx.reg[45] & 1) {
                 this->ctx.cmd.dy += this->ctx.cmd.diy;
+                this->addCommandWait(32);
             } else {
                 this->ctx.cmd.dx += this->ctx.cmd.dix;
             }
@@ -2232,6 +2229,7 @@ public:
                         this->ctx.cmd.dx += this->ctx.cmd.dix;
                     } else {
                         this->ctx.cmd.dy += this->ctx.cmd.diy;
+                        this->addCommandWait(32);
                     }
                 }
             }
@@ -2242,7 +2240,6 @@ public:
             this->setMIN(this->ctx.cmd.min);
             this->setCommandEnd();
         }
-        this->setCommandWait();
     }
 
     inline void executeCommandSRCH(bool setup)
@@ -2254,7 +2251,7 @@ public:
             this->ctx.cmd.sy = this->getSY();
             this->ctx.cmd.dix = this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<SRCH>: SX=%d, SY=%d, CLR=%d, DIX=%d, EQ=%d (SCREEN: %d)\n", this->ctx.cmd.sx, this->ctx.cmd.sy, this->ctx.reg[44], this->ctx.cmd.dix, this->ctx.cmd.diy, getScreenMode());
+            printf("%d: ExecuteCommand<SRCH>: SX=%d, SY=%d, CLR=%d, DIX=%d, EQ=%d (SCREEN: %d)\n", ctx.countV, this->ctx.cmd.sx, this->ctx.cmd.sy, this->ctx.reg[44], this->ctx.cmd.dix, this->ctx.cmd.diy, getScreenMode());
 #endif
         }
         if (0 <= this->ctx.cmd.sx && this->ctx.cmd.sx < 512) {
@@ -2273,7 +2270,6 @@ public:
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
                     this->setSX(this->ctx.cmd.sx);
                     this->setCommandEnd();
-                    this->setCommandWait();
                     return;
                 }
             } else {
@@ -2283,7 +2279,6 @@ public:
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
                     this->setSX(this->ctx.cmd.sx);
                     this->setCommandEnd();
-                    this->setCommandWait();
                     return;
                 }
             }
@@ -2292,8 +2287,8 @@ public:
             this->ctx.stat[2] &= 0b11101111;
             this->setSX(this->ctx.cmd.sx);
             this->setCommandEnd();
-            this->setCommandWait();
         }
+        this->addCommandWait(64);
     }
 
     inline void executeCommandPSET(bool setup)
@@ -2304,13 +2299,13 @@ public:
             this->ctx.cmd.dx = this->getDX();
             this->ctx.cmd.dy = this->getDY();
 #ifdef COMMAND_DEBUG
-            printf("ExecuteCommand<PSET>: DX=%d, DY=%d, CLR=$%02X, LO=%X (SCREEN: %d)\n", ctx.cmd.dx, ctx.cmd.dy, ctx.reg[44], ctx.commandL, getScreenMode());
+            printf("%d: ExecuteCommand<PSET>: DX=%d, DY=%d, CLR=$%02X, LO=%X (SCREEN: %d)\n", ctx.countV, ctx.cmd.dx, ctx.cmd.dy, ctx.reg[44], ctx.commandL, getScreenMode());
 #endif
         }
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->renderLogicalPixel(addr, dpb, this->ctx.cmd.dx, this->ctx.reg[44], ctx.commandL);
         this->setCommandEnd();
-        this->setCommandWait();
+        this->addCommandWait(64);
     }
 
     inline void executeCommandPOINT(bool setup)
