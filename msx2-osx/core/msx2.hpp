@@ -346,6 +346,11 @@ public:
         initKeyCode(0xF3, 7, 6); // f3
         initKeyCode(0xF4, 0, 7); // f4
         initKeyCode(0xF5, 1, 7); // f5
+        initKeyCode(0xF6, 5, 6, true); // f6
+        initKeyCode(0xF7, 6, 6, true); // f7
+        initKeyCode(0xF8, 7, 6, true); // f8
+        initKeyCode(0xF9, 0, 7, true); // f9
+        initKeyCode(0xFA, 1, 7, true); // f10
         this->reset();
     }
     
