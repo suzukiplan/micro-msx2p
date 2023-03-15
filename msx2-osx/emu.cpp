@@ -17,6 +17,13 @@ pthread_mutex_t sound_locker;
 static short sound_buffer[65536 * 2];
 static unsigned short sound_cursor;
 
+static struct TypeWriter {
+    char buf[65536];
+    int index;
+    int size;
+    int wait;
+} tw;
+
 extern "C" void emu_init_bios(const void* main,
                               const void* sub,
                               const void* disk,
@@ -208,7 +215,27 @@ extern "C" void emu_vsync()
         spu = vgsspu_start2(44100, 16, 2, 23520, sound_callback);
         initialized = true;
     }
-    msx2.tick(emu_key, 0, emu_keycode);
+    if (0 < tw.size) {
+        if (tw.wait) {
+            if (msx2.ctx.readKey < 1) {
+                msx2.tick(0, 0, tw.buf[tw.index]);
+            } else {
+                msx2.tick(0, 0, 0);
+                tw.wait++;
+                if (3 <= tw.wait) {
+                    tw.wait = 0;
+                    tw.index++;
+                    tw.size--;
+                }
+            }
+        } else {
+            msx2.ctx.readKey = 0;
+            msx2.tick(0, 0, tw.buf[tw.index]);
+            tw.wait = 1;
+        }
+    } else {
+        msx2.tick(emu_key, 0, emu_keycode);
+    }
     memcpy(emu_vram, msx2.vdp.display, sizeof(emu_vram));
     
     size_t pcmSize;
@@ -622,4 +649,17 @@ const void* emu_getBitmapVRAM(size_t* size) {
             printf("Unsupported screen mode: %d\n", screenMode);
     }
     return nullptr;
+}
+
+const void emu_startTypeWriter(const char* text)
+{
+    tw.size = (int)strlen(text);
+    if (65536 <= tw.size) {
+        tw.size = 0;
+        return;
+    }
+    memcpy(tw.buf, text, tw.size);
+    tw.index = 0;
+    tw.wait = 0;
+    msx2.ctx.readKey = 0;
 }

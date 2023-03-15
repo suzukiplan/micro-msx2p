@@ -51,7 +51,8 @@ public:
     struct Context {
         unsigned char io[256];
         unsigned char key;
-        unsigned char reserved[3];
+        unsigned char readKey;
+        unsigned char reserved[2];
     } ctx;
     
     ~MSX2() {
@@ -503,6 +504,7 @@ public:
                         }
                     }
                     if ((this->ctx.io[0xAA] & 0x0F) == this->keyCodes[this->ctx.key].y) {
+                        this->ctx.readKey++;
                         result |= bit[this->keyCodes[this->ctx.key].x];
                     }
                 }

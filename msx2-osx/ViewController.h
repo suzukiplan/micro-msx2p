@@ -21,5 +21,6 @@
 -(IBAction)menuSaveVramBitmap:(id)sender;
 -(IBAction)menuSaveSpritePattern:(id)sender;
 -(IBAction)menuPause:(id)sender;
+-(IBAction)menuTypeFromClipboard:(id)sender;
 @end
 

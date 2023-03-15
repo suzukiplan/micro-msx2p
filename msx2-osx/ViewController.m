@@ -288,6 +288,15 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     }
 }
 
+-(IBAction)menuTypeFromClipboard:(id)sender
+{
+    NSLog(@"menuTypeFromClipboard");
+    NSString* str = [[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString];
+    if (str) {
+        emu_startTypeWriter(str.UTF8String);
+    }
+}
+
 - (void)_saveData:(NSData*)data type:(SaveFileType)type
 {
     [_video pauseWithCompletionHandler:^{

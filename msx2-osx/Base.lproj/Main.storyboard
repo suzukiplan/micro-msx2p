@@ -121,7 +121,7 @@
                                                 <action selector="menuSaveVramBitmap:" target="Ady-hI-5gd" id="wtg-jT-3zZ"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Save Sprite Pattern" keyEquivalent="p" id="URz-nq-hv5">
+                                        <menuItem title="Save Sprite Pattern" keyEquivalent="g" id="URz-nq-hv5">
                                             <connections>
                                                 <action selector="menuSaveSpritePattern:" target="Ady-hI-5gd" id="GIo-Hp-STo"/>
                                             </connections>
@@ -136,6 +136,11 @@
                                         <menuItem title="Pause / Resume" keyEquivalent="p" id="Cmp-Z1-hyl">
                                             <connections>
                                                 <action selector="menuPause:" target="Ady-hI-5gd" id="mDt-n4-eyt"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Type from Clipboard" keyEquivalent="v" id="9MY-ig-D2e">
+                                            <connections>
+                                                <action selector="menuTypeFromClipboard:" target="Ady-hI-5gd" id="hLh-P0-6gh"/>
                                             </connections>
                                         </menuItem>
                                     </items>
