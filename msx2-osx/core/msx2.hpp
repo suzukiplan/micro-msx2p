@@ -24,19 +24,31 @@ private:
     size_t quickSaveBufferSize;
     
     struct KeyCode {
+        int num;
         bool exist;
-        int x;
-        int y;
+        int x[2];
+        int y[2];
         bool shift;
     } keyCodes[0x100];
     
     void initKeyCode(unsigned char code, int x, int y, bool shift = false) {
         keyCodes[code].exist = true;
-        keyCodes[code].x = x;
-        keyCodes[code].y = y;
+        keyCodes[code].x[0] = x;
+        keyCodes[code].y[0] = y;
         keyCodes[code].shift = shift;
+        keyCodes[code].num = 1;
     }
-    
+
+    void initKeyCode2(unsigned char code, int x1, int y1, int x2, int y2, bool shift = false) {
+        keyCodes[code].exist = true;
+        keyCodes[code].x[0] = x1;
+        keyCodes[code].y[0] = y1;
+        keyCodes[code].x[1] = x2;
+        keyCodes[code].y[1] = y2;
+        keyCodes[code].shift = shift;
+        keyCodes[code].num = 2;
+    }
+
 public:
     Z80* cpu;
     MSX2MMU mmu;
@@ -340,6 +352,7 @@ public:
         initKeyCode('\r', 7, 7);
         initKeyCode('\n', 7, 7);
         initKeyCode(' ', 0, 8);
+        initKeyCode2(0x18, 1, 6, 4, 7); // CTRL + STOP
         initKeyCode(0x1B, 2, 7); // ESC
         initKeyCode(0x7F, 5, 7); // DEL as Back Space
         initKeyCode(0xF1, 5, 6); // f1
@@ -503,9 +516,11 @@ public:
                             result |= bit[0];
                         }
                     }
-                    if ((this->ctx.io[0xAA] & 0x0F) == this->keyCodes[this->ctx.key].y) {
-                        this->ctx.readKey++;
-                        result |= bit[this->keyCodes[this->ctx.key].x];
+                    for (int i = 0; i < this->keyCodes[this->ctx.key].num; i++) {
+                        if ((this->ctx.io[0xAA] & 0x0F) == this->keyCodes[this->ctx.key].y[i]) {
+                            this->ctx.readKey++;
+                            result |= bit[this->keyCodes[this->ctx.key].x[i]];
+                        }
                     }
                 }
                 return ~result;

@@ -133,6 +133,12 @@
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" title="Application" id="yU2-xe-Duw">
                                     <items>
+                                        <menuItem title="CTRL+STOP" keyEquivalent="c" id="If3-nc-cQk">
+                                            <modifierMask key="keyEquivalentModifierMask" control="YES"/>
+                                            <connections>
+                                                <action selector="menuStop:" target="Ady-hI-5gd" id="oal-TD-ewH"/>
+                                            </connections>
+                                        </menuItem>
                                         <menuItem title="Pause / Resume" keyEquivalent="p" id="Cmp-Z1-hyl">
                                             <connections>
                                                 <action selector="menuPause:" target="Ady-hI-5gd" id="mDt-n4-eyt"/>

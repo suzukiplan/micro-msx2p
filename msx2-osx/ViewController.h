@@ -20,6 +20,7 @@
 -(IBAction)menuSaveVramDump:(id)sender;
 -(IBAction)menuSaveVramBitmap:(id)sender;
 -(IBAction)menuSaveSpritePattern:(id)sender;
+-(IBAction)menuStop:(id)sender;
 -(IBAction)menuPause:(id)sender;
 -(IBAction)menuTypeFromClipboard:(id)sender;
 @end

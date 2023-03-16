@@ -275,6 +275,12 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     }];
 }
 
+-(IBAction)menuStop:(id)sender
+{
+    static char stop[2] = { 0x18, 0x00 };
+    emu_startTypeWriter(stop);
+}
+
 - (IBAction)menuPause:(id)sender
 {
     if (_video.pausing) {
