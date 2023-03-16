@@ -2263,7 +2263,7 @@ public:
                 clr &= 0x03;
             }
             unsigned char px = this->readLogicalPixel(addr, dpb, this->ctx.cmd.sx);
-            if (this->getEQ()) {
+            if (!this->getEQ()) {
                 if (px == clr) {
                     this->ctx.stat[2] |= 0b00010000;
                     this->ctx.stat[8] = this->ctx.cmd.sx & 0xFF;
