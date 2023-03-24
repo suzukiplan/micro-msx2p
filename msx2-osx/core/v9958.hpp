@@ -345,6 +345,7 @@ public:
     inline int getPatternGeneratorAddress() {
         switch (this->getScreenMode()) {
             case 0b00000: // GRAPHIC1
+            case 0b10000: // TEXT1
                 return (this->ctx.reg[4] & 0b00111111) << 11;
             case 0b00001: // GRAPHIC2
             case 0b00010: // GRAPHIC3
@@ -835,6 +836,9 @@ public:
                     case 0b00111: // GRAPHIC7
                         this->renderScanlineModeG7(lineNumber, renderPosition);
                         break;
+                    case 0b10000: // TEXT1
+                        this->renderScanlineModeT1(lineNumber, renderPosition);
+                        break;
                     case 0b11000: // ???
                     case 0b11011: // ???
                         break;
@@ -1142,6 +1146,31 @@ public:
             }
         }
         renderSpritesMode2(lineNumber, renderPosition);
+    }
+
+    inline void renderScanlineModeT1(int lineNumber, unsigned short* renderPosition)
+    {
+        int pn = this->getNameTableAddress();
+        int pg = this->getPatternGeneratorAddress();
+        int lineNumberS = (lineNumber + this->ctx.reg[23]) & 0xFF;
+        int lineNumberMod8 = lineNumberS & 0b111;
+        unsigned char* nam = &this->ctx.ram[pn + lineNumberS / 8 * 40];
+        int cur = 0;
+        for (int i = 0; i < 40; i++) {
+            unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + lineNumberMod8];
+            this->renderPixel2(&renderPosition[cur], ptn & 0b10000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], ptn & 0b01000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], ptn & 0b00100000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], ptn & 0b00010000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], ptn & 0b00001000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            cur += 2;
+            this->renderPixel2(&renderPosition[cur], ptn & 0b00000100 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            cur += 2;
+        }
     }
 
     inline void renderSpritesMode1(int lineNumber, unsigned short* renderPosition)
