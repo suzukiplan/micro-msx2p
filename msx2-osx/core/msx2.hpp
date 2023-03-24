@@ -14,7 +14,7 @@
 
 class MSX2 {
 private:
-    const int CPU_CLOCK = 3579545;
+    const int CPU_CLOCK = 3584160;
     const int VDP_CLOCK = 21504960;
     const int PSG_CLOCK = 44100;
     short soundBuffer[65536];
@@ -82,6 +82,7 @@ public:
         }, [](void* arg, unsigned short port, unsigned char value) {
             ((MSX2*)arg)->outPort((unsigned char) port, value);
         }, this, false);
+        this->cpu->wtc.fetch = 1;
         this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
         this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
             //((MSX2*)arg)->putlog("Detect IE%d (vf:%d, hf:%d)", ie, ((MSX2*)arg)->vdp.ctx.stat[0] & 0x80 ? 1 : 0,((MSX2*)arg)->vdp.ctx.stat[1] & 0x01);
