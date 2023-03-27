@@ -459,7 +459,7 @@ public:
 
         // increment H/V counter
         this->ctx.countH++;
-        if (912 == this->ctx.countH) {
+        if (262 == this->ctx.countH) {
             // HSYNC
             if (this->ctx.countV - this->getTopBorder() + this->getAdjustY() - 1 == this->ctx.lineIE1) {
                 if (!this->isFH()) {
@@ -467,9 +467,8 @@ public:
                     this->checkIRQ();
                 }
             }
-        } else if (1341 == this->ctx.countH) {
             this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
-            // VSYNC
+            // VSYNC (set flag)
             if (this->ctx.countV - this->getTopBorder() + this->getAdjustY() == this->getLineNumber()) {
                 this->ctx.stat[2] |= 0b01000000; // set VR flag (Vertical Blanking)
                 if (!this->isF()) {
