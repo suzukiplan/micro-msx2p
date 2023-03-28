@@ -530,16 +530,16 @@ public:
     inline void tick_checkHorizontalEvents() {
         switch (this->evt.ht[this->ctx.countH]) {
             case HorizontalEventType::LeftErase:
+                this->tick_triggerIntH();
                 break;
             case HorizontalEventType::LeftBorder:
-                this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
                 break;
             case HorizontalEventType::ActiveDisplayH:
                 this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
                 break;
             case HorizontalEventType::RightBorder:
+                this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
                 this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
-                this->tick_triggerIntH();
                 break;
             case HorizontalEventType::RightErase:
                 this->tick_display();
@@ -592,7 +592,9 @@ public:
                 break;
             default: return;
         }
-        if (scanline < 0 || 240 <= scanline) {
+        if (scanline < 0) {
+            scanline += 240;
+        }   else if (240 <= scanline) {
             return;
         }
         // render backdrop
@@ -630,9 +632,11 @@ public:
 
     inline void tick_triggerIntH() {
         if (!this->isFH()) {
-            if (this->evt.vi[this->ctx.countV] == this->ctx.lineIE1) {
-                this->ctx.stat[1] |= 0x01; // Set FH flag
-                this->checkIRQ();
+            if (this->evt.vt[this->ctx.countV] == VerticalEventType::ActiveDisplayV) {
+                if (this->evt.vi[this->ctx.countV] == this->ctx.lineIE1) {
+                    this->ctx.stat[1] |= 0x01; // Set FH flag
+                    this->checkIRQ();
+                }
             }
         }
     }
@@ -946,10 +950,12 @@ public:
                 break;
             case 19:
                 this->ctx.lineIE1 = (value - this->ctx.reg[23]) & 0xFF;
+                this->ctx.lineIE1++;
                 //printf("%d: R#%d val=%d, lineIE1=%d\n",ctx.countV,rn,value,this->ctx.lineIE1);
                 break;
             case 23:
                 this->ctx.lineIE1 = (this->ctx.reg[19] - value) & 0xFF;
+                this->ctx.lineIE1++;
                 //printf("%d: R#%d val=%d, lineIE1=%d\n",ctx.countV,rn,value,this->ctx.lineIE1);
                 break;
             case 44:
