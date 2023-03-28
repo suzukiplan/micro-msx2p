@@ -7,6 +7,100 @@
 class V9958
 {
 private:
+    enum HorizontalEventType {
+        ActiveDisplayH,
+        RightBorder,
+        RightErase,
+        SyncRight,
+        LeftErase,
+        LeftBorder
+    };
+
+    enum VerticalEventType {
+        VerticalSync,
+        TopErase,
+        TopBorder,
+        ActiveDisplayV,
+        BottomBorder,
+        BottomErase
+    };
+
+    struct EventTables {
+        HorizontalEventType ht[1368];
+        VerticalEventType vt[262];
+        int hi[1368];
+        int vi[262];
+    } evt;
+
+    void updateEventTables() {
+        this->updateEventTableH();
+        this->updateEventTableV();
+    }
+
+    void updateEventTableH()
+    {
+        for (int i = 0; i < 1368; i++) {
+            int ii = i + this->getAdjustX();
+            if (ii < 0) {
+                ii += 1368;
+            } else if (1368 <= ii) {
+                ii -= 1368;
+            }
+            if (i < 1024) {
+                this->evt.ht[ii] = HorizontalEventType::ActiveDisplayH;
+                this->evt.hi[ii] = i;
+            } else if (i < 1024 + 56) {
+                // note: Actually RightBorder is 59Hz, but 56Hz for optimize the performance
+                this->evt.ht[ii] = HorizontalEventType::RightBorder;
+                this->evt.hi[ii] = i - 1024;
+            } else if (i < 1024 + 56 + 30) {
+                // note: Actually RightErase is 27Hz, but 30Hz for optimize the performance
+                this->evt.ht[ii] = HorizontalEventType::RightErase;
+                this->evt.hi[ii] = i - 1024 - 56;
+            } else if (i < 1024 + 56 + 30 + 100) {
+                this->evt.ht[ii] = HorizontalEventType::SyncRight;
+                this->evt.hi[ii] = i - 1024 - 56 - 30;
+            } else if (i < 1024 + 56 + 30 + 100 + 102) {
+                this->evt.ht[ii] = HorizontalEventType::LeftErase;
+                this->evt.hi[ii] = i - 1024 - 56 - 30 - 100;
+            } else {
+                this->evt.ht[ii] = HorizontalEventType::LeftBorder;
+                this->evt.hi[ii] = i - 1024 - 56 - 30 - 100 - 102;
+            }
+        }
+    }
+
+    void updateEventTableV()
+    {
+        for (int i = 0; i < 262; i++) {
+            int ii = i + this->getAdjustY();
+            if (ii < 0) {
+                ii += 262;
+            } else if (262 <= ii) {
+                ii -= 262;
+            }
+            if (i < 3) {
+                this->evt.vt[ii] = VerticalEventType::VerticalSync;
+                this->evt.vi[ii] = i;
+            } else if (i < 3 + 13) {
+                this->evt.vt[ii] = VerticalEventType::TopErase;
+                this->evt.vi[ii] = i - 3;
+            } else if (i < 3 + 13 + this->getTopBorder()) {
+                this->evt.vt[ii] = VerticalEventType::TopBorder;
+                this->evt.vi[ii] = i - 3 - 13;
+            } else if (i < 3 + 13 + this->getTopBorder() + this->getLineNumber()) {
+                this->evt.vt[ii] = VerticalEventType::ActiveDisplayV;
+                this->evt.vi[ii] = i - 3 - 13 - this->getTopBorder();
+            } else if (i < 3 + 13 + this->getTopBorder() + this->getLineNumber() + this->getBottomBorder()) {
+                this->evt.vt[ii] = VerticalEventType::BottomBorder;
+                this->evt.vi[ii] = i - 3 - 13 - this->getTopBorder() - this->getLineNumber();
+            } else {
+                this->evt.vt[ii] = VerticalEventType::BottomErase;
+                this->evt.vi[ii] = i - 3 - 13 - this->getTopBorder() - this->getLineNumber() - this->getBottomBorder();
+            }
+        }
+    }
+
     unsigned short yjkColor[32][64][64];
     const unsigned char regMask[64] = {
         0x7e, 0x7b, 0x7f, 0xff, 0x3f, 0xff, 0x3f, 0xff,
@@ -192,6 +286,7 @@ public:
             this->ctx.pal[i][0] |= (rgb[i] & 0b000000000000000011100000) >> 5;
             updatePaletteCacheFromRegister(i);
         }
+        this->updateEventTables();
     }
 
     inline int getScreenMode()
@@ -231,8 +326,9 @@ public:
     inline int getOnTime() { return (ctx.reg[13] & 0xF0) >> 4; }
     inline int getOffTime() { return ctx.reg[13] & 0x0F; }
     inline int getSyncMode() { return (ctx.reg[9] & 0b00110000) >> 4; }
-    inline int getTopBorder() { return this->ctx.reg[9] & 0b10000000 ? 16 : 26; }
-    inline int getLineNumber() { return this->ctx.reg[9] & 0b10000000 ? 212 : 192; }
+    inline int getTopBorder() { return 26 - ((this->ctx.reg[9] & 0b10000000) >> 7) * 10; }
+    inline int getBottomBorder() { return 25 - ((this->ctx.reg[9] & 0b10000000) >> 7) * 10; }
+    inline int getLineNumber() { return 192 + ((this->ctx.reg[9] & 0b10000000) >> 7) * 20; }
     inline int isInterlaceMode() { return this->ctx.reg[9] & 0b00001000 ? true : false; }
     inline int isEvenOrderMode() { return this->ctx.reg[9] & 0b00000100 ? true : false; }
     inline bool isSprite16px() { return this->ctx.reg[1] & 0b00000010 ? true : false; }
@@ -422,68 +518,121 @@ public:
             }
         }
 
-        /*
-         * Line Clocks: 1368Hz
-         * 1. Sync Right  100Hz
-         * 2. Left Erase 102Hz
-         * 3. Left Border 56Hz
-         * 4. Active Display 1024Hz
-         * 5. Right Border 59Hz
-         * 6. Right Erase 27Hz
-         */
-        if (0 == this->ctx.countH % 4) {
-            int x = (this->ctx.countH - 202) / 4;
-            int y = this->ctx.countV;
-            if (y < 240 && 0 <= x && x < 284) {
-                int x2 = x << 1;
-                int scanline = y - this->getTopBorder() + this->getAdjustY();
-                if (0 == y && 0 == x) {
-                    this->ctx.stat[2] &= 0b10111111; // Reset VR flag (Vertical Active)
+        // count up (H)
+        auto htPrev = this->evt.ht[this->ctx.countH];
+        this->ctx.countH++;
+        this->ctx.countH %= 1368;
+        if (htPrev != this->evt.ht[this->ctx.countH]) {
+            tick_checkHorizontalEvents();
+        }
+    }
+
+    inline void tick_checkHorizontalEvents() {
+        switch (this->evt.ht[this->ctx.countH]) {
+            case HorizontalEventType::LeftErase:
+                break;
+            case HorizontalEventType::LeftBorder:
+                this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
+                break;
+            case HorizontalEventType::ActiveDisplayH:
+                this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
+                break;
+            case HorizontalEventType::RightBorder:
+                this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
+                this->tick_triggerIntH();
+                break;
+            case HorizontalEventType::RightErase:
+                this->tick_display();
+                break;
+            case HorizontalEventType::SyncRight: {
+                // count up (V)
+                auto vtPrev = this->evt.vt[this->ctx.countV];
+                this->ctx.countV++;
+                this->ctx.countV %= 262;
+                if (vtPrev != this->evt.vt[this->ctx.countV]) {
+                    tick_checkVerticalEvents();
                 }
-                auto renderPosition = &this->display[y * 568];
-                if (0b00100 == this->getScreenMode()) {
-                    renderPosition[x2] = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
-                    renderPosition[x2 + 1] = this->palette[this->ctx.reg[7] & 0b00000011];
-                } else {
-                    renderPosition[x2] = this->getBackdropColor();
-                    renderPosition[x2 + 1] = renderPosition[x2];
-                }
-                if (0 == x) {
-                    this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
-                } else if (283 == x) {
-                    this->renderScanline(scanline, &renderPosition[13 * 2 - this->getAdjustX() * 2]);
-                    this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
-                }
+                break;
             }
         }
+    }
 
-        // increment H/V counter
-        this->ctx.countH++;
-        if (262 == this->ctx.countH) {
-            // HSYNC
-            if (this->ctx.countV - this->getTopBorder() + this->getAdjustY() - 1 == this->ctx.lineIE1) {
-                if (!this->isFH()) {
-                    this->ctx.stat[1] |= 0x01; // Set FH flag
-                    this->checkIRQ();
-                }
-            }
-            this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
-            // VSYNC (set flag)
-            if (this->ctx.countV - this->getTopBorder() + this->getAdjustY() == this->getLineNumber()) {
-                this->ctx.stat[2] |= 0b01000000; // set VR flag (Vertical Blanking)
-                if (!this->isF()) {
-                    this->ctx.stat[0] |= 0x80; // set F flag
-                    this->checkIRQ();
-                }
-            }
-        } else if (1368 == this->ctx.countH) {
-            // Move to the next scanline
-            this->ctx.countH = 0;
-            this->ctx.countV++;
-            if (262 == this->ctx.countV) {
+    inline void tick_checkVerticalEvents() {
+        switch (this->evt.vt[this->ctx.countV]) {
+            case VerticalEventType::VerticalSync:
                 this->ctx.counter++;
-                this->ctx.countV = 0;
                 this->detectBreak(this->arg);
+                break;
+            case VerticalEventType::TopErase:
+                break;
+            case VerticalEventType::TopBorder:
+                break;
+            case VerticalEventType::ActiveDisplayV:
+                this->ctx.stat[2] &= 0b10111111; // Reset VR flag (Vertical Active)
+                break;
+            case VerticalEventType::BottomBorder:
+                this->ctx.stat[2] |= 0b01000000; // Set VR flag (Vertical Blanking)
+                this->tick_triggerIntV();
+                break;
+            case VerticalEventType::BottomErase:
+                break;
+        }
+    }
+
+    inline void tick_display() {
+        int scanline = this->evt.vi[this->ctx.countV] - this->getAdjustY();
+        switch (this->evt.vt[this->ctx.countV]) {
+            case VerticalEventType::TopBorder:
+                break;
+            case VerticalEventType::ActiveDisplayV:
+                scanline += this->getTopBorder();
+                break;
+            case VerticalEventType::BottomBorder:
+                scanline += this->getTopBorder() + this->getLineNumber();
+                break;
+            default: return;
+        }
+        if (scanline < 0 || 240 <= scanline) {
+            return;
+        }
+        // render backdrop
+        auto renderPosition = &this->display[scanline * 568];
+        if (0b00100 == this->getScreenMode()) {
+            unsigned short ec = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
+            unsigned short oc = this->palette[this->ctx.reg[7] & 0b00000011];
+            for (int x = 0; x < 568; x += 2) {
+                renderPosition[x] = ec;
+                renderPosition[x + 1] = oc;
+            }
+        } else {
+            unsigned short bc = this->getBackdropColor();
+            for (int x = 0; x < 568; x++) {
+                renderPosition[x] = bc;
+            }
+        }
+        // render main display
+        if (this->getTopBorder() - this->getAdjustY() <= scanline) {
+            int renderLine = scanline - (this->getTopBorder() - this->getAdjustY());
+            if (renderLine < this->getLineNumber()) {
+                renderPosition += 26;
+                renderPosition -= this->getAdjustX() << 1;
+                this->renderScanline(renderLine, renderPosition);
+            }
+        }
+    }
+
+    inline void tick_triggerIntV() {
+        if (!this->isF()) {
+            this->ctx.stat[0] |= 0x80; // set F flag
+            this->checkIRQ();
+        }
+    }
+
+    inline void tick_triggerIntH() {
+        if (!this->isFH()) {
+            if (this->evt.vi[this->ctx.countV] == this->ctx.lineIE1) {
+                this->ctx.stat[1] |= 0x01; // Set FH flag
+                this->checkIRQ();
             }
         }
     }
@@ -767,34 +916,55 @@ public:
             debug.registerUpdateListener(debug.arg, rn, value);
         }
         this->ctx.reg[rn] = value;
-        //if(0==rn)printf("%d: IE1=%s\n",ctx.countV,isIE1()?"on":"off");
-        //if(1==rn)printf("%d: IE0=%s\n",ctx.countV,isIE0()?"on":"off");
-        //if(15==rn)printf("%d: R#15 val=%d\n",ctx.countV,value);
-        if (0 == rn && mod & 0x10) {
-            this->checkIRQ();
-        } else if (1 == rn && mod & 0x20) {
-            this->checkIRQ();
-        } else if (44 == rn && this->ctx.command && 0 == this->ctx.cmd.wait) {
-            switch (this->ctx.command) {
-                case 0b1111: this->executeCommandHMMC(false); break;
-                case 0b1011: this->executeCommandLMMC(false); break;
-            }
-        } else if (46 == rn && 0 == this->ctx.cmd.wait) {
-            this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
-        } else if (14 == rn) {
-            this->ctx.reg[14] &= 0b00000111;
-            this->ctx.addr &= 0x3FFF;
-            this->ctx.addr |= this->ctx.reg[14] << 14;
-        } else if (16 == rn) {
-            this->ctx.latch2 = 0;
-        } else if (8 == rn) {
-            this->ctx.reg[8] &= 0b00111111; // force disable mouse & light-pen
-        } else if (19 == rn) {
-            this->ctx.lineIE1 = (value - this->ctx.reg[23]) & 0xFF;
-            //printf("%d: R#%d val=%d, lineIE1=%d\n",ctx.countV,rn,value,this->ctx.lineIE1);
-        } else if (23 == rn) {
-            this->ctx.lineIE1 = (this->ctx.reg[19] - value) & 0xFF;
-            //printf("%d: R#%d val=%d, lineIE1=%d\n",ctx.countV,rn,value,this->ctx.lineIE1);
+        switch (rn) {
+            case 0:
+                if (mod & 0x10) {
+                    this->checkIRQ();
+                }
+                break;
+            case 1:
+                if (mod & 0x20) {
+                    this->checkIRQ();
+                }
+                break;
+            case 8:
+                this->ctx.reg[8] &= 0b00111111; // force disable mouse & light-pen
+                break;
+            case 9:
+                this->updateEventTableV();
+                break;
+            case 14:
+                this->ctx.reg[14] &= 0b00000111;
+                this->ctx.addr &= 0x3FFF;
+                this->ctx.addr |= this->ctx.reg[14] << 14;
+                break;
+            case 16:
+                this->ctx.latch2 = 0;
+                break;
+            case 18:
+                this->updateEventTables();
+                break;
+            case 19:
+                this->ctx.lineIE1 = (value - this->ctx.reg[23]) & 0xFF;
+                //printf("%d: R#%d val=%d, lineIE1=%d\n",ctx.countV,rn,value,this->ctx.lineIE1);
+                break;
+            case 23:
+                this->ctx.lineIE1 = (this->ctx.reg[19] - value) & 0xFF;
+                //printf("%d: R#%d val=%d, lineIE1=%d\n",ctx.countV,rn,value,this->ctx.lineIE1);
+                break;
+            case 44:
+                if (this->ctx.command && 0 == this->ctx.cmd.wait) {
+                    switch (this->ctx.command) {
+                        case 0b1111: this->executeCommandHMMC(false); break;
+                        case 0b1011: this->executeCommandLMMC(false); break;
+                    }
+                }
+                break;
+            case 46:
+                if (0 == this->ctx.cmd.wait) {
+                    this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
+                }
+                break;
         }
     }
 
