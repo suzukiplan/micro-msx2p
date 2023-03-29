@@ -24,6 +24,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     SaveFileTypeVRAM,
     SaveFileTypeBitmapVRAM,
     SaveFileTypeBitmapSprite,
+    SaveFileTypeBitmapScreen,
 };
 
 @interface ViewController () <NSWindowDelegate>
@@ -256,6 +257,25 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     }];
 }
 
+- (IBAction)menuSaveScreenBitmap:(id)sender
+{
+    NSLog(@"menuSaveScreenBitmap");
+    __weak ViewController* weakSelf = self;
+    [_video pauseWithCompletionHandler:^{
+        size_t size;
+        const void* raw = emu_getBitmapScreen(&size);
+        if (!raw) {
+            [weakSelf.video resumeWithCompletionHandler:^{
+                NSLog(@"unsupported");
+            }];
+        } else {
+            NSLog(@"bitmap size: %lu bytes", size);
+            NSData* data = [NSData dataWithBytes:raw length:size];
+            [weakSelf _saveData:data type:SaveFileTypeBitmapScreen];
+        }
+    }];
+}
+
 -(IBAction)menuSaveSpritePattern:(id)sender
 {
     NSLog(@"menuSaveSpritePattern");
@@ -321,6 +341,9 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
                 break;
             case SaveFileTypeBitmapVRAM:
                 panel.nameFieldStringValue = @"vram.bmp";
+                break;
+            case SaveFileTypeBitmapScreen:
+                panel.nameFieldStringValue = @"screenshot.bmp";
                 break;
             case SaveFileTypeBitmapSprite:
                 panel.nameFieldStringValue = @"sprite.bmp";

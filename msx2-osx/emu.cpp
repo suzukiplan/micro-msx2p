@@ -651,6 +651,57 @@ const void* emu_getBitmapVRAM(size_t* size) {
     return nullptr;
 }
 
+static unsigned char bit5_to_bit8(unsigned char col)
+{
+    unsigned char result = (col & 0b00011111) << 3;
+    result |= (col & 0b10000000) >> 5;
+    result |= (col & 0b01000000) >> 5;
+    result |= (col & 0b00100000) >> 5;
+    return result;
+}
+
+const void* emu_getBitmapScreen(size_t* size) {
+    static unsigned char buf[14 + 40 + 568 * 480 * 4];
+    int iSize = (int)sizeof(buf);
+    *size = iSize;
+    memset(buf, 0, sizeof(buf));
+    int ptr = 0;
+    buf[ptr++] = 'B';
+    buf[ptr++] = 'M';
+    memcpy(&buf[ptr], &iSize, 4);
+    ptr += 4;
+    ptr += 4;
+    iSize = 14 + 40;
+    memcpy(&buf[ptr], &iSize, 4);
+    ptr += 4;
+    BitmapHeader header;
+    header.isize = 40;
+    header.width = 568;
+    header.height = 480;
+    header.planes = 1;
+    header.bits = 32;
+    header.ctype = 0;
+    header.gsize = 568 * 480 * 4;
+    header.xppm = 1;
+    header.yppm = 1;
+    header.cnum = 0;
+    header.inum = 0;
+    memcpy(&buf[ptr], &header, sizeof(header));
+    ptr += sizeof(header);
+    for (int y = 0; y < 240; y++) {
+        for (int x = 0; x < 568; x++) {
+            auto col = msx2.vdp.display[(239 - y) * 568 + x];
+            buf[ptr++] = bit5_to_bit8(col & 0b0000000000011111);
+            buf[ptr++] = bit5_to_bit8((col & 0b0000001111100000) >> 5);
+            buf[ptr++] = bit5_to_bit8((col & 0b0111110000000000) >> 10);
+            buf[ptr++] = 0x00;
+        }
+        memcpy(&buf[ptr], &buf[ptr - 568 * 4], 568 * 4);
+        ptr += 568 * 4;
+    }
+    return buf;
+}
+
 const void emu_startTypeWriter(const char* text)
 {
     tw.size = (int)strlen(text);

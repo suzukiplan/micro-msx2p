@@ -40,6 +40,7 @@ const void* emu_getRAM(void);
 const void* emu_getVRAM(void);
 const void* emu_getBitmapVRAM(size_t* size);
 const void* emu_getBitmapSprite(size_t* size);
+const void* emu_getBitmapScreen(size_t* size);
 const void emu_startTypeWriter(const char* text);
 
 #ifdef __cplusplus
