@@ -32,11 +32,6 @@ private:
         int vi[262];
     } evt;
 
-    void updateEventTables() {
-        this->updateEventTableH();
-        this->updateEventTableV();
-    }
-
     void updateEventTableH()
     {
         for (int i = 0; i < 1368; i++) {
@@ -305,6 +300,11 @@ public:
         if (ctx.reg[0] & 0b00000100) mode |= 0b01000;
         if (ctx.reg[0] & 0b00001000) mode |= 0b10000;
         return mode;
+    }
+
+    void updateEventTables() {
+        this->updateEventTableH();
+        this->updateEventTableV();
     }
 
     inline bool isExpansionRAM() { return ctx.reg[45] & 0b01000000 ? true : false; }
