@@ -1014,17 +1014,13 @@ public:
                 //printf("%3d,%3d: R#%d val=%d, lineIE1=%d\n",ctx.countV,ctx.counter%100,rn,value,this->ctx.lineIE1);
                 break;
             case 44:
-                if (this->ctx.command && 0 == this->ctx.cmd.wait) {
-                    switch (this->ctx.command) {
-                        case 0b1111: this->executeCommandHMMC(false); break;
-                        case 0b1011: this->executeCommandLMMC(false); break;
-                    }
+                switch (this->ctx.command) {
+                    case 0b1111: this->executeCommandHMMC(false); break;
+                    case 0b1011: this->executeCommandLMMC(false); break;
                 }
                 break;
             case 46:
-                if (0 == this->ctx.cmd.wait) {
-                    this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
-                }
+                this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
                 break;
         }
     }
