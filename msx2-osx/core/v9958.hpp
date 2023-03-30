@@ -336,6 +336,16 @@ public:
     inline bool isSpriteDisplay() { return this->ctx.reg[8] & 0b00000010 ? false : true; }
     inline int getAdjustX() { return this->adjust[this->ctx.reg[18] & 0x0F]; }
     inline int getAdjustY() { return this->adjust[(this->ctx.reg[18] & 0xF0) >> 4]; }
+    inline void setTR() { this->ctx.stat[2] |= 0b10000000; }
+    inline void resetTR() { this->ctx.stat[2] &= 0b01111111; }
+    inline void setVR() { this->ctx.stat[2] |= 0b01000000; }
+    inline void resetVR() { this->ctx.stat[2] &= 0b10111111; }
+    inline void setHR() { this->ctx.stat[2] |= 0b00100000; }
+    inline void resetHR() { this->ctx.stat[2] &= 0b11011111; }
+    inline void setBD() { this->ctx.stat[2] |= 0b00010000; }
+    inline void resetBD() { this->ctx.stat[2] &= 0b11101111; }
+    inline void setCE() { this->ctx.stat[2] |= 0b00000001; }
+    inline void resetCE() { this->ctx.stat[2] &= 0b11111110; }
 
     inline int getSpriteAttributeTableM1() {
         int addr = this->ctx.reg[11] & 0b00000011;
@@ -535,11 +545,11 @@ public:
             case HorizontalEventType::LeftBorder:
                 break;
             case HorizontalEventType::ActiveDisplayH:
-                this->ctx.stat[2] &= 0b11011111; // Reset HR flag (Horizontal Active)
+                this->resetHR(); // horizontal active
                 break;
             case HorizontalEventType::RightBorder:
+                this->setHR(); // horizontal blanking
                 this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
-                this->ctx.stat[2] |= 0b00100000; // Set HR flag (Horizontal Blanking)
                 break;
             case HorizontalEventType::RightErase:
                 this->tick_display();
@@ -568,10 +578,10 @@ public:
             case VerticalEventType::TopBorder:
                 break;
             case VerticalEventType::ActiveDisplayV:
-                this->ctx.stat[2] &= 0b10111111; // Reset VR flag (Vertical Active)
+                this->resetVR();
                 break;
             case VerticalEventType::BottomBorder:
-                this->ctx.stat[2] |= 0b01000000; // Set VR flag (Vertical Blanking)
+                this->setVR();
                 this->tick_triggerIntV();
                 break;
             case VerticalEventType::BottomErase:
@@ -677,10 +687,7 @@ public:
                 result |= 0b00000100;
                 break;
             case 2:
-                result &= 0b01111110;
                 result |= 0b00001100;
-                result |= this->ctx.cmd.wait ? 0b00000000 : 0b10000000;
-                result |= this->ctx.command ? 0b00000001 : 0b00000000;
                 break;
             case 5:
                 this->ctx.stat[3] = 0;
@@ -1847,6 +1854,7 @@ public:
     inline void executeCommand(int cm, int lo)
     {
         if (cm) {
+            this->setCE();
             this->ctx.command = cm;
             this->ctx.commandL = lo;
             switch (cm) {
@@ -1995,8 +2003,13 @@ public:
     inline int getDIX() { return this->ctx.reg[45] & 0b00000100 ? -1 : 1; }
     inline int getDIY() { return this->ctx.reg[45] & 0b00001000 ? -1 : 1; }
     inline int abs(int n) { return n < 0 ? -n : n; }
-    inline void setCommandEnd() { this->ctx.command = 0; }
     inline void addCommandWait(int wait) { this->ctx.cmd.wait += wait; }
+
+    inline void setCommandEnd() {
+        this->ctx.command = 0;
+        this->resetCE();
+        this->resetTR();
+    }
 
     inline void commandMoveD(int waitY) {
         this->ctx.cmd.dx += this->ctx.cmd.dix;
@@ -2086,6 +2099,9 @@ public:
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         this->ctx.ram[addr] = this->ctx.reg[44];
         this->commandMoveD(0);
+        if (this->ctx.command) {
+            this->setTR(); // set TR if keep executing
+        }
     }
 
     inline void executeCommandYMMM(bool setup)
@@ -2310,6 +2326,9 @@ public:
         int addr = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
         renderLogicalPixel(addr, dpb, this->ctx.cmd.dx, this->ctx.reg[44], this->ctx.commandL);
         this->commandMoveD(0);
+        if (this->ctx.command) {
+            this->setTR(); // set TR if keep executing
+        }
     }
 
     inline void executeCommandLMCM(bool setup)
@@ -2333,6 +2352,7 @@ public:
         }
         int addr = this->ctx.cmd.sx / dpb + this->ctx.cmd.sy * lineBytes;
         this->ctx.stat[7] = this->readLogicalPixel(addr, dpb, ctx.cmd.sx);
+        this->setTR();
         this->addCommandWait(72);
         this->commandMoveS(64);
     }
@@ -2469,7 +2489,7 @@ public:
             unsigned char px = this->readLogicalPixel(addr, dpb, this->ctx.cmd.sx);
             if (!this->getEQ()) {
                 if (px == clr) {
-                    this->ctx.stat[2] |= 0b00010000;
+                    this->setBD();
                     this->ctx.stat[8] = this->ctx.cmd.sx & 0xFF;
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
                     this->setSX(this->ctx.cmd.sx);
@@ -2478,7 +2498,7 @@ public:
                 }
             } else {
                 if (px != clr) {
-                    this->ctx.stat[2] |= 0b00010000;
+                    this->setBD();
                     this->ctx.stat[8] = this->ctx.cmd.sx & 0xFF;
                     this->ctx.stat[9] = ((this->ctx.cmd.sx & 0x300) >> 8) | 0xFC;
                     this->setSX(this->ctx.cmd.sx);
@@ -2488,7 +2508,7 @@ public:
             }
             this->ctx.cmd.sx += this->ctx.cmd.dix;
         } else {
-            this->ctx.stat[2] &= 0b11101111;
+            this->resetBD();
             this->setSX(this->ctx.cmd.sx);
             this->setCommandEnd();
         }
