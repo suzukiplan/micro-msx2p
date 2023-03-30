@@ -578,6 +578,9 @@ public:
                 break;
             case HorizontalEventType::ActiveDisplayH:
                 this->resetHR(); // horizontal active
+                if (this->isF()) {
+                    this->checkIRQ(); // callback VSYNC interrupt
+                }
                 break;
             case HorizontalEventType::RightBorder:
                 this->setHR(); // horizontal blanking
@@ -614,7 +617,7 @@ public:
                 break;
             case VerticalEventType::BottomBorder:
                 this->setVR();
-                this->tick_triggerIntV();
+                this->setF(); // NOTE: do not callback at this timing (callback after HR reset)
                 break;
             case VerticalEventType::BottomErase:
                 break;
@@ -670,13 +673,6 @@ public:
                 memset(renderPosition, 0x00, 568 * 2);
             }
 #endif
-        }
-    }
-
-    inline void tick_triggerIntV() {
-        if (!this->isF()) {
-            this->setF();
-            this->checkIRQ();
         }
     }
 
@@ -1004,12 +1000,14 @@ public:
                 this->updateEventTables();
                 break;
             case 19:
-                this->ctx.lineIE1 = (value - this->ctx.reg[23]) & 0xFF;
+                this->ctx.lineIE1 = value;
+                this->ctx.lineIE1 -= this->ctx.reg[23];
                 this->ctx.lineIE1++;
                 //printf("%3d,%3d: R#%d val=%d, lineIE1=%d\n",ctx.countV,ctx.counter%100,rn,value,this->ctx.lineIE1);
                 break;
             case 23:
-                this->ctx.lineIE1 = (this->ctx.reg[19] - value) & 0xFF;
+                this->ctx.lineIE1 = this->ctx.reg[19];
+                this->ctx.lineIE1 -= value;
                 this->ctx.lineIE1++;
                 //printf("%3d,%3d: R#%d val=%d, lineIE1=%d\n",ctx.countV,ctx.counter%100,rn,value,this->ctx.lineIE1);
                 break;
