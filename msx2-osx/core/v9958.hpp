@@ -315,8 +315,6 @@ public:
     inline bool isIE0() { return ctx.reg[1] & 0b00100000 ? true : false; }
     inline bool isIE1() { return ctx.reg[0] & 0b00010000 ? true : false; }
     inline bool isIE2() { return ctx.reg[0] & 0b00100000 ? true : false; }
-    inline bool isF() { return this->ctx.stat[0] & 0x80 ? true : false; }
-    inline bool isFH() { return this->ctx.stat[1] & 0x01 ? true : false; }
     inline bool isEnabledMouse() { return ctx.reg[8] & 0b10000000 ? true : false; }
     inline bool isEnabledLightPen() { return ctx.reg[8] & 0b01000000 ? true : false; }
     inline bool isYAE() { return ctx.reg[25] & 0b00010000 ? true : false; }
@@ -336,6 +334,31 @@ public:
     inline bool isSpriteDisplay() { return this->ctx.reg[8] & 0b00000010 ? false : true; }
     inline int getAdjustX() { return this->adjust[this->ctx.reg[18] & 0x0F]; }
     inline int getAdjustY() { return this->adjust[(this->ctx.reg[18] & 0xF0) >> 4]; }
+    inline bool isF() { return this->ctx.stat[0] & 0x80; }
+    inline void setF() { this->ctx.stat[0] |= 0x80; }
+    inline void resetF() { this->ctx.stat[0] &= 0x7F; }
+    inline void reset5S() { this->ctx.stat[0] &= 0b10111111; }
+    inline void resetCollision() { this->ctx.stat[0] &= 0b11011111; }
+
+    inline void set5S(bool f, int n) {
+        this->ctx.stat[0] &= 0b11100000;
+        this->ctx.stat[0] |= (f ? 0b01000000 : 0) | (n & 0b00011111);
+    }
+
+    inline void setCollision(int x, int y)
+    {
+        this->ctx.stat[0] |= 0b00100000;
+        x += 12;
+        y += 8;
+        this->ctx.stat[3] = x & 0xFF;
+        this->ctx.stat[4] = (x & 0x0100) >> 8;
+        this->ctx.stat[5] = y & 0xFF;
+        this->ctx.stat[6] = (y & 0x0300) >> 8;
+    }
+
+    inline bool isFH() { return this->ctx.stat[1] & 0x01; }
+    inline void setFH() { this->ctx.stat[1] |= 0b00000001; }
+    inline void resetFH() { this->ctx.stat[1] &= 0b11111110; }
     inline void setTR() { this->ctx.stat[2] |= 0b10000000; }
     inline void resetTR() { this->ctx.stat[2] &= 0b01111111; }
     inline void setVR() { this->ctx.stat[2] |= 0b01000000; }
@@ -344,6 +367,8 @@ public:
     inline void resetHR() { this->ctx.stat[2] &= 0b11011111; }
     inline void setBD() { this->ctx.stat[2] |= 0b00010000; }
     inline void resetBD() { this->ctx.stat[2] &= 0b11101111; }
+    inline void setEO() { this->ctx.stat[2] |= 0b00000010; }
+    inline void resetEO() { this->ctx.stat[2] &= 0b11111101; }
     inline void setCE() { this->ctx.stat[2] |= 0b00000001; }
     inline void resetCE() { this->ctx.stat[2] &= 0b11111110; }
 
@@ -635,7 +660,7 @@ public:
 
     inline void tick_triggerIntV() {
         if (!this->isF()) {
-            this->ctx.stat[0] |= 0x80; // set F flag
+            this->setF();
             this->checkIRQ();
         }
     }
@@ -644,7 +669,7 @@ public:
         if (!this->isFH()) {
             if (this->evt.vt[this->ctx.countV] == VerticalEventType::ActiveDisplayV) {
                 if (this->evt.vi[this->ctx.countV] == this->ctx.lineIE1) {
-                    this->ctx.stat[1] |= 0x01; // Set FH flag
+                    this->setFH();
                     this->checkIRQ();
                 }
             }
@@ -667,26 +692,25 @@ public:
         int sn = this->ctx.reg[15] & 0b00001111;
         unsigned char result = this->ctx.stat[sn];
         switch (sn) {
-            case 0:
+            case 0: // |F|S5|C|5#|5#|5#|5#|5#|
                 if (this->isF()) {
-                    //printf("%d: reset F\n",ctx.countV);
-                    this->ctx.stat[0] &= 0b00011111;
+                    //printf("%3d,%3d: reset F\n",ctx.countV,ctx.counter%100);
+                    this->resetF();
                     this->checkIRQ();
-                } else {
-                    this->ctx.stat[0] &= 0b00011111;
                 }
+                this->reset5S();
+                this->resetCollision();
                 break;
-            case 1:
+            case 1: // |*|*|ID|ID|ID|ID|ID|FH|
                 if (this->isFH() && this->isIE1()) {
-                    //printf("%d: reset FH\n",ctx.countV);
-                    this->ctx.stat[1] &= 0b11000000;
+                    //printf("%3d,%3d: reset FH\n",ctx.countV,ctx.counter%100);
+                    this->resetFH();
                     this->checkIRQ();
-                } else {
-                    this->ctx.stat[1] &= 0b11000001;
                 }
+                result &= 0b00000001;
                 result |= 0b00000100;
                 break;
-            case 2:
+            case 2: // |TR|VR|HR|BD|1|1|EO|CE|
                 result |= 0b00001100;
                 break;
             case 5:
@@ -879,13 +903,13 @@ public:
 
     inline void checkIRQ() {
         if (this->isIE0() && this->isF()) {
-            //printf("%d: Detect Interrupt (F=%d, FH=%d)\n",ctx.countV,isF()?1:0,isFH()?1:0);
+            //printf("%3d,%3d: Detect IE0 (F=%d, FH=%d)\n",ctx.countV,ctx.counter%100,isF()?1:0,isFH()?1:0);
             this->detectInterrupt(this->arg, 0);
         } else if (this->isIE1() && this->isFH()) {
-            //printf("%d: Detect Interrupt (F=%d, FH=%d)\n",ctx.countV,isF()?1:0,isFH()?1:0);
+            //printf("%3d,%3d: Detect IE1 (F=%d, FH=%d)\n",ctx.countV,ctx.counter%100,isF()?1:0,isFH()?1:0);
             this->detectInterrupt(this->arg, 1);
         } else {
-            //printf("%d: Cancel Interrupt\n",ctx.countV);
+            //printf("%3d,%3d: Cancel Interrupt\n",ctx.countV,ctx.counter%100);
             this->cancelInterrupt(this->arg);
         }
     }
@@ -949,6 +973,9 @@ public:
                 this->ctx.addr &= 0x3FFF;
                 this->ctx.addr |= this->ctx.reg[14] << 14;
                 break;
+            /*case 15:
+                printf("%3d,%3d update R#%d = $%02X\n",ctx.countV,ctx.counter%100,rn,value);
+                break; */
             case 16:
                 this->ctx.latch2 = 0;
                 break;
@@ -958,12 +985,12 @@ public:
             case 19:
                 this->ctx.lineIE1 = (value - this->ctx.reg[23]) & 0xFF;
                 this->ctx.lineIE1++;
-                //printf("%d: R#%d val=%d, lineIE1=%d\n",ctx.countV,rn,value,this->ctx.lineIE1);
+                //printf("%3d,%3d: R#%d val=%d, lineIE1=%d\n",ctx.countV,ctx.counter%100,rn,value,this->ctx.lineIE1);
                 break;
             case 23:
                 this->ctx.lineIE1 = (this->ctx.reg[19] - value) & 0xFF;
                 this->ctx.lineIE1++;
-                //printf("%d: R#%d val=%d, lineIE1=%d\n",ctx.countV,rn,value,this->ctx.lineIE1);
+                //printf("%3d,%3d: R#%d val=%d, lineIE1=%d\n",ctx.countV,ctx.counter%100,rn,value,this->ctx.lineIE1);
                 break;
             case 44:
                 if (this->ctx.command && 0 == this->ctx.cmd.wait) {
@@ -1394,8 +1421,7 @@ public:
                         sn++;
                         if (!col) tsn++;
                         if (5 == sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
+                            this->set5S(true, i);
                             if (!this->renderLimitOverSprites) {
                                 break;
                             } else {
@@ -1403,8 +1429,7 @@ public:
                                 limitOver = true;
                             }
                         } else if (sn < 5) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
+                            this->set5S(false, i);
                         }
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
@@ -1445,8 +1470,7 @@ public:
                         sn++;
                         if (!col) tsn++;
                         if (5 == sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
+                            this->set5S(true, i);
                             if (!this->renderLimitOverSprites) {
                                 break;
                             } else {
@@ -1454,8 +1478,7 @@ public:
                                 limitOver = true;
                             }
                         } else if (sn < 5) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
+                            this->set5S(false, i);
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
                         bool overflow = false;
@@ -1482,8 +1505,7 @@ public:
                         sn++;
                         if (!col) tsn++;
                         if (5 == sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
+                            this->set5S(true, i);
                             if (!this->renderLimitOverSprites) {
                                 break;
                             } else {
@@ -1491,8 +1513,7 @@ public:
                                 limitOver = true;
                             }
                         } else if (sn < 5) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
+                            this->set5S(false, i);
                         }
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
@@ -1533,8 +1554,7 @@ public:
                         sn++;
                         if (!col) tsn++;
                         if (5 == sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
+                            this->set5S(true, i);
                             if (!this->renderLimitOverSprites) {
                                 break;
                             } else {
@@ -1542,8 +1562,7 @@ public:
                                 limitOver = true;
                             }
                         } else if (sn < 5) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
+                            this->set5S(false, i);
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
                         bool overflow = false;
@@ -1613,8 +1632,7 @@ public:
                         col &= paletteMask;
                         if (!col) tsn++;
                         if (9 == sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
+                            this->set5S(true, i);
                             if (!this->renderLimitOverSprites) {
                                 break;
                             } else {
@@ -1622,8 +1640,7 @@ public:
                                 limitOver = true;
                             }
                         } else if (sn < 9) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
+                            this->set5S(false, i);
                         }
                         cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
                         bool overflow = false;
@@ -1681,8 +1698,7 @@ public:
                         col &= paletteMask;
                         if (!col) tsn++;
                         if (9 == sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
+                            this->set5S(true, i);
                             if (!this->renderLimitOverSprites) {
                                 break;
                             } else {
@@ -1690,8 +1706,7 @@ public:
                                 limitOver = true;
                             }
                         } else if (sn < 9) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
+                            this->set5S(false, i);
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
                         bool overflow = false;
@@ -1730,8 +1745,7 @@ public:
                         col &= paletteMask;
                         if (!col) tsn++;
                         if (9 == sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
+                            this->set5S(true, i);
                             if (!this->renderLimitOverSprites) {
                                 break;
                             } else {
@@ -1739,8 +1753,7 @@ public:
                                 limitOver = true;
                             }
                         } else if (sn < 9) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
+                            this->set5S(false, i);
                         }
                         cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
                         bool overflow = false;
@@ -1798,8 +1811,7 @@ public:
                         col &= paletteMask;
                         if (!col) tsn++;
                         if (9 == sn) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= 0b01000000 | i;
+                            this->set5S(true, i);
                             if (!this->renderLimitOverSprites) {
                                 break;
                             } else {
@@ -1807,8 +1819,7 @@ public:
                                 limitOver = true;
                             }
                         } else if (sn < 9) {
-                            this->ctx.stat[0] &= 0b11100000;
-                            this->ctx.stat[0] |= i;
+                            this->set5S(false, i);
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
                         bool overflow = false;
@@ -1835,19 +1846,6 @@ public:
                     }
                 }
             }
-        }
-    }
-
-    inline void setCollision(int x, int y)
-    {
-        this->ctx.stat[0] |= 0b00100000;
-        if (!this->isEnabledMouse() && !this->isEnabledLightPen()) {
-            x += 12;
-            y += 8;
-            this->ctx.stat[3] = x & 0xFF;
-            this->ctx.stat[4] = (x & 0x0100) >> 8;
-            this->ctx.stat[5] = y & 0xFF;
-            this->ctx.stat[6] = (y & 0x0300) >> 8;
         }
     }
 
