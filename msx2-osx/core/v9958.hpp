@@ -3,6 +3,7 @@
 
 #include <string.h>
 //#define COMMAND_DEBUG
+//#define INTERRUPT_LINE_DEBUG
 
 class V9958
 {
@@ -167,7 +168,13 @@ public:
         unsigned char hardwareResetFlag;
         unsigned int counter;
         unsigned char lineIE1;
+#ifdef INTERRUPT_LINE_DEBUG
+        unsigned char fireIE0;
+        unsigned char fireIE1;
+        unsigned char reserved[5];
+#else
         unsigned char reserved[7];
+#endif
     } ctx;
 
     void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value)) {
@@ -651,10 +658,18 @@ public:
         if (this->getTopBorder() - this->getAdjustY() <= scanline) {
             int renderLine = scanline - (this->getTopBorder() - this->getAdjustY());
             if (renderLine < this->getLineNumber()) {
-                renderPosition += 26;
-                renderPosition -= this->getAdjustX() << 1;
-                this->renderScanline(renderLine, renderPosition);
+                this->renderScanline(renderLine, &renderPosition[26 - (this->getAdjustX() << 1)]);
             }
+#ifdef INTERRUPT_LINE_DEBUG
+            if (this->ctx.fireIE0) {
+                this->ctx.fireIE0 = 0;
+                memset(renderPosition, 0xFF, 568 * 2);
+            }
+            if (this->ctx.fireIE1) {
+                this->ctx.fireIE1 = 0;
+                memset(renderPosition, 0x00, 568 * 2);
+            }
+#endif
         }
     }
 
@@ -904,9 +919,15 @@ public:
     inline void checkIRQ() {
         if (this->isIE0() && this->isF()) {
             //printf("%3d,%3d: Detect IE0 (F=%d, FH=%d)\n",ctx.countV,ctx.counter%100,isF()?1:0,isFH()?1:0);
+#ifdef INTERRUPT_LINE_DEBUG
+            this->ctx.fireIE0 = 1;
+#endif
             this->detectInterrupt(this->arg, 0);
         } else if (this->isIE1() && this->isFH()) {
             //printf("%3d,%3d: Detect IE1 (F=%d, FH=%d)\n",ctx.countV,ctx.counter%100,isF()?1:0,isFH()?1:0);
+#ifdef INTERRUPT_LINE_DEBUG
+            this->ctx.fireIE1 = 1;
+#endif
             this->detectInterrupt(this->arg, 1);
         } else {
             //printf("%3d,%3d: Cancel Interrupt\n",ctx.countV,ctx.counter%100);
