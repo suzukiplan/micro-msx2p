@@ -708,13 +708,13 @@ public:
         unsigned char result = this->ctx.stat[sn];
         switch (sn) {
             case 0: // |F|S5|C|5#|5#|5#|5#|5#|
+                this->reset5S();
+                this->resetCollision();
                 if (this->isF()) {
                     //printf("%3d,%3d: reset F\n",ctx.countV,ctx.counter%100);
                     this->resetF();
                     this->checkIRQ();
                 }
-                this->reset5S();
-                this->resetCollision();
                 break;
             case 1: // |*|*|ID|ID|ID|ID|ID|FH|
                 if (this->isFH() && this->isIE1()) {
