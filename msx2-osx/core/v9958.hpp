@@ -572,19 +572,20 @@ public:
     inline void tick_checkHorizontalEvents() {
         switch (this->evt.ht[this->ctx.countH]) {
             case HorizontalEventType::LeftErase:
-                this->tick_triggerIntH();
                 break;
             case HorizontalEventType::LeftBorder:
                 break;
             case HorizontalEventType::ActiveDisplayH:
                 this->resetHR(); // horizontal active
-                if (this->isF()) {
-                    this->checkIRQ(); // callback VSYNC interrupt
-                }
+                if (this->isF() || this->isFH()) this->checkIRQ(); // fire IRQ if F|FH
                 break;
             case HorizontalEventType::RightBorder:
                 this->setHR(); // horizontal blanking
-                this->ctx.stat[1] &= this->isIE1() ? 0xFF : 0xFE; // Reset FH if is not IE1
+                if (this->isIE1()) {
+                    this->tick_checkIntH(); // set F if match Reg.19
+                } else {
+                    this->ctx.stat[1] &= 0xFE; // Reset FH if is not IE1
+                }
                 break;
             case HorizontalEventType::RightErase:
                 this->tick_display();
@@ -676,12 +677,11 @@ public:
         }
     }
 
-    inline void tick_triggerIntH() {
+    inline void tick_checkIntH() {
         if (!this->isFH()) {
             if (this->evt.vt[this->ctx.countV] == VerticalEventType::ActiveDisplayV) {
                 if (this->evt.vi[this->ctx.countV] == this->ctx.lineIE1) {
                     this->setFH();
-                    this->checkIRQ();
                 }
             }
         }
@@ -1002,13 +1002,11 @@ public:
             case 19:
                 this->ctx.lineIE1 = value;
                 this->ctx.lineIE1 -= this->ctx.reg[23];
-                this->ctx.lineIE1++;
                 //printf("%3d,%3d: R#%d val=%d, lineIE1=%d\n",ctx.countV,ctx.counter%100,rn,value,this->ctx.lineIE1);
                 break;
             case 23:
                 this->ctx.lineIE1 = this->ctx.reg[19];
                 this->ctx.lineIE1 -= value;
-                this->ctx.lineIE1++;
                 //printf("%3d,%3d: R#%d val=%d, lineIE1=%d\n",ctx.countV,ctx.counter%100,rn,value,this->ctx.lineIE1);
                 break;
             case 44:
