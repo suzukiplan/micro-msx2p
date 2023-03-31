@@ -45,9 +45,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_main_msx2_jp" ofType:@"rom"]];
     NSData* biosLogo = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_logo_msx2" ofType:@"rom"]];
     NSData* biosSub = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_sub" ofType:@"rom"]];
-    emu_init_cbios(biosMain.bytes, biosMain.length,
-                   biosLogo.bytes, biosLogo.length,
-                   biosSub.bytes, biosSub.length);
+    emu_init_cbios(biosMain.bytes, biosLogo.bytes, biosSub.bytes);
 #elif 0
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2" ofType:@"ROM"]];
     NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2EXT" ofType:@"ROM"]];
