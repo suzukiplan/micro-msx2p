@@ -1002,11 +1002,13 @@ public:
             case 19:
                 this->ctx.lineIE1 = value;
                 this->ctx.lineIE1 -= this->ctx.reg[23];
+                this->ctx.lineIE1++;
                 //printf("%3d,%3d: R#%d val=%d, lineIE1=%d\n",ctx.countV,ctx.counter%100,rn,value,this->ctx.lineIE1);
                 break;
             case 23:
                 this->ctx.lineIE1 = this->ctx.reg[19];
                 this->ctx.lineIE1 -= value;
+                this->ctx.lineIE1++;
                 //printf("%3d,%3d: R#%d val=%d, lineIE1=%d\n",ctx.countV,ctx.counter%100,rn,value,this->ctx.lineIE1);
                 break;
             case 44:
