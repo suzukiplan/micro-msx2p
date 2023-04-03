@@ -2152,8 +2152,9 @@ public:
         int dpb = this->getDotPerByteX();
         int lineBytes = screenWidth / dpb;
         if (setup) {
+            auto ignore = this->getIgnoreMask();
             this->ctx.cmd.sy = this->getSY();
-            this->ctx.cmd.dx = this->getDX();
+            this->ctx.cmd.dx = this->getDX(ignore);
             this->ctx.cmd.dy = this->getDY();
             this->ctx.cmd.ny = this->getNY();
             this->ctx.cmd.diy = this->getDIY();
