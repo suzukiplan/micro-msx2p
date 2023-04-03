@@ -1928,10 +1928,14 @@ public:
         }
     }
 
-    inline unsigned short getSX() {
+    inline unsigned short getSX(unsigned short ignore = 0xFFFF) {
         unsigned short result = this->ctx.reg[33] & 1;
         result <<= 8;
         result |= this->ctx.reg[32];
+        if (0xFFFF != ignore) {
+            result &= ignore;
+            this->setSX(result);
+        }
         return result;
     }
 
@@ -1952,10 +1956,14 @@ public:
         this->ctx.reg[34] = sy & 0xFF;
     }
 
-    inline unsigned short getDX() {
+    inline unsigned short getDX(unsigned short ignore = 0xFFFF) {
         unsigned short result = this->ctx.reg[37] & 1;
         result <<= 8;
         result |= this->ctx.reg[36];
+        if (0xFFFF != ignore) {
+            result &= ignore;
+            this->setDX(result);
+        }
         return result;
     }
 
@@ -1977,8 +1985,12 @@ public:
     }
 
     inline void setNX(int nx) { this->setMAJ(nx); }
-    inline unsigned short getNX() {
+    inline unsigned short getNX(unsigned short ignore = 0xFFFF) {
         unsigned short nx = this->getMAJ();
+        if (ignore != 0xFFFF) {
+            nx &= ignore;
+            this->setNX(nx);
+        }
         return 0 == nx ? 512 : nx;
     }
 
@@ -2010,6 +2022,18 @@ public:
     inline void setMIN(int min) {
         this->ctx.reg[43] = (min & 0x300) >> 8;
         this->ctx.reg[42] = min & 0xFF;
+    }
+
+    inline short getIgnoreMask() {
+        switch (this->getScreenMode()) {
+            case 0b00011: // GRAPHIC4
+            case 0b00101: // GRAPHIC6
+                return 0xFFFE;
+            case 0b00100: // GRAPHIC5
+                return 0xFFFC;
+            default:
+                return 0xFFFF;
+        }
     }
 
     inline int getEQ() { return this->ctx.reg[45] & 0b00000010 ? 1 : 0; }
@@ -2099,9 +2123,10 @@ public:
         int dpb = this->getDotPerByteX();
         int lineBytes = screenWidth / dpb;
         if (setup) {
-            this->ctx.cmd.dx = this->getDX();
+            auto ignore = this->getIgnoreMask();
+            this->ctx.cmd.dx = this->getDX(ignore);
             this->ctx.cmd.dy = this->getDY();
-            this->ctx.cmd.nx = this->getNX();
+            this->ctx.cmd.nx = this->getNX(ignore);
             this->ctx.cmd.ny = this->getNY();
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = dpb * this->getDIX();
@@ -2133,6 +2158,7 @@ public:
             this->ctx.cmd.ny = this->getNY();
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = dpb * this->getDIX();
+            this->ctx.cmd.dx &= this->getIgnoreMask();
 #ifdef COMMAND_DEBUG
             printf("%d: ExecuteCommand<YMMM>: SY=%d, DX=%d, DY=%d, NY=%d, DIX=%d, DIY=%d (SCREEN: %d)\n", ctx.countV, ctx.cmd.sy, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, getScreenMode());
 #endif
@@ -2170,11 +2196,12 @@ public:
         int dpb = this->getDotPerByteX();
         int lineBytes = screenWidth / dpb;
         if (setup) {
-            this->ctx.cmd.sx = this->getSX();
+            auto ignore = this->getIgnoreMask();
+            this->ctx.cmd.sx = this->getSX(ignore);
             this->ctx.cmd.sy = this->getSY();
-            this->ctx.cmd.dx = this->getDX();
+            this->ctx.cmd.dx = this->getDX(ignore);
             this->ctx.cmd.dy = this->getDY();
-            this->ctx.cmd.nx = this->getNX();
+            this->ctx.cmd.nx = this->getNX(ignore);
             this->ctx.cmd.ny = this->getNY();
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = dpb * this->getDIX();
@@ -2201,9 +2228,10 @@ public:
         int dpb = this->getDotPerByteX();
         int lineBytes = screenWidth / dpb;
         if (setup) {
-            this->ctx.cmd.dx = this->getDX();
+            auto ignore = this->getIgnoreMask();
+            this->ctx.cmd.dx = this->getDX(ignore);
             this->ctx.cmd.dy = this->getDY();
-            this->ctx.cmd.nx = this->getNX();
+            this->ctx.cmd.nx = this->getNX(ignore);
             this->ctx.cmd.ny = this->getNY();
             this->ctx.cmd.diy = this->getDIY();
             this->ctx.cmd.dix = dpb * this->getDIX();
