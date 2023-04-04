@@ -2156,9 +2156,9 @@ public:
         int dy = this->getDY();
         int ny = this->getNY();
         int diy = this->getDIY();
-        int dix = dpb * this->getDIX();
+        int dix = this->getDIX();
 #ifdef COMMAND_DEBUG
-        printf("%d: ExecuteCommand<YMMM>: SY=%d, DX=%d, DY=%d, NY=%d, DIX=%d, DIY=%d (SCREEN: %d)\n", ctx.countV, ctx.cmd.sy, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, getScreenMode());
+        printf("%d: ExecuteCommand<YMMM>: SY=%d, DX=%d, DY=%d, NY=%d, DIX=%d, DIY=%d (SCREEN: %d)\n", ctx.countV, sy, dx, dy, ny, dix, diy, getScreenMode());
 #endif
         int addrS = dx / dpb + sy * lineBytes;
         int addrD = dx / dpb + dy * lineBytes;
