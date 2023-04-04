@@ -548,7 +548,6 @@ public:
         }
         if (this->ctx.command && 0 == this->ctx.cmd.wait) {
             switch (this->ctx.command) {
-                case 0b1110: this->executeCommandYMMM(false); break;
                 case 0b1101: this->executeCommandHMMM(false); break;
                 case 0b1100: this->executeCommandHMMV(false); break;
                 case 0b1001: this->executeCommandLMMM(false); break;
@@ -1872,7 +1871,7 @@ public:
             this->ctx.commandL = lo;
             switch (cm) {
                 case 0b1111: this->executeCommandHMMC(true); break;
-                case 0b1110: this->executeCommandYMMM(true); break;
+                case 0b1110: this->executeCommandYMMM(); break;
                 case 0b1101: this->executeCommandHMMM(true); break;
                 case 0b1100: this->executeCommandHMMV(true); break;
                 case 0b1011: this->executeCommandLMMC(true); break;
@@ -2142,7 +2141,7 @@ public:
         }
     }
 
-    inline void executeCommandYMMM(bool setup)
+    inline void executeCommandYMMM()
     {
         if (!this->isBitmapMode()) {
             printf("Error: YMMM was executed in invalid screen mode (%d)\n", this->getScreenMode());
@@ -2151,40 +2150,30 @@ public:
         int screenWidth = this->getScreenWidth();
         int dpb = this->getDotPerByteX();
         int lineBytes = screenWidth / dpb;
-        if (setup) {
-            auto ignore = this->getIgnoreMask();
-            this->ctx.cmd.sy = this->getSY();
-            this->ctx.cmd.dx = this->getDX(ignore);
-            this->ctx.cmd.dy = this->getDY();
-            this->ctx.cmd.ny = this->getNY();
-            this->ctx.cmd.diy = this->getDIY();
-            this->ctx.cmd.dix = dpb * this->getDIX();
-            this->ctx.cmd.dx &= this->getIgnoreMask();
+        auto ignore = this->getIgnoreMask();
+        int sy = this->getSY();
+        int dx = this->getDX(ignore);
+        int dy = this->getDY();
+        int ny = this->getNY();
+        int diy = this->getDIY();
+        int dix = dpb * this->getDIX();
 #ifdef COMMAND_DEBUG
-            printf("%d: ExecuteCommand<YMMM>: SY=%d, DX=%d, DY=%d, NY=%d, DIX=%d, DIY=%d (SCREEN: %d)\n", ctx.countV, ctx.cmd.sy, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, getScreenMode());
+        printf("%d: ExecuteCommand<YMMM>: SY=%d, DX=%d, DY=%d, NY=%d, DIX=%d, DIY=%d (SCREEN: %d)\n", ctx.countV, ctx.cmd.sy, ctx.cmd.dx, ctx.cmd.dy, ctx.cmd.ny, ctx.cmd.dix, ctx.cmd.diy, getScreenMode());
 #endif
+        int addrS = dx / dpb + sy * lineBytes;
+        int addrD = dx / dpb + dy * lineBytes;
+        int base = 0 < dix ? 0 : dx / dpb;
+        addrS -= base;
+        addrD -= base;
+        int size = 0 < dix ? lineBytes - dx / dpb : dx / dpb;
+        while (0 < ny) {
+            this->addCommandWait(40);
+            memmove(&ctx.ram[addrD], &ctx.ram[addrS], size);
+            ny--;
+            addrS += diy * lineBytes;
+            addrD += diy * lineBytes;
         }
-        int addrS = this->ctx.cmd.dx / dpb + this->ctx.cmd.sy * lineBytes;
-        int addrD = this->ctx.cmd.dx / dpb + this->ctx.cmd.dy * lineBytes;
-        unsigned char d = this->ctx.ram[addrS];
-        this->addCommandWait(40);
-        this->ctx.ram[addrD] = d;
-        this->addCommandWait(24);
-        this->ctx.cmd.dx += this->ctx.cmd.dix;
-        if (512 <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0) {
-            this->ctx.cmd.dx = this->getDX();
-            this->ctx.cmd.nx = this->getNX();
-            this->ctx.cmd.dy += this->ctx.cmd.diy;
-            this->ctx.cmd.sy += this->ctx.cmd.diy;
-            this->ctx.cmd.ny--;
-            if (this->ctx.cmd.ny <= 0 || 1024 <= this->ctx.cmd.dy || this->ctx.cmd.dy < 0 || 1024 <= this->ctx.cmd.sy || this->ctx.cmd.sy < 0) {
-                this->setDX(this->ctx.cmd.dx);
-                this->setDY(this->ctx.cmd.dy);
-                this->setSY(this->ctx.cmd.sy);
-                this->setNY(this->ctx.cmd.ny);
-                this->setCommandEnd();
-            }
-        }
+        this->setCommandEnd();
     }
 
     inline void executeCommandHMMM(bool setup)
