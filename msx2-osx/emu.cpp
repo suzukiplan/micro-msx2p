@@ -716,13 +716,37 @@ const void emu_startTypeWriter(const char* text)
     }
 
 static bool onceLog[65536];
+unsigned char hextbl[256];
 
 const void emu_loggingOnce(void)
 {
     memset(onceLog, 0, sizeof(onceLog));
+    hextbl['0'] = 0;
+    hextbl['1'] = 1;
+    hextbl['2'] = 2;
+    hextbl['3'] = 3;
+    hextbl['4'] = 4;
+    hextbl['5'] = 5;
+    hextbl['6'] = 6;
+    hextbl['7'] = 7;
+    hextbl['8'] = 8;
+    hextbl['9'] = 9;
+    hextbl['A'] = 10;
+    hextbl['B'] = 11;
+    hextbl['C'] = 12;
+    hextbl['D'] = 13;
+    hextbl['E'] = 14;
+    hextbl['F'] = 15;
     msx2.cpu->setDebugMessage([](void* arg, const char* msg) {
-        if (!onceLog[((MSX2*)arg)->cpu->reg.PC]) {
-            onceLog[((MSX2*)arg)->cpu->reg.PC] = true;
+        unsigned short pc = hextbl[msg[1]];
+        pc <<= 4;
+        pc |= hextbl[msg[2]];
+        pc <<= 4;
+        pc |= hextbl[msg[3]];
+        pc <<= 4;
+        pc |= hextbl[msg[4]];
+        if (!onceLog[pc]) {
+            onceLog[pc] = true;
             ((MSX2*)arg)->putlog("%s", msg);
         }
     });
