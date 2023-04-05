@@ -716,8 +716,8 @@ const void emu_startTypeWriter(const char* text)
     }
 
 static bool onceLog[65536];
-unsigned char hextbl[256];
-int nestLevel = 0;
+static unsigned char hextbl[256];
+static int nestLevel = 0;
 
 const void emu_loggingOnce(void)
 {
