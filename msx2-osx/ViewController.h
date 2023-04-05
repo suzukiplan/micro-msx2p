@@ -24,5 +24,6 @@
 -(IBAction)menuStop:(id)sender;
 -(IBAction)menuPause:(id)sender;
 -(IBAction)menuTypeFromClipboard:(id)sender;
+-(IBAction)menuLoggingOnce:(id)sender;
 @end
 

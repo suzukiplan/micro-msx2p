@@ -452,4 +452,10 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     [self.view.window setContentSize:NSMakeSize(VRAM_WIDTH * 4, VRAM_HEIGHT * 4)];
 }
 
+-(IBAction)menuLoggingOnce:(id)sender
+{
+    NSLog(@"menuLoggingOnce");
+    emu_loggingOnce();
+}
+
 @end

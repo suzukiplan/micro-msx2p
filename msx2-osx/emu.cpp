@@ -713,4 +713,17 @@ const void emu_startTypeWriter(const char* text)
     tw.index = 0;
     tw.wait = 0;
     msx2.ctx.readKey = 0;
+    }
+
+static bool onceLog[65536];
+
+const void emu_loggingOnce(void)
+{
+    memset(onceLog, 0, sizeof(onceLog));
+    msx2.cpu->setDebugMessage([](void* arg, const char* msg) {
+        if (!onceLog[((MSX2*)arg)->cpu->reg.PC]) {
+            onceLog[((MSX2*)arg)->cpu->reg.PC] = true;
+            ((MSX2*)arg)->putlog("%s", msg);
+        }
+    });
 }
