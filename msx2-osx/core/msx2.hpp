@@ -64,7 +64,8 @@ public:
         unsigned char io[256];
         unsigned char key;
         unsigned char readKey;
-        unsigned char reserved[2];
+        unsigned char regC;
+        unsigned char selectedKeyRow;
     } ctx;
     
     ~MSX2() {
@@ -376,6 +377,7 @@ public:
         memset(&this->cpu->reg.pair, 0xFF, sizeof(this->cpu->reg.pair));
         memset(&this->cpu->reg.back, 0xFF, sizeof(this->cpu->reg.back));
         memset(&this->ctx, 0, sizeof(this->ctx));
+        this->ctx.regC = 0x50;
         this->cpu->reg.SP = 0xF000;
         this->cpu->reg.IX = 0xFFFF;
         this->cpu->reg.IY = 0xFFFF;
@@ -513,12 +515,12 @@ public:
                 unsigned char result = 0;
                 if (this->ctx.key && this->keyCodes[this->ctx.key].exist) {
                     if (this->keyCodes[this->ctx.key].shift) {
-                        if ((this->ctx.io[0xAA] & 0x0F) == 6) {
+                        if (this->ctx.selectedKeyRow == 6) {
                             result |= bit[0];
                         }
                     }
                     for (int i = 0; i < this->keyCodes[this->ctx.key].num; i++) {
-                        if ((this->ctx.io[0xAA] & 0x0F) == this->keyCodes[this->ctx.key].y[i]) {
+                        if (this->ctx.selectedKeyRow == this->keyCodes[this->ctx.key].y[i]) {
                             this->ctx.readKey++;
                             result |= bit[this->keyCodes[this->ctx.key].x[i]];
                         }
@@ -526,10 +528,7 @@ public:
                 }
                 return ~result;
             }
-            case 0xAA: return 0x00;
-                puts("IN PPI PORT C");
-                exit(-1);
-                break;
+            case 0xAA: return this->ctx.regC;
             case 0xB5: return this->clock.inPortB5();
             case 0xB8: return 0x00; // light pen
             case 0xB9: return 0x00; // light pen
@@ -572,14 +571,36 @@ public:
             case 0xA0: this->psg.latch(value); break;
             case 0xA1: this->psg.write(value); break;
             case 0xA8: this->mmu.updatePrimary(value); break;
-            case 0xAA: break;
+            case 0xAA: {
+                unsigned char mod = this->ctx.regC ^ value;
+                if (mod) {
+                    this->ctx.regC = value;
+                    if (mod & 0x0F) {
+                        this->ctx.selectedKeyRow = this->ctx.regC & 0x0F;
+                    }
+                    if (mod & 0xA0) {
+                        // TODO: update pluse signal
+                    }
+                    if (mod & 0x40) {
+                        // TODO: update caps led
+                    }
+                }
+                break;
+            }
             case 0xAB: {
                 if (0 == (value & 0x80)) {
-                    unsigned char bitmask = (unsigned char)(1 << ((value & 0x0E) >> 1));
+                    unsigned char bit = (value & 0x0E) >> 1;
                     if (value & 0x01) {
-                        this->ctx.io[0xAA] = this->ctx.io[0xAA] | bitmask;
+                        this->ctx.regC |= 1 << bit;
                     } else {
-                        this->ctx.io[0xAA] = this->ctx.io[0xAA] & ~bitmask;
+                        this->ctx.regC &= ~(1 << bit);
+                    }
+                    if (bit <= 3) {
+                        this->ctx.selectedKeyRow = this->ctx.regC & 0x0F;
+                    } else if (5 == bit || 7 == bit) {
+                        // TODO: update pulse signal
+                    } else if (6 == bit) {
+                        // TODO: update caps led
                     }
                 }
                 break;
