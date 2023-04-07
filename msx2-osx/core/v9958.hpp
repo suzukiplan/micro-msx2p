@@ -678,10 +678,25 @@ public:
 
     inline void tick_checkIntH() {
         if (!this->isFH()) {
-            if (this->evt.vt[this->ctx.countV] == VerticalEventType::ActiveDisplayV) {
-                if (this->evt.vi[this->ctx.countV] == this->ctx.lineIE1) {
-                    this->setFH();
-                }
+            int scanline;
+            switch (this->evt.vt[this->ctx.countV]) {
+                case VerticalEventType::ActiveDisplayV:
+                    scanline = this->evt.vi[this->ctx.countV];
+                    break;
+                case VerticalEventType::BottomBorder:
+                    scanline = this->evt.vi[this->ctx.countV];
+                    scanline += this->getLineNumber();
+                    break;
+                case VerticalEventType::TopBorder:
+                    scanline = this->evt.vi[this->ctx.countV];
+                    scanline += this->getLineNumber();
+                    scanline += this->getBottomBorder();
+                    break;
+                default:
+                    return;
+            }
+            if (scanline == this->ctx.lineIE1) {
+                this->setFH();
             }
         }
     }
