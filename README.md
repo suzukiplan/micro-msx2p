@@ -5,10 +5,14 @@
 - micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを 家庭用ゲーム機（Nintendo Switch, PlayStation, XBOXなど）、スマートフォンアプリ（iOS, Adnrdoiなど）、PCアプリ（Windows, macOS, Linuxなど）として販売する用途（組み込み用途）を想定して **各種プロジェクトへの組み込みのし易さ** に特化することを目指した最小構成の MSX2+ エミュレータです。
 - 実機 BIOS で動作させることも可能ですが、基本的には C-BIOS を用いて ROM カートリッジ形式のゲームソフトで利用する用途を想定しています。
   - [ROMカートリッジ形式のゲームソフトの作成方法についての参考資料](https://qiita.com/suzukiplan/items/b369d3f9b41be55b247e)
-  - MSX-BASIC のプログラムは C-BIOS では動かせません（実機BIOSが必要です）
-  - FDC (東芝製) の実装は入っていますが FDC へのアクセスには実機の DISK BIOS が必要です
-  - OPLL (YM-2413) の実装は入ってますが FM-PAC の BIOS 実装は入ってません（BIOS を経由せずにポート $7C, $7D を直叩きすることで再生可能）
-- 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用のエミュレータ実装が付随しています。
+  - C-BIOS を用いることで発生する制約:
+    - MSX-BASIC のプログラムは動作できません
+      - MSX-BASIC のプログラムの動作には実機BIOSが必要
+    - FloppyDisk を扱うことができません
+      - FDC (東芝製) の実装は入っていますが FDC へのアクセスには実機の DISK BIOS が必要
+    - FM-PAC の BIOS またはカートリッジを扱うことができません
+      - OPLL (YM-2413) の実装自体は入っているので、一般的な BIOS 経由でのアクセスではなく、出力ポート $7C, $7D を直叩きすることで OPLL を再生することは可能
+- 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用の MSX2+ エミュレータ実装が付随しています。
 
 ## Unimplemented Features　(TODO List)
 
