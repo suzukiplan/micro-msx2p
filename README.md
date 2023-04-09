@@ -7,7 +7,7 @@
   - [ROMカートリッジ形式のゲームソフトの作成方法についての参考資料](https://qiita.com/suzukiplan/items/b369d3f9b41be55b247e)
   - MSX-BASIC のプログラムは C-BIOS では動かせません（実機BIOSが必要です）
   - FDC (東芝製) の実装は入っていますが FDC へのアクセスには実機 DISK BIOS が必要です
-  - OPLL (YM-2413) の実装は入ってますが FMPAC の BIOS 実装は入ってません（ポート $7C, $7D を直叩きすることで再生することは可能）
+  - OPLL (YM-2413) の実装は入ってますが FM-PAC の BIOS 実装は入ってません（BIOS を経由せずにポート $7C, $7D を直叩きすることで再生可能）
 - 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用のエミュレータ実装が付随しています。
 
 ## Unimplemented Features
@@ -104,12 +104,12 @@ msx2.setup(3, 3, 2, data.fm, sizeof(data.fm), "FM");
 
 ```c++
 // 適切なメガロム種別の指定が必要:
-// - MSX2_ROM_TYPE_NORMAL (16KB or 32KB)
-// - MSX2_ROM_TYPE_ASC8 (ASCII8 メガロム)
-// - MSX2_ROM_TYPE_ASC8_SRAM2 (ASCII8 メガロム+SRAM)
-// - MSX2_ROM_TYPE_ASC16 3 (ASCII16 メガロム)
-// - MSX2_ROM_TYPE_KONAMI_SCC 4 (SCC搭載KONAMI メガロム)
-// - MSX2_ROM_TYPE_KONAMI 5 (標準KONAMI メガロム)
+// - MSX2_ROM_TYPE_NORMAL ....... 標準ROM(16KB or 32KB)
+// - MSX2_ROM_TYPE_ASC8 ......... ASCII8 メガロム
+// - MSX2_ROM_TYPE_ASC8_SRAM2 ... ASCII8 メガロム+SRAM
+// - MSX2_ROM_TYPE_ASC16 3 ...... ASCII16 メガロム
+// - MSX2_ROM_TYPE_KONAMI_SCC ... KONAMI メガロム (SCC搭載)
+// - MSX2_ROM_TYPE_KONAMI ....... KONAMI メガロム
 msx2.loadRom(rom, romSize, megaRomType);
 ```
 
@@ -184,6 +184,7 @@ for (int driveId = 0; driveId < 2; driveId++) {
         auto crc = msx2.fdc.calcDiskCrc(myDisks[i].data, myDisks[i].size);
         if (crc == fdc.ctx.crc[driveId]) {
             msx2.insertDisk(driveId, myDisks[i].data, myDisks[i].size, true);
+            break;
         }
     }
 }
