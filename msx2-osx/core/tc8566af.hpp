@@ -27,8 +27,9 @@
 #ifndef INCLUDE_TC8566AF_HPP
 #define INCLUDE_TC8566AF_HPP
 
-class TC8566AF {
-private:
+class TC8566AF
+{
+  private:
     static const int NUMBER_OF_DRIVES = 2;
     static const int NUMBER_OF_SIDES = 2;
     static const int NUMBER_OF_TRACKS = 80;
@@ -93,20 +94,20 @@ private:
     static const int ST3_RDY = 0x20;
     static const int ST3_WP = 0x40;
     static const int ST3_FLT = 0x80;
-    
+
     struct DiskDrive {
         bool readOnly;
         int size;
         unsigned char sectors[SECTOR_LIMIT][SECTOR_SIZE];
     } drives[NUMBER_OF_DRIVES];
-    
+
     struct Callback {
         void* arg;
         void (*diskReadListener)(void* arg, int driveId, int sector);
         void (*diskWriteListener)(void* arg, int driveId, int sector);
     } CB;
 
-public:
+  public:
     struct Context {
         unsigned int crc[NUMBER_OF_DRIVES];
         int phaseStep;
@@ -126,7 +127,7 @@ public:
         unsigned char sectorsPerCylinder;
         unsigned char sectorBuf[SECTOR_SIZE];
     } ctx;
-    
+
     struct DiskWriteJournal {
         unsigned int crc;
         int sector;
@@ -134,30 +135,35 @@ public:
     } journal[JOURNAL_LIMIT];
     int journalCount = 0;
 
-    TC8566AF() {
+    TC8566AF()
+    {
         memset(&this->drives, 0, sizeof(this->drives));
         memset(&this->CB, 0, sizeof(this->CB));
         memset(&this->journal, 0, sizeof(this->journal));
         this->journalCount = 0;
         this->reset();
     }
-    
-    void setDiskReadListener(void* arg, void (*diskReadListener)(void* arg, int driveId, int sector)) {
+
+    void setDiskReadListener(void* arg, void (*diskReadListener)(void* arg, int driveId, int sector))
+    {
         this->CB.arg = arg;
         this->CB.diskReadListener = diskReadListener;
     }
 
-    void setDiskWriteListener(void* arg, void (*diskWriteListener)(void* arg, int driveId, int sector)) {
+    void setDiskWriteListener(void* arg, void (*diskWriteListener)(void* arg, int driveId, int sector))
+    {
         this->CB.arg = arg;
         this->CB.diskWriteListener = diskWriteListener;
     }
 
-    void reset() {
+    void reset()
+    {
         memset(&this->ctx, 0, sizeof(this->ctx));
         this->ctx.mainStatus = STM_NDM | STM_RQM;
     }
 
-    unsigned int calcDiskCrc(const void* data, size_t size) {
+    unsigned int calcDiskCrc(const void* data, size_t size)
+    {
         unsigned int buf[SECTOR_SIZE * SECTOR_LIMIT / 4];
         if (sizeof(buf) < size) return 0;
         memset(buf, 0, sizeof(buf));
@@ -169,12 +175,14 @@ public:
         return crc;
     }
 
-    void ejectDisk(int driveId) {
+    void ejectDisk(int driveId)
+    {
         if (driveId < 0 || NUMBER_OF_DRIVES <= driveId) return;
         memset(&this->drives[driveId], 0, sizeof(struct DiskDrive));
     }
 
-    void insertDisk(int driveId, const void* data, size_t size, bool readOnly) {
+    void insertDisk(int driveId, const void* data, size_t size, bool readOnly)
+    {
         if (driveId < 0 || NUMBER_OF_DRIVES <= driveId) return;
         this->ejectDisk(driveId);
         this->drives[driveId].readOnly = readOnly;
@@ -203,7 +211,8 @@ public:
         }
     }
 
-    inline unsigned char read(unsigned char reg) {
+    inline unsigned char read(unsigned char reg)
+    {
         switch (reg) {
             case 4:
                 if (~this->ctx.mainStatus & STM_RQM) {
@@ -223,8 +232,9 @@ public:
                 return 0x00;
         }
     }
-    
-    inline void write(unsigned char reg, unsigned char value) {
+
+    inline void write(unsigned char reg, unsigned char value)
+    {
         switch (reg) {
             case 2:
                 this->ctx.drive = value & 0x03;
@@ -245,25 +255,30 @@ public:
                 break;
         }
     }
-    
-private:
-    inline bool isEnabled(int driveId) {
+
+  private:
+    inline bool isEnabled(int driveId)
+    {
         return 0 <= driveId && driveId < NUMBER_OF_DRIVES;
     }
 
-    inline bool isPresent(int driveId) {
+    inline bool isPresent(int driveId)
+    {
         return this->isEnabled(driveId) && 0 < this->drives[driveId].size;
     }
 
-    inline int diskGetSides(int driveId) {
+    inline int diskGetSides(int driveId)
+    {
         return this->isPresent(driveId) ? NUMBER_OF_SIDES : 0;
     }
 
-    inline bool isReadOnly(int driveId) {
+    inline bool isReadOnly(int driveId)
+    {
         return this->isPresent(driveId) ? this->drives[driveId].readOnly : false;
     }
 
-    inline bool isValid(int driveId, int side, int track, int sector) {
+    inline bool isValid(int driveId, int side, int track, int sector)
+    {
         if (!this->isPresent(driveId)) {
             return false;
         } else if (side < 0 || NUMBER_OF_SIDES <= side) {
@@ -276,7 +291,8 @@ private:
         return true;
     }
 
-    inline int readSector(int driveId, int side, int track, int sector) {
+    inline int readSector(int driveId, int side, int track, int sector)
+    {
         int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
         if (SECTOR_LIMIT <= offset || !this->isValid(driveId, side, track, sector)) {
             return 0;
@@ -288,7 +304,8 @@ private:
         return 1;
     }
 
-    inline int writeSector(int driveId, int side, int track, int sector) {
+    inline int writeSector(int driveId, int side, int track, int sector)
+    {
         int offset = sector - 1 + NUMBER_OF_SECTORS * (track * NUMBER_OF_SIDES + side);
         if (SECTOR_LIMIT <= offset || !this->isValid(driveId, side, track, sector)) {
             return 0;
@@ -323,7 +340,8 @@ private:
         return 1;
     }
 
-    inline void idlePhaseWrite(unsigned char value) {
+    inline void idlePhaseWrite(unsigned char value)
+    {
         this->ctx.command = CMD_UNKNOWN;
         if ((value & 0x1f) == 0x06) this->ctx.command = CMD_READ_DATA;
         if ((value & 0x3f) == 0x05) this->ctx.command = CMD_WRITE_DATA;
@@ -368,8 +386,9 @@ private:
                 this->ctx.phase = PHASE_IDLE;
         }
     }
-    
-    inline void commandPhaseWrite(unsigned char value) {
+
+    inline void commandPhaseWrite(unsigned char value)
+    {
         switch (this->ctx.command) {
             case CMD_READ_DATA: this->commandSetupRW(value); break;
             case CMD_WRITE_DATA: this->commandSetupRW(value); break;
@@ -380,8 +399,9 @@ private:
             case CMD_SENSE_DEVICE_STATUS: this->commandSetupSenseDeviceStatus(value); break;
         }
     }
-    
-    inline void commandSetupRW(unsigned char value) {
+
+    inline void commandSetupRW(unsigned char value)
+    {
         switch (this->ctx.phaseStep++) {
             case 0:
                 this->ctx.status[0] &= ~(ST0_DS0 | ST0_DS1 | ST0_IC0 | ST0_IC1);
@@ -426,8 +446,9 @@ private:
                 break;
         }
     }
-    
-    inline void commandSetupFormat(unsigned char value) {
+
+    inline void commandSetupFormat(unsigned char value)
+    {
         switch (this->ctx.phaseStep++) {
             case 0:
                 this->ctx.status[0] &= ~(ST0_DS0 | ST0_DS1 | ST0_IC0 | ST0_IC1);
@@ -456,8 +477,9 @@ private:
                 break;
         }
     }
-    
-    inline void commandSetupSeek(unsigned char value) {
+
+    inline void commandSetupSeek(unsigned char value)
+    {
         switch (this->ctx.phaseStep++) {
             case 0:
                 this->ctx.status[0] &= ~(ST0_DS0 | ST0_DS1 | ST0_IC0 | ST0_IC1);
@@ -478,8 +500,9 @@ private:
                 break;
         }
     }
-    
-    inline void commandSetupRecalibrate(unsigned char value) {
+
+    inline void commandSetupRecalibrate(unsigned char value)
+    {
         switch (this->ctx.phaseStep++) {
             case 0:
                 this->ctx.status[0] &= ~(ST0_DS0 | ST0_DS1 | ST0_IC0 | ST0_IC1);
@@ -498,8 +521,9 @@ private:
                 break;
         }
     }
-    
-    inline void commandSetupSpecify(unsigned char value) {
+
+    inline void commandSetupSpecify(unsigned char value)
+    {
         switch (this->ctx.phaseStep++) {
             case 1:
                 this->ctx.mainStatus &= ~STM_CB;
@@ -507,8 +531,9 @@ private:
                 break;
         }
     }
-    
-    inline void commandSetupSenseDeviceStatus(unsigned char value) {
+
+    inline void commandSetupSenseDeviceStatus(unsigned char value)
+    {
         switch (this->ctx.phaseStep++) {
             case 0:
                 this->ctx.status[0] &= ~(ST0_DS0 | ST0_DS1 | ST0_IC0 | ST0_IC1);
@@ -526,15 +551,17 @@ private:
                 break;
         }
     }
-    
-    inline void executionPhaseWrite(unsigned char value) {
+
+    inline void executionPhaseWrite(unsigned char value)
+    {
         switch (this->ctx.command) {
             case CMD_WRITE_DATA: this->executionWriteData(value); break;
             case CMD_FORMAT: this->executionFormat(value); break;
         }
     }
-    
-    inline void executionWriteData(unsigned char value) {
+
+    inline void executionWriteData(unsigned char value)
+    {
         if (this->ctx.sectorOffset < SECTOR_SIZE) {
             this->ctx.sectorBuf[this->ctx.sectorOffset++] = value;
             if (this->ctx.sectorOffset == SECTOR_SIZE) {
@@ -549,9 +576,10 @@ private:
             }
         }
     }
-    
-    inline void executionFormat(unsigned char value) {
-        switch(this->ctx.phaseStep & 3) {
+
+    inline void executionFormat(unsigned char value)
+    {
+        switch (this->ctx.phaseStep & 3) {
             case 0:
                 this->ctx.currentTrack = value;
                 break;
@@ -572,8 +600,9 @@ private:
             this->ctx.mainStatus |= STM_DIO;
         }
     }
-    
-    inline unsigned char executionPhaseRead(){
+
+    inline unsigned char executionPhaseRead()
+    {
         if (this->ctx.command == CMD_READ_DATA) {
             if (this->ctx.sectorOffset < 512) {
                 unsigned char value = this->ctx.sectorBuf[this->ctx.sectorOffset++];
@@ -586,8 +615,9 @@ private:
         }
         return 0xff;
     }
-    
-    inline unsigned char resultsPhaseRead() {
+
+    inline unsigned char resultsPhaseRead()
+    {
         switch (this->ctx.command) {
             case CMD_READ_DATA:
             case CMD_WRITE_DATA:

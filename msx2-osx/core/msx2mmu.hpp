@@ -27,13 +27,13 @@
 #ifndef INCLUDE_MSX2MMU_HPP
 #define INCLUDE_MSX2MMU_HPP
 
+#include "msx2def.h"
 #include <stdio.h>
 #include <string.h>
-#include "msx2def.h"
 
 class MSX2MMU
 {
-public:
+  public:
     // MSX slots are separated by 16KB, but MegaROMs are separated by 8KB or 16KB, so data blocks are managed by 8KB
     struct DataBlock8KB {
         char label[8];
@@ -43,19 +43,19 @@ public:
         bool isDiskBios;
         bool isFmBios;
     };
-    
+
     struct Slot {
         struct DataBlock8KB data[8];
     } slots[4][4];
-    
+
     bool secondaryExist[4];
-    
+
     struct Cartridge {
         unsigned char* ptr;
         size_t size;
         int romType;
     } cartridge;
-    
+
     struct Callback {
         void* arg;
         unsigned char (*sccRead)(void* arg, unsigned short addr);
@@ -64,7 +64,7 @@ public:
         void (*diskWrite)(void* arg, unsigned short addr, unsigned char value);
         void (*fmWrite)(void* arg, unsigned short addr, unsigned char value);
     } CB;
-    
+
     struct Context {
         struct PrimarySlotState {
             unsigned char pri;
@@ -86,20 +86,22 @@ public:
     unsigned char pac[0x2000];
     unsigned char ram[0x10000];
 
-    MSX2MMU() {
+    MSX2MMU()
+    {
         memset(&this->slots, 0, sizeof(this->slots));
         memset(&this->secondaryExist, 0, sizeof(this->secondaryExist));
         memset(this->sram, 0, sizeof(this->sram));
         memset(this->pac, 0, sizeof(this->pac));
         this->sramEnabled = false;
     }
-    
+
     void setupCallbacks(void* arg,
                         unsigned char (*sccRead)(void* arg, unsigned short addr),
                         void (*sccWrite)(void* arg, unsigned short addr, unsigned char value),
                         unsigned char (*diskRead)(void* arg, unsigned short addr),
                         void (*diskWrite)(void* arg, unsigned short addr, unsigned char value),
-                        void (*fmWrite)(void* arg, unsigned short addr, unsigned char value)) {
+                        void (*fmWrite)(void* arg, unsigned short addr, unsigned char value))
+    {
         this->CB.arg = arg;
         this->CB.sccRead = sccRead;
         this->CB.sccWrite = sccWrite;
@@ -108,13 +110,14 @@ public:
         this->CB.fmWrite = fmWrite;
     }
 
-    void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
+    void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3)
+    {
         secondaryExist[0] = page0;
         secondaryExist[1] = page1;
         secondaryExist[2] = page2;
         secondaryExist[3] = page3;
     }
-    
+
     void reset()
     {
         memset(&this->ctx, 0, sizeof(this->ctx));
@@ -129,7 +132,7 @@ public:
         this->ctx.mmap[2] = 1;
         this->ctx.mmap[3] = 0;
     }
-    
+
     void setupCartridge(int pri, int sec, int idx, void* data, size_t size, int romType)
     {
         this->cartridge.ptr = (unsigned char*)data;
@@ -169,8 +172,9 @@ public:
                 exit(-1);
         }
     }
-    
-    void setupRAM(int pri, int sec) {
+
+    void setupRAM(int pri, int sec)
+    {
         printf("Setup SLOT %d-%d $%04X~$%04X = %s\n", pri, sec, 0, 0xFFFF, "RAM");
         for (int i = 0; i < 8; i++) {
             strcpy(this->slots[pri][sec].data[i].label, "RAM");
@@ -205,8 +209,9 @@ public:
         } while (0 < size);
         this->bankSwitchover();
     }
-    
-    inline void bankSwitchover() {
+
+    inline void bankSwitchover()
+    {
         for (int i = 1; i < 3; i++) {
             for (int j = 2; j < 6; j += 2) {
                 if (this->slots[i][0].data[j].isCartridge) {
@@ -261,14 +266,14 @@ public:
             return 0xFF;
         }
     }
-    
+
     inline void updateSecondary(unsigned char value)
     {
         unsigned char pri = this->ctx.pslot[3].pri;
         if (this->secondaryExist[pri]) {
             this->ctx.pslot[pri].reg = value;
             for (int page = 0; page < 4; page++) {
-                if(this->ctx.pslot[page].pri == pri) {
+                if (this->ctx.pslot[page].pri == pri) {
                     unsigned char sec = value & 0b11;
                     this->ctx.pslot[page].sec = sec;
                     this->ctx.pri[page] = pri;
@@ -278,8 +283,9 @@ public:
             }
         }
     }
-    
-    struct DataBlock8KB* getDataBlock(unsigned short addr) {
+
+    struct DataBlock8KB* getDataBlock(unsigned short addr)
+    {
         int page = (addr & 0b1100000000000000) >> 14;
         int pri = this->ctx.pri[page];
         int sec = this->ctx.sec[page];
@@ -287,7 +293,7 @@ public:
         auto s = &this->slots[pri][sec];
         return &s->data[idx];
     }
-    
+
     inline unsigned char read(unsigned short addr)
     {
         if (addr == 0xFFFF) {
@@ -306,14 +312,15 @@ public:
                 }
             } else if (s->data[idx].isFmBios && this->isEnabledPacSRAM()) {
                 if ((addr & 0x3FFF) < 0x1FFE) {
-                    return this->pac[addr &0x1FFF];
+                    return this->pac[addr & 0x1FFF];
                 }
             }
         }
         return ptr ? ptr[addr & 0x1FFF] : 0xFF;
     }
-    
-    inline bool isEnabledPacSRAM() {
+
+    inline bool isEnabledPacSRAM()
+    {
         return this->pac[0x1FFE] == 0x4D && this->pac[0x1FFF] == 0x69;
     }
 
@@ -357,8 +364,9 @@ public:
             exit(-1);
         }
     }
-    
-    inline void asc8(int idx, unsigned short addr, unsigned char value) {
+
+    inline void asc8(int idx, unsigned short addr, unsigned char value)
+    {
         switch (addr & 0x7800) {
             case 0x6000: this->ctx.cpos[idx][0] = value; break;
             case 0x6800: this->ctx.cpos[idx][1] = value; break;
@@ -368,13 +376,15 @@ public:
         this->bankSwitchover();
     }
 
-    inline void asc8sram2(int idx, unsigned short addr, unsigned char value) {
+    inline void asc8sram2(int idx, unsigned short addr, unsigned char value)
+    {
         this->ctx.isSelectSRAM[4] = value & 0b11110000 ? 1 : 0;
         value &= 0b00001111;
         this->asc8(idx, addr, value);
     }
 
-    inline void asc16(int idx, unsigned short addr, unsigned char value) {
+    inline void asc16(int idx, unsigned short addr, unsigned char value)
+    {
         if (0x6000 <= addr && addr < 0x6800) {
             this->ctx.cpos[idx][0] = value * 2;
             this->ctx.cpos[idx][1] = value * 2 + 1;
@@ -385,8 +395,9 @@ public:
             this->bankSwitchover();
         }
     }
-    
-    inline void konamiSCC(int idx, unsigned short addr, unsigned char value) {
+
+    inline void konamiSCC(int idx, unsigned short addr, unsigned char value)
+    {
         switch (addr & 0xF000) {
             case 0x5000: this->ctx.cpos[idx][0] = value; break;
             case 0x7000: this->ctx.cpos[idx][1] = value; break;
@@ -402,8 +413,9 @@ public:
         }
         this->bankSwitchover();
     }
-    
-    inline void konami(int idx, unsigned short addr, unsigned char value) {
+
+    inline void konami(int idx, unsigned short addr, unsigned char value)
+    {
         switch (addr & 0xF000) {
             case 0x6000: this->ctx.cpos[idx][1] = value; break;
             case 0x7000: this->ctx.cpos[idx][1] = value; break;

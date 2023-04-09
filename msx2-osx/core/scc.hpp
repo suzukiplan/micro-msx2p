@@ -28,8 +28,9 @@
 #define INCLUDE_SCC_HPP
 #include <string.h>
 
-class SCC {
-public:
+class SCC
+{
+  public:
     bool enabled;
     struct Channel {
         signed char waveforms[32];
@@ -38,25 +39,28 @@ public:
         unsigned char volume;
         unsigned char index;
     };
-    
+
     struct Context {
         struct Channel ch[5];
         int sw;
     } ctx;
-    
-    SCC() {
+
+    SCC()
+    {
         this->reset();
         this->enabled = false;
     }
-    
+
     void reset() { memset(&this->ctx, 0, sizeof(this->ctx)); }
-    
-    inline unsigned char read(unsigned short addr) {
+
+    inline unsigned char read(unsigned short addr)
+    {
         addr &= 0xFF;
         return addr < 0x80 ? this->ctx.ch[addr / 0x20].waveforms[addr & 0x1F] : 0xFF;
     }
-    
-    inline void write(unsigned short addr, unsigned char value) {
+
+    inline void write(unsigned short addr, unsigned char value)
+    {
         addr &= 0xFF;
         if (addr & 0x80) {
             addr &= 0x3F;
@@ -72,12 +76,13 @@ public:
             this->ctx.ch[addr >> 5].waveforms[addr & 0x1F] = (signed char)value;
         }
     }
-    
-    inline void tick(short* left, short* right, unsigned int cycles) {
+
+    inline void tick(short* left, short* right, unsigned int cycles)
+    {
         if (!this->enabled) return;
         int mix[5];
         int sw = this->ctx.sw;
-        for(int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             Channel* ch = &this->ctx.ch[i];
             if (ch->period) {
                 ch->counter += cycles;
@@ -97,9 +102,10 @@ public:
         *left = this->to_short((*left) + result);
         *right = this->to_short((*right) + result);
     }
-    
-private:
-    inline short to_short(int i) {
+
+  private:
+    inline short to_short(int i)
+    {
         if (32767 < i) return (short)32767;
         if (i < -32768) return (short)-32768;
         return (short)i;

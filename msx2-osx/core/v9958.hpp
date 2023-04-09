@@ -33,7 +33,7 @@
 
 class V9958
 {
-private:
+  private:
     enum HorizontalEventType {
         ActiveDisplayH,
         RightBorder,
@@ -132,8 +132,7 @@ private:
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
-    };
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
     int colorMode;
     void* arg;
     void (*detectInterrupt)(void* arg, int ie);
@@ -149,14 +148,14 @@ private:
         void (*vramWriteListener)(void* arg, int addr, unsigned char value);
         void* arg;
     } debug;
-    const int adjust[16] = { 0, 1, 2, 3, 4, 5, 6, 7, -8, -7, -6, -5, -4, -3, -2, -1 };
+    const int adjust[16] = {0, 1, 2, 3, 4, 5, 6, 7, -8, -7, -6, -5, -4, -3, -2, -1};
 
-public:
+  public:
     bool renderLimitOverSprites = true;
     unsigned short display[568 * 240];
     unsigned short palette[16];
     unsigned char lastRenderScanline;
-    
+
     struct CommandContext {
         int wait;
         int sx;
@@ -203,22 +202,26 @@ public:
 #endif
     } ctx;
 
-    void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value)) {
+    void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value))
+    {
         debug.arg = arg;
         debug.registerUpdateListener = listener;
     }
 
-    void setVramAddrChangedListener(void* arg, void (*listener)(void* arg, int addr)) {
+    void setVramAddrChangedListener(void* arg, void (*listener)(void* arg, int addr))
+    {
         debug.arg = arg;
         debug.vramAddrChangedListener = listener;
     }
 
-    void setVramReadListener(void* arg, void (*listener)(void* arg, int addr, unsigned char value)) {
+    void setVramReadListener(void* arg, void (*listener)(void* arg, int addr, unsigned char value))
+    {
         debug.arg = arg;
         debug.vramReadListener = listener;
     }
 
-    void setVramWriteListener(void* arg, void (*listener)(void* arg, int addr, unsigned char value)) {
+    void setVramWriteListener(void* arg, void (*listener)(void* arg, int addr, unsigned char value))
+    {
         debug.arg = arg;
         debug.vramWriteListener = listener;
     }
@@ -241,7 +244,8 @@ public:
         this->reset();
     }
 
-    void initYjkColorTable() {
+    void initYjkColorTable()
+    {
         for (int y = 0; y < 32; y++) {
             for (int J = 0; J < 64; J++) {
                 for (int K = 0; K < 64; K++) {
@@ -262,7 +266,8 @@ public:
         }
     }
 
-    void updateAllPalettes() {
+    void updateAllPalettes()
+    {
         for (int i = 0; i < 16; i++) {
             this->updatePaletteCacheFromRegister(i);
         }
@@ -270,7 +275,8 @@ public:
 
     void reset()
     {
-        static unsigned int rgb[16] = {0x000000, 0x000000,
+        static unsigned int rgb[16] = {
+            0x000000, 0x000000,
             //***     ***     ***
             0b110000000010000000100000, // 6 1 1
             0b111000000110000001100000, // 7 3 3
@@ -289,8 +295,7 @@ public:
         };
         static unsigned char stat[16] = {
             0x1f, 0x00, 0xcc, 0x40, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-        };
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
         static unsigned char reg[64] = {
             0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -299,12 +304,11 @@ public:
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-        };
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
         memset(this->display, 0, sizeof(this->display));
         memset(&this->ctx, 0, sizeof(this->ctx));
-        memcpy(&this->ctx.stat , stat, sizeof(stat));
-        memcpy(&this->ctx.reg , reg, sizeof(reg));
+        memcpy(&this->ctx.stat, stat, sizeof(stat));
+        memcpy(&this->ctx.reg, reg, sizeof(reg));
         this->ctx.hardwareResetFlag = 0xFF;
         for (int i = 0; i < 16; i++) {
             this->ctx.pal[i][0] = 0;
@@ -335,7 +339,8 @@ public:
         return mode;
     }
 
-    void updateEventTables() {
+    void updateEventTables()
+    {
         this->updateEventTableH();
         this->updateEventTableV();
     }
@@ -373,7 +378,8 @@ public:
     inline void reset5S() { this->ctx.stat[0] &= 0b10111111; }
     inline void resetCollision() { this->ctx.stat[0] &= 0b11011111; }
 
-    inline void set5S(bool f, int n) {
+    inline void set5S(bool f, int n)
+    {
         this->ctx.stat[0] &= 0b11100000;
         this->ctx.stat[0] |= (f ? 0b01000000 : 0) | (n & 0b00011111);
     }
@@ -405,34 +411,39 @@ public:
     inline void setCE() { this->ctx.stat[2] |= 0b00000001; }
     inline void resetCE() { this->ctx.stat[2] &= 0b11111110; }
 
-    inline int getSpriteAttributeTableM1() {
+    inline int getSpriteAttributeTableM1()
+    {
         int addr = this->ctx.reg[11] & 0b00000011;
         addr <<= 15;
         addr |= (this->ctx.reg[5] & 0b11111111) << 7;
         return addr;
     }
 
-    inline int getSpriteAttributeTableM2() {
+    inline int getSpriteAttributeTableM2()
+    {
         int addr = this->ctx.reg[11] & 0b00000011;
         addr <<= 15;
         addr |= (this->ctx.reg[5] & 0b11111100) << 7;
         return addr;
     }
 
-    inline int getSpriteColorTable() {
+    inline int getSpriteColorTable()
+    {
         int addr = this->ctx.reg[11] & 0b00000011;
         addr <<= 15;
         addr |= (this->ctx.reg[5] & 0b11111000) << 7;
         return addr;
     }
 
-    inline int getSpriteGeneratorTable() {
+    inline int getSpriteGeneratorTable()
+    {
         int addr = this->ctx.reg[6] & 0b00111111;
         addr <<= 11;
         return addr;
     }
 
-    inline int getAddressMask() {
+    inline int getAddressMask()
+    {
         switch (this->getScreenMode()) {
             case 0b00000: // GRAPHIC1
             case 0b00001: // GRAPHIC2
@@ -451,7 +462,8 @@ public:
         }
     }
 
-    inline unsigned short getBackdropColor() {
+    inline unsigned short getBackdropColor()
+    {
         switch (this->getScreenMode()) {
             case 0b00111: return this->convertColor_8bit_to_16bit(this->ctx.reg[7]);
             case 0b00100: return this->palette[this->ctx.reg[7] & 0b00000011];
@@ -459,15 +471,17 @@ public:
         }
     }
 
-    inline unsigned short getTextColor() {
+    inline unsigned short getTextColor()
+    {
         if (this->getScreenMode() == 0b00111) {
             return 0;
         } else {
             return this->palette[(this->ctx.reg[7] & 0b11110000) >> 4];
         }
     }
- 
-    inline int getNameTableAddress() {
+
+    inline int getNameTableAddress()
+    {
         switch (this->getScreenMode()) {
             case 0b00000: // GRAPHIC1
             case 0b00001: // GRAPHIC2
@@ -488,25 +502,27 @@ public:
         }
     }
 
-    inline int getNameTableSize() {
+    inline int getNameTableSize()
+    {
         switch (this->getScreenMode()) {
             case 0b00000: return 768; // GRAPHIC1
             case 0b00001: return 768; // GRAPHIC2
             case 0b00010: return 768; // GRAPHIC3
-            case 0b00011: // GRAPHIC4
-            case 0b00100: // GRAPHIC5
+            case 0b00011:             // GRAPHIC4
+            case 0b00100:             // GRAPHIC5
                 return this->getLineNumber() == 192 ? 0x6000 : 0x6A00;
             case 0b00101: // GRAPHIC6
             case 0b00111: // GRAPHIC7
                 return this->getLineNumber() == 192 ? 0xC000 : 0xD400;
-            case 0b01000: return 192; // MULTI COLOR
+            case 0b01000: return 192;     // MULTI COLOR
             case 0b10000: return 40 * 24; // TEXT1
             case 0b10010: return 80 * 27; // TEXT2
-            default: return 0; // n/a
+            default: return 0;            // n/a
         }
     }
 
-    inline int getPatternGeneratorAddress() {
+    inline int getPatternGeneratorAddress()
+    {
         switch (this->getScreenMode()) {
             case 0b00000: // GRAPHIC1
             case 0b10000: // TEXT1
@@ -519,18 +535,20 @@ public:
         }
     }
 
-    inline int getPatternGeneratorSize() {
+    inline int getPatternGeneratorSize()
+    {
         switch (this->getScreenMode()) {
             case 0b00000: return 2048; // GRAPHIC1
             case 0b00001: return 6144; // GRAPHIC2
             case 0b00010: return 6144; // GRAPHIC3
             case 0b10000: return 2048; // TEXT1
             case 0b10010: return 2048; // TEXT2
-            default: return 0; // n/a
+            default: return 0;         // n/a
         }
     }
 
-    inline int getColorTableAddress() {
+    inline int getColorTableAddress()
+    {
         switch (this->getScreenMode()) {
             case 0b00000: // GRAPHIC1
             {
@@ -556,13 +574,14 @@ public:
         }
     }
 
-    inline int getColorTableSize() {
+    inline int getColorTableSize()
+    {
         switch (this->getScreenMode()) {
-            case 0b00000: return 32; // GRAPHIC1
+            case 0b00000: return 32;   // GRAPHIC1
             case 0b00001: return 6144; // GRAPHIC2
             case 0b00010: return 6144; // GRAPHIC3
-            case 0b10010: return 240; // TEXT2 (Blink Table)
-            default: return 0; // n/a
+            case 0b10010: return 240;  // TEXT2 (Blink Table)
+            default: return 0;         // n/a
         }
     }
 
@@ -594,14 +613,15 @@ public:
         }
     }
 
-    inline void tick_checkHorizontalEvents() {
+    inline void tick_checkHorizontalEvents()
+    {
         switch (this->evt.ht[this->ctx.countH]) {
             case HorizontalEventType::LeftErase:
                 break;
             case HorizontalEventType::LeftBorder:
                 break;
             case HorizontalEventType::ActiveDisplayH:
-                this->resetHR(); // horizontal active
+                this->resetHR();                                   // horizontal active
                 if (this->isF() || this->isFH()) this->checkIRQ(); // fire IRQ if F|FH
                 break;
             case HorizontalEventType::RightBorder:
@@ -628,7 +648,8 @@ public:
         }
     }
 
-    inline void tick_checkVerticalEvents() {
+    inline void tick_checkVerticalEvents()
+    {
         switch (this->evt.vt[this->ctx.countV]) {
             case VerticalEventType::VerticalSync:
                 this->ctx.counter++;
@@ -650,7 +671,8 @@ public:
         }
     }
 
-    inline void tick_display() {
+    inline void tick_display()
+    {
         int scanline = this->evt.vi[this->ctx.countV] - this->getAdjustY();
         switch (this->evt.vt[this->ctx.countV]) {
             case VerticalEventType::TopBorder:
@@ -665,7 +687,7 @@ public:
         }
         if (scanline < 0) {
             scanline += 240;
-        }   else if (240 <= scanline) {
+        } else if (240 <= scanline) {
             return;
         }
         // render backdrop
@@ -702,7 +724,8 @@ public:
         }
     }
 
-    inline void tick_checkIntH() {
+    inline void tick_checkIntH()
+    {
         if (!this->isFH()) {
             int scanline;
             switch (this->evt.vt[this->ctx.countV]) {
@@ -860,15 +883,18 @@ public:
     }
 #endif
 
-    inline void outPortF4(unsigned char value) {
+    inline void outPortF4(unsigned char value)
+    {
         this->ctx.hardwareResetFlag = value;
     }
 
-    inline unsigned char inPortF4() {
+    inline unsigned char inPortF4()
+    {
         return this->ctx.hardwareResetFlag;
     }
 
-    inline unsigned short bit2to5(unsigned short n) {
+    inline unsigned short bit2to5(unsigned short n)
+    {
         n <<= 3;
         n |= n & 0b01000 ? 1 : 0;
         n |= n & 0b10000 ? 2 : 0;
@@ -876,14 +902,16 @@ public:
         return n;
     }
 
-    inline unsigned short bit3to5(unsigned short n) {
+    inline unsigned short bit3to5(unsigned short n)
+    {
         n <<= 2;
         n |= n & 0b01000 ? 1 : 0;
         n |= n & 0b10000 ? 2 : 0;
         return n;
     }
 
-    inline unsigned short bit3to6(unsigned short n) {
+    inline unsigned short bit3to6(unsigned short n)
+    {
         n <<= 3;
         n |= n & 0b001000 ? 1 : 0;
         n |= n & 0b010000 ? 2 : 0;
@@ -915,7 +943,8 @@ public:
         this->palette[pn] = r | g | b;
     }
 
-    inline const char* where(int addr) {
+    inline const char* where(int addr)
+    {
         static const char* answer[] = {
             "UNKNOWN",
             "NameTable",
@@ -952,7 +981,8 @@ public:
         return answer[0];
     }
 
-    inline void checkIRQ() {
+    inline void checkIRQ()
+    {
         if (this->isIE0() && this->isF()) {
             //printf("%3d,%3d: Detect IE0 (F=%d, FH=%d)\n",ctx.countV,ctx.counter%100,isF()?1:0,isFH()?1:0);
 #ifdef INTERRUPT_LINE_DEBUG
@@ -988,7 +1018,8 @@ public:
         this->incrementAddress();
     }
 
-    inline void incrementAddress() {
+    inline void incrementAddress()
+    {
         this->ctx.addr++;
         this->ctx.addr &= 0x1FFFF;
         unsigned char r14 = (this->ctx.addr >> 14) & 0b00000111;
@@ -1117,28 +1148,33 @@ public:
                         renderPosition[i] = borderColor;
                     }
                 }
-            } else return;
+            } else
+                return;
         }
     }
 
-    inline void renderPixel1(unsigned short* renderPosition, int paletteNumber) {
+    inline void renderPixel1(unsigned short* renderPosition, int paletteNumber)
+    {
         if (0 == (this->ctx.reg[8] & 0b00100000) && !paletteNumber) return;
         *renderPosition = this->palette[paletteNumber];
     }
 
-    inline void renderPixel2(unsigned short* renderPosition, int paletteNumber) {
+    inline void renderPixel2(unsigned short* renderPosition, int paletteNumber)
+    {
         if (0 == (this->ctx.reg[8] & 0b00100000) && !paletteNumber) return;
         *renderPosition = this->palette[paletteNumber];
         *(renderPosition + 1) = this->palette[paletteNumber];
     }
 
-    inline void renderPixel2S1(unsigned short* renderPosition, int paletteNumber) {
+    inline void renderPixel2S1(unsigned short* renderPosition, int paletteNumber)
+    {
         if (!paletteNumber) return;
         *renderPosition = this->palette[paletteNumber];
         *(renderPosition + 1) = this->palette[paletteNumber];
     }
 
-    inline void renderPixel2S2(unsigned short* renderPosition, int paletteNumber) {
+    inline void renderPixel2S2(unsigned short* renderPosition, int paletteNumber)
+    {
         if (!paletteNumber || !this->isSpriteDisplay()) return;
         *renderPosition = this->palette[paletteNumber];
         *(renderPosition + 1) = this->palette[paletteNumber];
@@ -1517,7 +1553,7 @@ public:
                                 }
                             }
                             overflow = x == 0xFF;
-                       }
+                        }
                     }
                 } else {
                     // 8x8 x 2
@@ -1739,7 +1775,7 @@ public:
                                 }
                             }
                             overflow = x == 0xFF;
-                       }
+                        }
                     }
                 } else {
                     // 8x8 x 2
@@ -1958,7 +1994,8 @@ public:
         }
     }
 
-    inline bool isBitmapMode() {
+    inline bool isBitmapMode()
+    {
         switch (this->getScreenMode()) {
             case 0b00011: return true; // GRAPHIC4
             case 0b00100: return true; // GRAPHIC5
@@ -1968,7 +2005,8 @@ public:
         }
     }
 
-    inline unsigned short getSX(unsigned short ignore = 0xFFFF) {
+    inline unsigned short getSX(unsigned short ignore = 0xFFFF)
+    {
         unsigned short result = this->ctx.reg[33] & 1;
         result <<= 8;
         result |= this->ctx.reg[32];
@@ -1979,24 +2017,28 @@ public:
         return result;
     }
 
-    inline void setSX(int sx) {
+    inline void setSX(int sx)
+    {
         this->ctx.reg[33] = (sx & 0x100) >> 8;
         this->ctx.reg[32] = sx & 0xFF;
     }
 
-    inline unsigned short getSY() {
+    inline unsigned short getSY()
+    {
         unsigned short result = this->ctx.reg[35] & 3;
         result <<= 8;
         result |= this->ctx.reg[34];
         return result;
     }
 
-    inline void setSY(int sy) {
+    inline void setSY(int sy)
+    {
         this->ctx.reg[35] = (sy & 0x300) >> 8;
         this->ctx.reg[34] = sy & 0xFF;
     }
 
-    inline unsigned short getDX(unsigned short ignore = 0xFFFF) {
+    inline unsigned short getDX(unsigned short ignore = 0xFFFF)
+    {
         unsigned short result = this->ctx.reg[37] & 1;
         result <<= 8;
         result |= this->ctx.reg[36];
@@ -2007,25 +2049,29 @@ public:
         return result;
     }
 
-    inline void setDX(int dx) {
+    inline void setDX(int dx)
+    {
         this->ctx.reg[37] = (dx & 0x100) >> 8;
         this->ctx.reg[36] = dx & 0xFF;
     }
 
-    inline unsigned short getDY() {
+    inline unsigned short getDY()
+    {
         unsigned short result = this->ctx.reg[39] & 3;
         result <<= 8;
         result |= this->ctx.reg[38];
         return result;
     }
 
-    inline void setDY(int dy) {
+    inline void setDY(int dy)
+    {
         this->ctx.reg[39] = (dy & 0x300) >> 8;
         this->ctx.reg[38] = dy & 0xFF;
     }
 
     inline void setNX(int nx) { this->setMAJ(nx); }
-    inline unsigned short getNX(unsigned short ignore = 0xFFFF) {
+    inline unsigned short getNX(unsigned short ignore = 0xFFFF)
+    {
         unsigned short nx = this->getMAJ();
         if (ignore != 0xFFFF) {
             nx &= ignore;
@@ -2035,36 +2081,42 @@ public:
     }
 
     inline void setNY(int ny) { this->setMIN(ny); }
-    inline unsigned short getNY() {
+    inline unsigned short getNY()
+    {
         unsigned short ny = this->getMIN();
         return 0 == ny ? 1024 : ny;
     }
 
-    inline unsigned short getMAJ() {
+    inline unsigned short getMAJ()
+    {
         unsigned short result = this->ctx.reg[41] & 1;
         result <<= 8;
         result |= this->ctx.reg[40];
         return result;
     }
 
-    inline void setMAJ(int maj) {
+    inline void setMAJ(int maj)
+    {
         this->ctx.reg[41] = (maj & 0x100) >> 8;
         this->ctx.reg[40] = maj & 0xFF;
     }
 
-    inline unsigned short getMIN() {
+    inline unsigned short getMIN()
+    {
         unsigned short result = this->ctx.reg[43] & 3;
         result <<= 8;
         result |= this->ctx.reg[42];
         return result;
     }
 
-    inline void setMIN(int min) {
+    inline void setMIN(int min)
+    {
         this->ctx.reg[43] = (min & 0x300) >> 8;
         this->ctx.reg[42] = min & 0xFF;
     }
 
-    inline short getIgnoreMask() {
+    inline short getIgnoreMask()
+    {
         switch (this->getScreenMode()) {
             case 0b00011: // GRAPHIC4
             case 0b00101: // GRAPHIC6
@@ -2082,13 +2134,15 @@ public:
     inline int abs(int n) { return n < 0 ? -n : n; }
     inline void addCommandWait(int wait) { this->ctx.cmd.wait += wait; }
 
-    inline void setCommandEnd() {
+    inline void setCommandEnd()
+    {
         this->ctx.command = 0;
         this->resetCE();
         this->resetTR();
     }
 
-    inline void commandMoveD(int waitY) {
+    inline void commandMoveD(int waitY)
+    {
         this->ctx.cmd.dx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
         if (this->ctx.cmd.nx <= 0 || 512 <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0) {
@@ -2108,7 +2162,8 @@ public:
         }
     }
 
-    inline void commandMoveS(int waitY) {
+    inline void commandMoveS(int waitY)
+    {
         this->ctx.cmd.sx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
         if (this->ctx.cmd.nx <= 0 || 512 <= this->ctx.cmd.sx || this->ctx.cmd.sx < 0) {
@@ -2128,7 +2183,8 @@ public:
         }
     }
 
-    inline void commandMoveDS(int waitY) {
+    inline void commandMoveDS(int waitY)
+    {
         this->ctx.cmd.dx += this->ctx.cmd.dix;
         this->ctx.cmd.sx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
@@ -2276,7 +2332,8 @@ public:
         this->commandMoveD(56);
     }
 
-    inline unsigned char readLogicalPixel(int addr, int dpb, int sx) {
+    inline unsigned char readLogicalPixel(int addr, int dpb, int sx)
+    {
         unsigned char src = this->ctx.ram[addr & 0x1FFFF];
         switch (dpb) {
             case 1: return src;
@@ -2292,15 +2349,16 @@ public:
         }
     }
 
-    inline void renderLogicalPixel(int addr, int dpb, int dx, int clr, int lo) {
+    inline void renderLogicalPixel(int addr, int dpb, int dx, int clr, int lo)
+    {
         if (clr || 0 == (lo & 0b1000)) {
             switch (dpb) {
                 case 1:
                     switch (lo & 0b0111) {
-                        case 0b0000: this->ctx.ram[addr & 0x1FFFF] = clr; break; // IMP
-                        case 0b0001: this->ctx.ram[addr & 0x1FFFF] &= clr; break; // AND
-                        case 0b0010: this->ctx.ram[addr & 0x1FFFF] |= clr; break; // OR
-                        case 0b0011: this->ctx.ram[addr & 0x1FFFF] ^= clr; break;// EOR
+                        case 0b0000: this->ctx.ram[addr & 0x1FFFF] = clr; break;        // IMP
+                        case 0b0001: this->ctx.ram[addr & 0x1FFFF] &= clr; break;       // AND
+                        case 0b0010: this->ctx.ram[addr & 0x1FFFF] |= clr; break;       // OR
+                        case 0b0011: this->ctx.ram[addr & 0x1FFFF] ^= clr; break;       // EOR
                         case 0b0100: this->ctx.ram[addr & 0x1FFFF] = 0xFF ^ clr; break; // NOT
                     }
                     break;
@@ -2316,10 +2374,10 @@ public:
                         this->ctx.ram[addr & 0x1FFFF] &= 0x0F;
                     }
                     switch (lo & 0b0111) {
-                        case 0b0000: src = clr; break; // IMP
-                        case 0b0001: src &= clr; break; // AND
-                        case 0b0010: src |= clr; break; // OR
-                        case 0b0011: src ^= clr; break; // EOR
+                        case 0b0000: src = clr; break;        // IMP
+                        case 0b0001: src &= clr; break;       // AND
+                        case 0b0010: src |= clr; break;       // OR
+                        case 0b0011: src ^= clr; break;       // EOR
                         case 0b0100: src = 0xFF ^ clr; break; // NOT
                     }
                     src &= 0x0F;
@@ -2349,17 +2407,17 @@ public:
                             src >>= 4;
                             this->ctx.ram[addr & 0x1FFFF] &= 0b11001111;
                             break;
-                        case 0 :
+                        case 0:
                             src &= 0b11000000;
                             src >>= 6;
                             this->ctx.ram[addr & 0x1FFFF] &= 0b00111111;
                             break;
                     }
                     switch (lo & 0b0111) {
-                        case 0b0000: src = clr; break; // IMP
-                        case 0b0001: src &= clr; break; // AND
-                        case 0b0010: src |= clr; break; // OR
-                        case 0b0011: src ^= clr; break; // EOR
+                        case 0b0000: src = clr; break;        // IMP
+                        case 0b0001: src &= clr; break;       // AND
+                        case 0b0010: src |= clr; break;       // OR
+                        case 0b0011: src ^= clr; break;       // EOR
                         case 0b0100: src = 0xFF ^ clr; break; // NOT
                     }
                     src &= 0b00000011;

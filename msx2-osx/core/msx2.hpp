@@ -26,20 +26,21 @@
  */
 #ifndef INCLUDE_MSX2_HPP
 #define INCLUDE_MSX2_HPP
-#include "z80.hpp"
-#include "v9958.hpp"
 #include "ay8910.hpp"
-#include "msx2mmu.hpp"
-#include "msx2def.h"
-#include "msx2clock.hpp"
-#include "msx2kanji.hpp"
-#include "scc.hpp"
-#include "tc8566af.hpp"
 #include "emu2413.h"
 #include "lz4.h"
+#include "msx2clock.hpp"
+#include "msx2def.h"
+#include "msx2kanji.hpp"
+#include "msx2mmu.hpp"
+#include "scc.hpp"
+#include "tc8566af.hpp"
+#include "v9958.hpp"
+#include "z80.hpp"
 
-class MSX2 {
-private:
+class MSX2
+{
+  private:
     const int CPU_CLOCK = 3584160;
     const int VDP_CLOCK = 21504960;
     const int PSG_CLOCK = 44100;
@@ -48,7 +49,7 @@ private:
     char quickSaveBuffer[1024 * 1024 * 4];
     char quickSaveBufferCompressed[1024 * 1024 * 4];
     size_t quickSaveBufferSize;
-    
+
     struct KeyCode {
         int num;
         bool exist;
@@ -56,8 +57,9 @@ private:
         int y[2];
         bool shift;
     } keyCodes[0x100];
-    
-    void initKeyCode(unsigned char code, int x, int y, bool shift = false) {
+
+    void initKeyCode(unsigned char code, int x, int y, bool shift = false)
+    {
         keyCodes[code].exist = true;
         keyCodes[code].x[0] = x;
         keyCodes[code].y[0] = y;
@@ -65,7 +67,8 @@ private:
         keyCodes[code].num = 1;
     }
 
-    void initKeyCode2(unsigned char code, int x1, int y1, int x2, int y2, bool shift = false) {
+    void initKeyCode2(unsigned char code, int x1, int y1, int x2, int y2, bool shift = false)
+    {
         keyCodes[code].exist = true;
         keyCodes[code].x[0] = x1;
         keyCodes[code].y[0] = y1;
@@ -75,7 +78,7 @@ private:
         keyCodes[code].num = 2;
     }
 
-public:
+  public:
     Z80* cpu;
     MSX2MMU mmu;
     V9958 vdp;
@@ -85,7 +88,7 @@ public:
     SCC scc;
     TC8566AF fdc;
     OPLL* ym2413;
-    
+
     struct Context {
         unsigned char io[256];
         unsigned char key;
@@ -93,56 +96,40 @@ public:
         unsigned char regC;
         unsigned char selectedKeyRow;
     } ctx;
-    
-    ~MSX2() {
+
+    ~MSX2()
+    {
         OPLL_delete(this->ym2413);
         delete this->cpu;
     }
-    
-    MSX2(int colorMode) {
-        this->cpu = new Z80([](void* arg, unsigned short addr) {
-            return ((MSX2*)arg)->mmu.read(addr);
-        }, [](void* arg, unsigned short addr, unsigned char value) {
-            ((MSX2*)arg)->mmu.write(addr, value);
-        }, [](void* arg, unsigned short port) {
-            return ((MSX2*)arg)->inPort((unsigned char) port);
-        }, [](void* arg, unsigned short port, unsigned char value) {
-            ((MSX2*)arg)->outPort((unsigned char) port, value);
-        }, this, false);
+
+    MSX2(int colorMode)
+    {
+        this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX2*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX2*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX2*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;
         this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
-        this->vdp.initialize(colorMode, this, [](void* arg, int ie) {
+        this->vdp.initialize(
+            colorMode, this, [](void* arg, int ie) {
             //((MSX2*)arg)->putlog("Detect IE%d (vf:%d, hf:%d)", ie, ((MSX2*)arg)->vdp.ctx.stat[0] & 0x80 ? 1 : 0,((MSX2*)arg)->vdp.ctx.stat[1] & 0x01);
             //((MSX2*)arg)->cpu->resetDebugMessage();
-            ((MSX2*)arg)->cpu->generateIRQ(0x07);
-        }, [](void* arg) {
-            ((MSX2*)arg)->cpu->cancelIRQ();
-        }, [](void* arg) {
-            ((MSX2*)arg)->cpu->requestBreak();
-        });
-        this->mmu.setupCallbacks(this, [](void* arg, unsigned short addr) {
-            return ((MSX2*)arg)->scc.read(addr);
-        }, [](void* arg, unsigned short addr, unsigned char value) {
-            ((MSX2*)arg)->scc.write(addr, value);
-        }, [](void* arg, unsigned short addr) {
+            ((MSX2*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX2*)arg)->cpu->cancelIRQ(); }, [](void* arg) { ((MSX2*)arg)->cpu->requestBreak(); });
+        this->mmu.setupCallbacks(
+            this, [](void* arg, unsigned short addr) { return ((MSX2*)arg)->scc.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->scc.write(addr, value); }, [](void* arg, unsigned short addr) {
             switch (addr) {
                 case 0x3FFA: return ((MSX2*)arg)->fdc.read(4);
                 case 0x3FFB: return ((MSX2*)arg)->fdc.read(5);
                 default: return (unsigned char)0xFF;
-            }
-        }, [](void* arg, unsigned short addr, unsigned char value) {
+            } }, [](void* arg, unsigned short addr, unsigned char value) {
             switch (addr) {
                 case 0x3FF8: ((MSX2*)arg)->fdc.write(2, value); break;
                 case 0x3FF9: ((MSX2*)arg)->fdc.write(3, value); break;
                 case 0x3FFA: ((MSX2*)arg)->fdc.write(4, value); break;
                 case 0x3FFB: ((MSX2*)arg)->fdc.write(5, value); break;
-            }
-        }, [](void* arg, unsigned short addr, unsigned char value) {
+            } }, [](void* arg, unsigned short addr, unsigned char value) {
             switch (addr) {
                 case 0x3FF4: OPLL_writeIO(((MSX2*)arg)->ym2413, 0, value); break;
                 case 0x3FF5: OPLL_writeIO(((MSX2*)arg)->ym2413, 1, value); break;
-            }
-        });
+            } });
         this->fdc.setDiskReadListener(this, [](void* arg, int driveId, int sector) {
             //((MSX2*)arg)->putlog("DiskRead: drive=%d, sector=%d", driveId, sector);
         });
@@ -257,7 +244,7 @@ public:
             }
         });
 #endif
-        
+
         this->cpu->addBreakPoint(0, [](void* arg) {
             puts("RESET!");
         });
@@ -278,7 +265,7 @@ public:
                 exit(-1);
             }
         });
-        
+
         this->cpu->setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX2*)arg)->consumeClock(cpuClocks);
         });
@@ -381,22 +368,23 @@ public:
         initKeyCode('\n', 7, 7);
         initKeyCode(' ', 0, 8);
         initKeyCode2(0x18, 1, 6, 4, 7); // CTRL + STOP
-        initKeyCode(0x1B, 2, 7); // ESC
-        initKeyCode(0x7F, 5, 7); // DEL as Back Space
-        initKeyCode(0xF1, 5, 6); // f1
-        initKeyCode(0xF2, 6, 6); // f2
-        initKeyCode(0xF3, 7, 6); // f3
-        initKeyCode(0xF4, 0, 7); // f4
-        initKeyCode(0xF5, 1, 7); // f5
-        initKeyCode(0xF6, 5, 6, true); // f6
-        initKeyCode(0xF7, 6, 6, true); // f7
-        initKeyCode(0xF8, 7, 6, true); // f8
-        initKeyCode(0xF9, 0, 7, true); // f9
-        initKeyCode(0xFA, 1, 7, true); // f10
+        initKeyCode(0x1B, 2, 7);        // ESC
+        initKeyCode(0x7F, 5, 7);        // DEL as Back Space
+        initKeyCode(0xF1, 5, 6);        // f1
+        initKeyCode(0xF2, 6, 6);        // f2
+        initKeyCode(0xF3, 7, 6);        // f3
+        initKeyCode(0xF4, 0, 7);        // f4
+        initKeyCode(0xF5, 1, 7);        // f5
+        initKeyCode(0xF6, 5, 6, true);  // f6
+        initKeyCode(0xF7, 6, 6, true);  // f7
+        initKeyCode(0xF8, 7, 6, true);  // f8
+        initKeyCode(0xF9, 0, 7, true);  // f9
+        initKeyCode(0xFA, 1, 7, true);  // f10
         this->reset();
     }
-    
-    void reset() {
+
+    void reset()
+    {
         memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
         this->soundBufferCursor = 0;
         memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
@@ -416,8 +404,9 @@ public:
         this->fdc.reset();
         OPLL_reset(this->ym2413);
     }
-    
-    void putlog(const char* fmt, ...) {
+
+    void putlog(const char* fmt, ...)
+    {
         static int seqno = 0;
         char buf[256];
         va_list args;
@@ -440,50 +429,60 @@ public:
                this->vdp.ctx.counter % 100,
                this->vdp.ctx.countV, buf);
     }
-    
-    void loadFont(const void* font, size_t fontSize) {
+
+    void loadFont(const void* font, size_t fontSize)
+    {
         this->kanji.loadFont(font, fontSize);
     }
-    
-    void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3) {
+
+    void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3)
+    {
         this->mmu.setupSecondaryExist(page0, page1, page2, page3);
     }
 
-    void setupRAM(int pri, int sec) {
+    void setupRAM(int pri, int sec)
+    {
         this->mmu.setupRAM(pri, sec);
     }
 
-    void setup(int pri, int sec, int idx, void* data, int size, const char* label = NULL) {
+    void setup(int pri, int sec, int idx, void* data, int size, const char* label = NULL)
+    {
         this->mmu.setup(pri, sec, idx, (unsigned char*)data, size, label);
     }
-    
-    void loadRom(void* data, int size, int romType) {
+
+    void loadRom(void* data, int size, int romType)
+    {
         this->mmu.setupCartridge(1, 0, 2, data, size, romType);
         this->scc.enabled = romType == MSX2_ROM_TYPE_KONAMI_SCC;
         this->reset();
     }
-    
-    void insertDisk(int driveId, const void *data, size_t size, bool readOnly) {
+
+    void insertDisk(int driveId, const void* data, size_t size, bool readOnly)
+    {
         this->fdc.insertDisk(driveId, data, size, readOnly);
     }
 
-    void ejectDisk(int driveId) {
+    void ejectDisk(int driveId)
+    {
         this->fdc.ejectDisk(driveId);
     }
 
-    void tick(unsigned char pad1, unsigned char pad2, unsigned char key) {
+    void tick(unsigned char pad1, unsigned char pad2, unsigned char key)
+    {
         this->psg.setPads(pad1, pad2);
         this->ctx.key = key;
         this->cpu->execute(0x7FFFFFFF);
     }
-    
-    void* getSound(size_t* soundSize) {
+
+    void* getSound(size_t* soundSize)
+    {
         *soundSize = this->soundBufferCursor * 2;
         this->soundBufferCursor = 0;
         return this->soundBuffer;
     }
-    
-    inline void consumeClock(int cpuClocks) {
+
+    inline void consumeClock(int cpuClocks)
+    {
         // Asynchronous with PSG/SCC
         this->psg.ctx.bobo += cpuClocks * this->PSG_CLOCK;
         while (0 < this->psg.ctx.bobo) {
@@ -495,10 +494,14 @@ public:
             int r = this->soundBuffer[this->soundBufferCursor + 1];
             l += opllWav;
             r += opllWav;
-            if (32767 < l) l = 32767;
-            else if (l < -32768) l = -32768;
-            if (32767 < r) r = 32767;
-            else if (r < -32768) r = -32768;
+            if (32767 < l)
+                l = 32767;
+            else if (l < -32768)
+                l = -32768;
+            if (32767 < r)
+                r = 32767;
+            else if (r < -32768)
+                r = -32768;
             this->soundBuffer[this->soundBufferCursor] = (short)l;
             this->soundBuffer[this->soundBufferCursor + 1] = (short)r;
             this->soundBufferCursor += 2;
@@ -516,8 +519,9 @@ public:
             this->clock.tick();
         }
     }
-    
-    inline unsigned char inPort(unsigned char port) {
+
+    inline unsigned char inPort(unsigned char port)
+    {
         switch (port) {
             case 0x81: return 0xFF; // 8251 status command
             case 0x88: return this->vdp.inPort98();
@@ -556,19 +560,19 @@ public:
             }
             case 0xAA: return this->ctx.regC;
             case 0xB5: return this->clock.inPortB5();
-            case 0xB8: return 0x00; // light pen
-            case 0xB9: return 0x00; // light pen
-            case 0xBA: return 0x00; // light pen
-            case 0xBB: return 0xFF; // light pen
-            case 0xC0: return 0xFF; // MSX-Audio (Y8950?)
-            case 0xC8: return 0xFF; // MSX interface
-            case 0xC9: return 0x00; // MSX interface
-            case 0xCA: return 0x00; // MSX interface
-            case 0xCB: return 0x00; // MSX interface
-            case 0xCC: return 0x00; // MSX interface
-            case 0xCD: return 0x00; // MSX interface
-            case 0xCE: return 0x00; // MSX interface
-            case 0xCF: return 0x00; // MSX interface
+            case 0xB8: return 0x00;                   // light pen
+            case 0xB9: return 0x00;                   // light pen
+            case 0xBA: return 0x00;                   // light pen
+            case 0xBB: return 0xFF;                   // light pen
+            case 0xC0: return 0xFF;                   // MSX-Audio (Y8950?)
+            case 0xC8: return 0xFF;                   // MSX interface
+            case 0xC9: return 0x00;                   // MSX interface
+            case 0xCA: return 0x00;                   // MSX interface
+            case 0xCB: return 0x00;                   // MSX interface
+            case 0xCC: return 0x00;                   // MSX interface
+            case 0xCD: return 0x00;                   // MSX interface
+            case 0xCE: return 0x00;                   // MSX interface
+            case 0xCF: return 0x00;                   // MSX interface
             case 0xD9: return this->kanji.inPortD9(); // kanji
             case 0xDB: return this->kanji.inPortDB(); // kanji
             case 0xF4: return this->vdp.inPortF4();
@@ -577,8 +581,9 @@ public:
         }
         return this->ctx.io[port];
     }
-    
-    inline void outPort(unsigned char port, unsigned char value) {
+
+    inline void outPort(unsigned char port, unsigned char value)
+    {
         this->ctx.io[port] = value;
         switch (port) {
             case 0x7C: OPLL_writeIO(this->ym2413, 0, value); break;
@@ -687,8 +692,9 @@ public:
             default: printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
     }
-    
-    const void* quickSave(size_t* size) {
+
+    const void* quickSave(size_t* size)
+    {
         this->quickSaveBufferSize = 0;
         this->writeSaveChunk("BRD", &this->ctx, (int)sizeof(this->ctx));
         this->writeSaveChunk("Z80", &this->cpu->reg, (int)sizeof(this->cpu->reg));
@@ -716,7 +722,8 @@ public:
         return this->quickSaveBufferCompressed;
     }
 
-    void quickLoad(const void* buffer, size_t bufferSize) {
+    void quickLoad(const void* buffer, size_t bufferSize)
+    {
         this->reset();
         int size = LZ4_decompress_safe((const char*)buffer,
                                        this->quickSaveBuffer,
@@ -787,8 +794,9 @@ public:
         }
     }
 
-private:
-    void writeSaveChunk(const char* name, const void* data, int size) {
+  private:
+    void writeSaveChunk(const char* name, const void* data, int size)
+    {
         memcpy(&this->quickSaveBuffer[this->quickSaveBufferSize], name, 4);
         this->quickSaveBufferSize += 4;
         memcpy(&this->quickSaveBuffer[this->quickSaveBufferSize], &size, 4);
