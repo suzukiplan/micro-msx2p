@@ -19,7 +19,7 @@ MSX のエミュレータ開発の歴史は長く、最初期の fMSX から始�
       - OPLL (YM-2413) の実装自体は入っているので、FM-BIOS 経由でのアクセスではなく、出力ポート $7C, $7D を直叩きすることで OPLL を再生することは可能
     - 商標 `MSX` は MSX Licenses Corporation の登録商標のため、製品に商標を含める等（利用）に当たっては MSX Licensing Corporation からの許諾が必要
       - 商標許諾を得ていない（大半の）ケースでは、ゲームに「〜 for MSX」と記載したり、商品パッケージ、カセットラベル等に商標 MSX を含めることができない点を注意
-    - 実機 BIOS を用いる必要があるケースでは [プロジェクトEGGクリエイターズ](https://www.amusement-center.com/project/egg/creators/) を使った方が良さそうです（具体的な応募手順は2023.04.10時点では公開されていないのでどの程度敷居が高いものなのかは不明ですが）
+    - 実機 BIOS や登録商標 `MSX` を用いる必要があるケースでは [プロジェクトEGGクリエイターズ](https://www.amusement-center.com/project/egg/creators/) を使った方が良さそうです（具体的な応募手順は2023.04.10時点では公開されていないのでどの程度敷居が高いものなのかは不明ですが）
 - 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用の MSX2+ エミュレータ実装が付随しています
 
 ## Unimplemented Features
