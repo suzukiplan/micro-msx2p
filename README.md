@@ -1,5 +1,9 @@
 # micro MSX2+
 
+## Motivation
+
+MSX のエミュレータ開発の歴史は長く、最初期の fMSX から始まり、高い再現度を実現した OpenMSX や blueMSX、WEBブラウザでの動作を可能にした WebMSX など、数多くのディストリビューションが存在します。逆に言えば、既にエミュレータの開発余地があまり無いとも言えます。ただ、以前Qiitaで[「自作のMSXゲームをWebMSXを使ってSteam等で配信できないか？」](https://qiita.com/suzukiplan/items/c012111e0da0c7a9ddb5)という自問を行ってみたのですが、「ライセンスの関係で厳しい」という結論に至りました。そこで、ライセンス面を完全にクリアして**組み込みに特化した MSX Stack** のようなものを配布してみると、何か面白いことが起こったりしないだろうか？
+
 ## Description
 
 - micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを家庭用ゲーム機（Nintendo Switch, PlayStation, XBOXなど）、スマートフォンアプリ（iOS, Androidなど）、PCアプリ（Windows, macOS, Linuxなど）などの各種プラットフォーム向けに販売する用途（組み込み用途）を想定して、**プロジェクトへの組み込みのし易さ**に特化することを目指した最小構成の MSX2+ エミュレータです
