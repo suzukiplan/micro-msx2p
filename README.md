@@ -1,10 +1,9 @@
 # micro MSX2+
 
-micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを Nintendo Switch、PlayStation、XBOX などの家庭用ゲーム機、スマートフォンアプリ、PCアプリ（Steam等）などで販売するための最小構成の MSX2+ エミュレータです。
-
-上述の目的があるため、C-BIOS を用いた ROM カートリッジのゲームソフトのみを対象にしています。
-
-本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用のエミュレータ実装が付随しています。
+- micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを Nintendo Switch、PlayStation、XBOX などの家庭用ゲーム機、スマートフォンアプリ、PCアプリ（Steam等）などで販売するための最小構成の MSX2+ エミュレータです。
+- 原則的には、C-BIOS を用いた ROM カートリッジ形式のゲームソフトのみを対象にしています。（一応、実機 BIOS で動作することも可能です）
+  - [ROMカートリッジ形式のゲームソフトの作成方法についての参考資料](https://qiita.com/suzukiplan/items/b369d3f9b41be55b247e)
+- 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用のエミュレータ実装が付随しています。
 
 ## Core Modules
 
