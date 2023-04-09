@@ -2,8 +2,8 @@
 
 ## Description
 
-- micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを 家庭用ゲーム機（Nintendo Switch, PlayStation, XBOXなど）、スマートフォンアプリ（iOS, Adnrdoiなど）、PCアプリ（Windows, macOS, Linuxなど）として販売する用途（組み込み用途）を想定して **各種プロジェクトへの組み込みのし易さ** に特化することを目指した最小構成の MSX2+ エミュレータです。
-- 実機 BIOS で動作させることも可能ですが、基本的には C-BIOS を用いて ROM カートリッジ形式のゲームソフトで利用する用途を想定しています。
+- micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを家庭用ゲーム機（Nintendo Switch, PlayStation, XBOXなど）、スマートフォンアプリ（iOS, Adnrdoiなど）、PCアプリ（Windows, macOS, Linuxなど）などの各種プラットフォーム向けに販売する用途（組み込み用途）を想定して、**プロジェクトへの組み込みのし易さ**に特化することを目指した最小構成の MSX2+ エミュレータです
+- 実機 BIOS で動作させることも可能ですが、基本的には C-BIOS を用いて ROM カートリッジ形式のゲームソフトで利用する用途を想定しています
   - [ROMカートリッジ形式のゲームソフトの作成方法についての参考資料](https://qiita.com/suzukiplan/items/b369d3f9b41be55b247e)
   - C-BIOS を用いることで発生する制約:
     - MSX-BASIC のプログラムは動作できません
@@ -12,7 +12,7 @@
       - FDC (東芝製) の実装は入っていますが FDC へのアクセスには実機の DISK BIOS が必要
     - FM-PAC の BIOS またはカートリッジを扱うことができません
       - OPLL (YM-2413) の実装自体は入っているので、一般的な BIOS 経由でのアクセスではなく、出力ポート $7C, $7D を直叩きすることで OPLL を再生することは可能
-- 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用の MSX2+ エミュレータ実装が付随しています。
+- 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用の MSX2+ エミュレータ実装が付随しています
 
 ## Unimplemented Features　(TODO List)
 
@@ -35,10 +35,11 @@
 
 ## Core Modules
 
-- エミュレータ・コアモジュール([./msx2-osx/core](./msx2-osx/core))はOS非依存（要 C++11 以降）
-  - Nintendo Switch、PlayStation、XBOX, iOS, Android, Windows, macOS, PlayStation, NintendoSwitch などで使用可能な筈
-  - 64bit CPU 専用（32bit CPU は非サポート）
-- セーブデータはエンディアンモデルが異なるコンピュータ間では互換性が無い
+- エミュレータ・コアモジュール（[./msx2-osx/core以下の全てのファイル](./msx2-osx/core)）をC++プロジェクトに組み込んで使用します
+  - 全てヘッダファイル形式で提供しています
+  - C/C++の標準ライブラリ以外は使用していないので、プラットフォーム（Nintendo Switch、PlayStation、XBOX, iOS, Android, Windows, macOS, PlayStation, NintendoSwitch など）に関係無くビルド可能な筈です
+  - ただし、64bit CPU 専用（32bit CPU は非サポート）です
+- セーブデータはエンディアンモデルが異なるコンピュータ間では互換性が無いため、プラットフォーム間でセーブデータのやりとりをする場合は注意してください
 
 ## [./msx2-osx/core](./msx2-osx/core) の使い方
 
