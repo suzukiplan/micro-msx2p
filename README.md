@@ -1,8 +1,11 @@
 # micro MSX2+
 
 - micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを Nintendo Switch、PlayStation、XBOX などの家庭用ゲーム機、スマートフォンアプリ、PCアプリ（Steam等）などで販売するための最小構成の MSX2+ エミュレータです。
-- 原則的には、C-BIOS を用いた ROM カートリッジ形式のゲームソフトのみを対象にしています。（一応、実機 BIOS で動作することも可能です）
+- 一応実機 BIOS で動作することも可能ですが、基本的には C-BIOS を用いた ROM カートリッジ形式のゲームソフトの販売用途での利用を想定しています。
   - [ROMカートリッジ形式のゲームソフトの作成方法についての参考資料](https://qiita.com/suzukiplan/items/b369d3f9b41be55b247e)
+  - MSX-BASIC のプログラムは C-BIOS では動かせません（実機BIOSが必要です）
+  - FDC (東芝製) の実装は入っていますが FDC へのアクセスには実機 DISK BIOS が必要です
+  - OPLL (YM-2413) の実装は入ってますが FMPAC の BIOS 実装は入ってません（ポート $7C, $7D を直叩きすることで再生することは可能）
 - 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用のエミュレータ実装が付随しています。
 
 ## Core Modules
@@ -42,7 +45,7 @@ msx2.setupRAM(3, 3);
 
 #### 2-2. usign FS-A1WSX BIOS
 
-念の為、MSX Licensing Corporation から公式 BIOS の利用と再配布がライセンスされている場合、次のような形で使うことができます。
+権利者から公式 BIOS の利用と再配布がライセンスされているケースであれば、次のような形で使うこともできます。
 
 ```c++
 // 拡張スロットの有効化設定
@@ -75,11 +78,11 @@ msx2.setup(3, 3, 2, data.fm, sizeof(data.fm), "FM");
 
 > 上記は FS-A1WSX の実機 BIOS が正常に動作する構成です。
 > 機種の BIOS の種類によって拡張スロットの有効化範囲、各種 BIOS ROM の配置ページ、RAMの配置ページが色々と異なります。
-> 実機 BIOS を利用する時は、実機のマニュアルを参照して正しい配置にしてください。
+> 実機 BIOS を利用する時は、実機のマニュアルを参照するなどして正しい配置にしてください。
 
 ### 3. Load media
 
-#### using ROM cartridges
+#### 3-1. using ROM cartridges
 
 ```c++
 // 適切なメガロム種別の指定が必要:
@@ -92,7 +95,7 @@ msx2.setup(3, 3, 2, data.fm, sizeof(data.fm), "FM");
 msx2.loadRom(rom, romSize, megaRomType);
 ```
 
-#### using Floppy Disks
+#### 3-2. using Floppy Disks
 
 ```c++
 msx2.insertDisk(driveId, data, size, true); // write protect
@@ -141,7 +144,7 @@ const void* saveData = msx2.quickSave(&size);
 msx2.quickLoad(saveData, size);
 ```
 
-#### (ディスク挿入状態のロード手順)
+#### 5-1. ディスク挿入状態のロード手順
 
 フロッピーディスクの挿入状態は記憶されますが、挿入データの復元はされないため、復元のための追加実装が必要です。
 
@@ -168,7 +171,7 @@ for (int driveId = 0; driveId < 2; driveId++) {
 }
 ```
 
-#### （ディスク書き込み状態の復元についての補足）
+#### 5-2. ディスク書き込み状態の復元についての補足
 
 `msx2.insertDisk` の第4引数 `readOnly` を `false` にすることで書き込み可能ディスクとして挿入できます。
 
@@ -185,7 +188,7 @@ JCT が存在する場合 `msx2.insertDisk` が行われた時に自動的にオ
 > つまり、何も考えずに quick save/load して `msx2.insertDisk` すればディスクの更新状態も自動的に復元されます。
 > しかし、ストレージ上のオリジナルのディスクファイル（.dsk）への変更内容の commit は行われません。
 
-#### (セーブデータサイズについての補足)
+#### 5-3. セーブデータサイズ
 
 セーブデータサイズは可変で、以下のデータを LZ4 で高速圧縮しています。（無風時の圧縮後サイズは5KBほど）
 
