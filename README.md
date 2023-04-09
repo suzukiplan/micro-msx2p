@@ -226,5 +226,5 @@ LZ4 解凍後のセーブデータは、
   - Web Site: [https://github.com/suzukiplan/z80](https://github.com/suzukiplan/z80)
   - License: MIT
 - micro MSX2+
-  - Web Site: [https://github.com/suzukiplan/micro-MSX2+]
+  - Web Site: [https://github.com/suzukiplan/micro-msx2p]
   - License: MIT
