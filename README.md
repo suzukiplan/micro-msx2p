@@ -36,12 +36,17 @@ MSX のエミュレータ開発の歴史は長く、最初期の [fMSX](http://f
     - 実装そのものは簡単にできるが、処理負荷が増大してしまうため実装を省略
     - _そもそもこの機能が無いと動かないゲームがあるのか？_
   - Even/Oddフラグ
-    - _そもそもこの機能が無いと動かないゲームがあるのか？_
   - TEXT2 の BLINK 機能
-    - _そもそもこの機能が無いと動かないゲームがあるのか？_
+  - 同期モード
 - Sound
   - Y8950 (MSX-AUDIO)
     - 主流は OPLL (FM-PAC) だと考えられるので実装省略
+- MMU
+  - Memory Mapper (RAM サイズは 64KB 固定)
+- その他
+  - BEEP音 (仕様規定が無いし使い所も分からないので省略)
+  - Printer, RS-232C, Modem, Mouse, Light Pen 等の周辺機器対応
+  - System Control, AV Control
 
 ## Core Modules
 
@@ -60,11 +65,22 @@ MSX のエミュレータ開発の歴史は長く、最初期の [fMSX](http://f
 
 ### 2. Setup
 
-#### 2-1. C-BIOS
+#### 2-1. Create Instance
+
+コンストラクタ引数にディスプレイカラーモードを指定してインスタンスを生成します。
 
 ```c++
 // ディスプレイのカラーモードを指定 (0: RGB555, 1: RGB565)
 MSX2 msx2(0);      
+```
+
+ディスプレイカラーモードの指定により `msx2.vdp.display` に格納される画面表示用データのピクセル形式が RGB555 (0) または RGB565 (1) の何れかになります。
+
+#### 2-2. Setup Slot
+
+##### (1) C-BIOS を用いる場合
+
+```c++
 
 // 拡張スロットの有効化設定
 msx2.setupSecondaryExist(false, false, false, true);
@@ -78,7 +94,7 @@ msx2.setup(3, 0, 0, data.ext, 0x4000, "SUB");
 msx2.setupRAM(3, 3);
 ```
 
-#### 2-2. FS-A1WSX BIOS
+##### (2) FS-A1WSX BIOS を用いる場合
 
 権利者から公式 BIOS の利用と再配布がライセンスされているケースや、ご自身で吸い出した実機 BIOS を用いてプログラムを配信せずに趣味の範囲で楽しむ場合、次のような形で使うこともできます。
 
@@ -131,9 +147,9 @@ msx2.setup(基本スロット, 拡張スロット, 開始アドレス÷0x2000, �
 
 上記以外の BIOS が含まれる機種の場合、上記以外の任意の文字列を設定してください。
 
-### 3. Load media
+### 3. Load External Media
 
-#### 3-1. using ROM cartridges
+#### 3-1. ROM cartridges
 
 ```c++
 // 適切なメガロム種別の指定が必要:
@@ -146,7 +162,7 @@ msx2.setup(基本スロット, 拡張スロット, 開始アドレス÷0x2000, �
 msx2.loadRom(rom, romSize, megaRomType);
 ```
 
-#### 3-2. using Floppy Disks
+#### 3-2. Floppy Disks
 
 ```c++
 msx2.insertDisk(driveId, data, size, true); // write protect
@@ -172,7 +188,7 @@ msx2.fdc.setDiskWriteListener(this, [](void* arg, int driveId, int sector) {
 msx2.reset();
 
 // 1フレーム実行 (キー入力は1フレームに1キーのみ送信可能な仕様)
-tick(pad1, pad2, key);
+msx2.tick(pad1, pad2, key);
 
 // 1フレーム実行後の音声データを取得 (44100Hz 16bit Stereo)
 size_t soundSize;
