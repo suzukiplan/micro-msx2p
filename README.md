@@ -2,25 +2,27 @@
 
 ## Motivation
 
-MSX のエミュレータ開発の歴史は長く、最初期の fMSX から始まり、高い再現度を実現した OpenMSX や blueMSX、WEBブラウザでの動作を可能にした WebMSX など、数多くのディストリビューションが存在します。逆に言えば、既にエミュレータの開発余地があまり無いので研究者の視点では面白みに欠ける分野かもしれません。ただ、以前Qiitaで[「自作のMSXゲームをWebMSXを使ってSteam等で配信できないか？」](https://qiita.com/suzukiplan/items/c012111e0da0c7a9ddb5)という調査を行ってみたのですが、_「ライセンスの関係で厳しいだろう」_ という残念な結論に至りました。そこで、その辺（ライセンス面の煩わしさ）をクリアした MSX Stack のようなものを配布して、新作のMSXゲーム開発に関わるインフラストラクチャ面の改善点を図ってみると、果たして世界は面白く変化するのか。
+MSX のエミュレータ開発の歴史は長く、最初期の [fMSX](http://fms.komkon.org/fMSX/) から始まり、高い再現度を実現した [openMSX](https://openmsx.org/) や [blueMSX](http://bluemsx.msxblue.com/jindex.htm)、WEBブラウザでの動作を可能にした [WebMSX](https://github.com/ppeccin/webmsx) など、数多くのディストリビューションが存在します。逆に言えば、既にエミュレータの開発余地があまり無いので研究者の視点では面白みに欠ける分野かもしれません。ただ、以前Qiitaで[「自作のMSXゲームをWebMSXを使ってSteam等で配信できないか？」](https://qiita.com/suzukiplan/items/c012111e0da0c7a9ddb5)という調査を行ってみたのですが、_「ライセンスの関係で厳しいだろう」_ という残念な結論に至りました。そこで、その辺（ライセンス面の煩わしさ）をクリアした MSX Stack のようなものを配布して、新作のMSXゲーム開発に関わるインフラストラクチャ面の改善点を図ってみると、果たして世界は面白く変化するのか。
 
 ## Description
 
-- micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを家庭用ゲーム機（Nintendo Switch, PlayStation, XBOXなど）、スマートフォンアプリ（iOS, Androidなど）、PCアプリ（Windows, macOS, Linuxなど）などの各種プラットフォーム向けに販売する用途（組み込み用途）を想定して、**プロジェクトへの組み込みのし易さ**に特化することを目指した最小構成の MSX2+ エミュレータです
-- 実機 BIOS で動作させることも可能ですが、基本的には C-BIOS を用いて ROM カートリッジ形式のゲームソフトで利用する用途を想定しています
+- micro MSX2+ は **組み込み用途に特化** した MSX2+ エミュレータです
+  - 例えば、自作の MSX, MSX2, MSX2+ 用のゲームソフトを家庭用ゲーム機（Nintendo Switch, PlayStation, XBOXなど）、スマートフォンアプリ（iOS, Androidなど）、PCアプリ（Windows, macOS, Linuxなど）などの各種プラットフォーム向けに販売する用途（組み込み用途）を想定しています
+  - つまり、エンドユーザ向けに開発された一般的な MSX エミュレータ（[openMSX](https://openmsx.org/) や [WebMSX](https://github.com/ppeccin/webmsx) など）とは異なり、MSX用のアプリケーションやゲームなどを自作して配布（販売）したい開発者向けのエミュレータのコアプログラムです
+- 実機 BIOS で動作させることも可能ですが、基本的には **C-BIOS を用いて ROM カートリッジ形式のゲームソフトで利用（配布）** する用途を想定しています
   - [ROMカートリッジ形式のゲームソフトの作成方法についての参考資料](https://qiita.com/suzukiplan/items/b369d3f9b41be55b247e)
   - C-BIOS を用いることで発生する制約:
     - MSX-BASIC のプログラムは動作できません
       - MSX-BASIC のプログラムの動作には実機BIOSが必要
-      - BIOS の著作権は Microsoft 等（※機種により異なる）が有しているため全ての著作権者からの許諾が必要
+      - BIOS の著作権は Microsoft 等（※機種により異なる）が有しているため再配布にはそれら著作権者からの許諾が必要
     - FloppyDisk を扱うことができません
       - FDC (東芝製) の実装は入っていますが FDC へのアクセスには実機の DISK BIOS が必要
     - FM-PAC の BIOS またはカートリッジを扱うことができません
       - OPLL (YM-2413) の実装自体は入っているので、FM-BIOS 経由でのアクセスではなく、出力ポート $7C, $7D を直叩きすることで OPLL を再生することは可能
     - 商標 `MSX` は MSX Licenses Corporation の登録商標のため、製品に商標を含める等（利用）に当たっては MSX Licensing Corporation からの許諾が必要
-      - 商標許諾を得ていない（大半の）ケースでは、ゲームに「〜 for MSX」と記載したり、商品パッケージ、カセットラベル等に商標 MSX を含めることができない点を注意
+      - 商標許諾を得ていない（大半の）ケースでは、ゲームタイトルに「〜 for MSX」と記載したり、商品パッケージ、カセットラベル等に MSX の商標や意匠を含めることができない点を注意
     - 実機 BIOS や登録商標 `MSX` を用いる必要があるケースでは [プロジェクトEGGクリエイターズ](https://www.amusement-center.com/project/egg/creators/) を使った方が良さそうです（具体的な応募手順は2023.04.10時点では公開されていないのでどの程度敷居が高いものなのかは不明ですが）
-- 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用の MSX2+ エミュレータ実装が付随しています
+- 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用の MSX2+ エミュレータの実装が付随しています
 
 ## Unimplemented Features
 
