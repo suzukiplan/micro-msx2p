@@ -1,12 +1,28 @@
 # micro MSX2+
 
-- micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを Nintendo Switch、PlayStation、XBOX などの家庭用ゲーム機、スマートフォンアプリ、PCアプリ（Steam等）などで販売するための最小構成の MSX2+ エミュレータです。
+- micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを Nintendo Switch、PlayStation、XBOX などの家庭用ゲーム機、スマートフォンアプリ、PCアプリ（Steam等）などとして販売する用途（組み込み用途）に特化した最小構成の MSX2+ エミュレータです。
 - 一応実機 BIOS で動作することも可能ですが、基本的には C-BIOS を用いた ROM カートリッジ形式のゲームソフトの販売用途での利用を想定しています。
   - [ROMカートリッジ形式のゲームソフトの作成方法についての参考資料](https://qiita.com/suzukiplan/items/b369d3f9b41be55b247e)
   - MSX-BASIC のプログラムは C-BIOS では動かせません（実機BIOSが必要です）
   - FDC (東芝製) の実装は入っていますが FDC へのアクセスには実機 DISK BIOS が必要です
   - OPLL (YM-2413) の実装は入ってますが FMPAC の BIOS 実装は入ってません（ポート $7C, $7D を直叩きすることで再生することは可能）
 - 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用のエミュレータ実装が付随しています。
+
+## Unimplemented Features
+
+- VDP
+  - Screen Mode: TEXT1
+    - そもそもこの機能が無いと動かないゲームがあるのか？
+    - TEXT2 については vdptest というプログラムの動作検証のため一応実装済み
+  - インタレース機能
+    - 実装そのものは簡単にできるが処理負荷が無駄に上がってしまうため実装していない
+    - そもそもこの機能が無いと動かないゲームがあるのか？
+  - Even/Oddフラグ
+    - そもそもこの機能が無いと動かないゲームがあるのか？
+  - TEXT2 の BLINK 機能
+    - そもそもこの機能が無いと動かないゲームがあるのか？
+- Sound
+  - Y8950 (MSX-AUDIO)
 
 ## Core Modules
 
@@ -86,12 +102,12 @@ msx2.setup(3, 3, 2, data.fm, sizeof(data.fm), "FM");
 
 ```c++
 // 適切なメガロム種別の指定が必要:
-// - MSX2_ROM_TYPE_NORMAL 0
-// - MSX2_ROM_TYPE_ASC8 1
-// - MSX2_ROM_TYPE_ASC8_SRAM2 2
-// - MSX2_ROM_TYPE_ASC16 3
-// - MSX2_ROM_TYPE_KONAMI_SCC 4
-// - MSX2_ROM_TYPE_KONAMI 5
+// - MSX2_ROM_TYPE_NORMAL (16KB or 32KB)
+// - MSX2_ROM_TYPE_ASC8 (ASCII8 メガロム)
+// - MSX2_ROM_TYPE_ASC8_SRAM2 (ASCII8 メガロム+SRAM)
+// - MSX2_ROM_TYPE_ASC16 3 (ASCII16 メガロム)
+// - MSX2_ROM_TYPE_KONAMI_SCC 4 (SCC搭載KONAMI メガロム)
+// - MSX2_ROM_TYPE_KONAMI 5 (標準KONAMI メガロム)
 msx2.loadRom(rom, romSize, megaRomType);
 ```
 
