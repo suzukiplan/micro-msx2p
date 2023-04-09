@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		7407A1D529834DB500D59AA5 /* cbios_logo_msx2.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7407A1D329834DB500D59AA5 /* cbios_logo_msx2.rom */; };
-		7407A1D629834DB500D59AA5 /* cbios_sub.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7407A1D429834DB500D59AA5 /* cbios_sub.rom */; };
 		741A1E13298FCEDB001AE497 /* tm1pkdr.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E0E298FCEDA001AE497 /* tm1pkdr.rom */; };
 		741A1E14298FCEDB001AE497 /* tm1pbios.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E0F298FCEDA001AE497 /* tm1pbios.rom */; };
 		741A1E15298FCEDB001AE497 /* tm1pdesk2.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E10298FCEDB001AE497 /* tm1pdesk2.rom */; };
@@ -76,7 +75,6 @@
 
 /* Begin PBXFileReference section */
 		7407A1D329834DB500D59AA5 /* cbios_logo_msx2.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_logo_msx2.rom; sourceTree = "<group>"; };
-		7407A1D429834DB500D59AA5 /* cbios_sub.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_sub.rom; sourceTree = "<group>"; };
 		740B459A29A89A2900289C9D /* tc8566af.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = tc8566af.hpp; sourceTree = "<group>"; };
 		741A1E052988DB8C001AE497 /* msx2def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msx2def.h; sourceTree = "<group>"; };
 		741A1E0C298B77E5001AE497 /* msx2clock.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = msx2clock.hpp; sourceTree = "<group>"; };
@@ -252,7 +250,6 @@
 				7444CCA029E000FB001CBA91 /* cbios_sub.rom */,
 				748D22E4297FB69800B504AF /* cbios_main_msx2_jp.rom */,
 				7407A1D329834DB500D59AA5 /* cbios_logo_msx2.rom */,
-				7407A1D429834DB500D59AA5 /* cbios_sub.rom */,
 				741A1E0F298FCEDA001AE497 /* tm1pbios.rom */,
 				741A1E12298FCEDB001AE497 /* tm1pdesk1.rom */,
 				741A1E10298FCEDB001AE497 /* tm1pdesk2.rom */,
@@ -380,7 +377,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				748D22E72980CB8400B504AF /* MSX2J.ROM in Resources */,
-				7407A1D629834DB500D59AA5 /* cbios_sub.rom in Resources */,
 				749112D829ACCE01004140F5 /* _FMBIOS.ROM in Resources */,
 				748D22D8297E7E2E00B504AF /* KNJDRV.ROM in Resources */,
 				7444CCAA29E000FB001CBA91 /* cbios_logo_msx2+.rom in Resources */,

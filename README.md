@@ -1,25 +1,29 @@
-# msx2-osx
+# micro MSX2+
 
-macOS 用の MSX2+ エミュレータ
+micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを Nintendo Switch、PlayStation、XBOX などの家庭用ゲーム機、スマートフォンアプリ、PCアプリ（Steam等）などで販売するための最小構成の MSX2+ エミュレータです。
 
-# core modules
+上述の目的があるため、C-BIOS を用いた ROM カートリッジのゲームソフトのみを対象にしています。
 
-- エミュレータのコアモジュール([./msx2-osx/core](./msx2-osx/core))はOS非依存
+本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用のエミュレータ実装が付随しています。
+
+## Core Modules
+
+- エミュレータ・コアモジュール([./msx2-osx/core](./msx2-osx/core))はOS非依存
   - iOS, Android, Windows, macOS, PlayStation, NintendoSwitch などで使用可能な筈
+  - 64bit CPU 専用（32bit CPU は非サポート）
 - セーブデータはエンディアンモデルが異なるコンピュータ間では互換性が無い
-- 32bit CPU は非サポート（64bit CPU only)
 
-# [./msx2-osx/core](./msx2-osx/core) の使い方
+## [./msx2-osx/core](./msx2-osx/core) の使い方
 
-
-## 1. Include
-
+### 1. Include
 
 ```c++
 #include "msx2.hpp"
 ```
 
-## 2. setup
+### 2. Setup
+
+#### 2-1. usign C-BIOS
 
 ```c++
 // ディスプレイのカラーモードを指定 (0: RGB555, 1: RGB565)
@@ -28,7 +32,24 @@ MSX2 msx2(0);
 // 拡張スロットの有効化設定
 msx2.setupSecondaryExist(false, false, false, true);
 
-// 漢字フォントを読み込む
+// 必須 BIOS (main, logo, sub) を読み込む
+msx2.setup(0, 0, 0, data.main, 0x8000, "MAIN");
+msx2.setup(0, 0, 4, data.logo, 0x4000, "LOGO");
+msx2.setup(3, 0, 0, data.ext, 0x4000, "SUB");
+
+// RAM の割当 (3-3)
+msx2.setupRAM(3, 3);
+```
+
+#### 2-2. usign FS-A1WSX BIOS
+
+念の為、MSX Licensing Corporation から公式 BIOS の利用と再配布がライセンスされている場合、次のような形で使うことができます。
+
+```c++
+// 拡張スロットの有効化設定
+msx2.setupSecondaryExist(false, false, false, true);
+
+// 漢字フォントを読み込む (optional)
 msx2.loadFont(knjfnt16, sizeof(knjfnt16));
 
 // RAM の割当 (3-0)
@@ -53,9 +74,13 @@ msx2.setup(3, 2, 6, empty, 0x4000, "DISK"); // ラベルは必ず "DISK" & 空�
 msx2.setup(3, 3, 2, data.fm, sizeof(data.fm), "FM");
 ```
 
-## 3. Load media
+> 上記は FS-A1WSX の実機 BIOS が正常に動作する構成です。
+> 機種の BIOS の種類によって拡張スロットの有効化範囲、各種 BIOS ROM の配置ページ、RAMの配置ページが色々と異なります。
+> 実機 BIOS を利用する時は、実機のマニュアルを参照して正しい配置にしてください。
 
-#### （カートリッジソフトを使う場合）
+### 3. Load media
+
+#### using ROM cartridges
 
 ```c++
 // 適切なメガロム種別の指定が必要:
@@ -68,21 +93,32 @@ msx2.setup(3, 3, 2, data.fm, sizeof(data.fm), "FM");
 msx2.loadRom(rom, romSize, megaRomType);
 ```
 
-#### (FDDを使う場合)
+#### using Floppy Disks
 
 ```c++
-msx2.insertDisk(driveId, data, size, true);
+msx2.insertDisk(driveId, data, size, true); // write protect
+msx2.insertDisk(driveId, data, size, false); // writable
 msx2.ejectDisk(driveId);
 ```
 
-## 4. Execution
+FDのアクセスには時間が掛かるため、セクタ読み込みや書き込みのタイミングでアクセスランプの点灯やバイブレーション等の実装をすることが望ましいです。
+
+```c++
+msx2.fdc.setDiskReadListener(this, [](void* arg, int driveId, int sector) {
+    // ディスクが1セクタ読み込まれるタイミングでコールバック
+});
+msx2.fdc.setDiskWriteListener(this, [](void* arg, int driveId, int sector) {
+    // ディスクへ1セクタ書き込まれるタイミングでコールバック
+});
+```
+
+### 4. Execution
 
 ```c++
 // リセット
 msx2.reset();
 
-// 1フレーム実行
-// キー入力は1フレームに1キーのみ送信可能（動画対応のための制限）
+// 1フレーム実行 (キー入力は1フレームに1キーのみ送信可能な仕様)
 tick(pad1, pad2, key);
 
 // 1フレーム実行後の音声データを取得 (44100Hz 16bit Stereo)
@@ -95,7 +131,7 @@ void* sound = msx2.getSound(&soundSize);
 unsigned short* display = msx2.vdp.display;
 ```
 
-## 5. Quick Save/Load
+### 5. Quick Save/Load
 
 ```c++
 // セーブ
@@ -105,6 +141,50 @@ const void* saveData = msx2.quickSave(&size);
 // ロード
 msx2.quickLoad(saveData, size);
 ```
+
+#### (ディスク挿入状態のロード手順)
+
+フロッピーディスクの挿入状態は記憶されますが、挿入データの復元はされないため、復元のための追加実装が必要です。
+
+まず、挿入されていたフロッピーディスクはCRC符号のみFDCコンテキストに記憶されています。
+
+```c++
+msx2.fdc.ctx.crc[driveId]
+```
+
+このコンテキスト情報を参照して、次のような手順でディスク挿入状態の復元を行ってください。
+
+1. `msx2.quickLoad` でクイックロード
+2. `msx2.fdc.calcDiskCrc` で上記CRC符号と一致するディスクを探索
+3. `msx2.insertDisk` で挿入
+
+```c++
+for (int driveId = 0; driveId < 2; driveId++) {
+    for (int i = 0; i < MY_DISK_NUM; i++) {
+        auto crc = msx2.fdc.calcDiskCrc(myDisks[i].data, myDisks[i].size);
+        if (crc == fdc.ctx.crc[driveId]) {
+            msx2.insertDisk(driveId, myDisks[i].data, myDisks[i].size, true);
+        }
+    }
+}
+```
+
+#### （ディスク書き込み状態の復元についての補足）
+
+`msx2.insertDisk` の第4引数 `readOnly` を `false` にすることで書き込み可能ディスクとして挿入できます。
+
+```c++
+msx2.insertDisk(driveId, myDisk.data, myDisk.size, false);
+```
+
+micro MSX2+ では、ディスクの書き込み状態は、ディスク（CRC）のセクタ番号（絶対セクタ番号）単位でジャーナル (JCT) に記憶します。
+
+JCT は、クイックセーブ時に有効な全てが記憶され、クイックロード時にオンメモリで復元されます。
+
+JCT が存在する場合 `msx2.insertDisk` が行われた時に自動的にオンメモリのディスクキャッシュに反映されます。
+
+> つまり、何も考えずに quick save/load して `msx2.insertDisk` すればディスクの更新状態も自動的に復元されます。
+> しかし、ストレージ上のオリジナルのディスクファイル（.dsk）への変更内容の commit は行われません。
 
 #### (セーブデータサイズについての補足)
 
@@ -134,67 +214,3 @@ LZ4 解凍後のセーブデータは、
 |`SRM`|8,192|y|メガROMカートリッジSRAM|
 |`PAC`|8,192|n|FM-PACのSRAM|
 |`R:0`|65,536|n|マッパー0 RAM|
-|`R:1`|65,536|y|マッパー1 RAM (128KB)|
-|`R:2`|65,536|y|マッパー2 RAM (192KB)|
-|`R:3`|65,536|y|マッパー3 RAM (256KB)|
-
-#### (ディスク挿入状態のロード手順)
-
-フロッピーディスクの挿入状態は記憶されるが、挿入データの復元は手動で行う必要がある。
-
-挿入されていたフロッピーディスクはCRC符号のみFDCコンテキストに記憶されている。
-
-```c++
-msx2.fdc.ctx.crc[driveId]
-```
-
-次のように実装することでディスク挿入状態を自動的に復元できる。
-
-1. `msx2.quickLoad` でクイックロード
-2. `msx2.fdc.calcDiskCrc` で上記CRC符号と一致するディスクを探索
-3. `msx2.insertDisk` で挿入
-
-```c++
-for (int driveId = 0; driveId < 2; driveId++) {
-    for (int i = 0; i < MY_DISK_NUM; i++) {
-        auto crc = msx2.fdc.calcDiskCrc(myDisks[i].data, myDisks[i].size);
-        if (crc == fdc.ctx.crc[driveId]) {
-            msx2.insertDisk(driveId, myDisks[i].data, myDisks[i].size, true);
-        }
-    }
-}
-```
-
-#### （ディスク書き込み状態の復元についての補足）
-
-`msx2.insertDisk` の第4引数 `readOnly` を `false` にすることで書き込み可能ディスクとして挿入できる。
-
-```
-msx2.insertDisk(driveId, myDisk.data, myDisk.size, false);
-```
-
-- ディスクの書き込み状態は、ディスク（CRC）のセクタ番号（絶対セクタ番号）単位でジャーナルに記憶している。
-- ジャーナルは、クイックセーブ時に有効な全て記憶され、クイックロード時に復元される。
-- ジャーナル情報が存在する場合 `msx2.insertDisk` が行われた時に自動的にオンメモリのディスクキャッシュに反映される。
-
-> つまり、何も考えずに quick save/load して `msx2.insertDisk` すればディスク更新状態も自動的に復元される。 
-
-## 6. Disk LED Lamp
-
-ディスクタイプのゲームは、ローディング時間がそこそこ長いため、LEDランプを実装がほぼ必須である。
-
-> _実装しなければ「ハングアップしているのか？」と誤解するユーザが出てくる可能性が高い。_
-
-LED ランプを点滅すべきタイミングは以下のように捕捉できる。
-
-```c++
-// ディスク読み取りを捕捉
-this->fdc.setDiskReadListener(this, [](void* arg, int driveId, int sector) {
-    // driveId (0 or 1) のドライブに挿入されているディスク から 1 セクタ (512バイト) 読み込まれた時に発火
-});
-
-// ディスク書き込みを捕捉
-this->fdc.setDiskWriteListener(this, [](void* arg, int driveId, int sector) {
-    // driveId (0 or 1) のドライブに挿入されているディスク から 1 セクタ (512バイト) 書き込まれた時に発火
-});
-```
