@@ -35,8 +35,7 @@
 
 ## Core Modules
 
-- エミュレータ・コアモジュール（[./msx2-osx/core以下の全てのファイル](./msx2-osx/core)）をC++プロジェクトに組み込んで使用します
-  - 全てヘッダファイル形式で提供しています
+- エミュレータ・コアモジュール（[./msx2-osx/core以下の全てのファイル](./msx2-osx/core)）と [./msx2-osx/lz4以下の全てのファイル](./msx2-osx/lz4) をC++プロジェクトに組み込んで使用します
   - C/C++の標準ライブラリ以外は使用していないので、プラットフォーム（Nintendo Switch、PlayStation、XBOX, iOS, Android, Windows, macOS, PlayStation, NintendoSwitch など）に関係無くビルド可能な筈です
   - ただし、64bit CPU 専用（32bit CPU は非サポート）です
 - セーブデータはエンディアンモデルが異なるコンピュータ間では互換性が無いため、プラットフォーム間でセーブデータのやりとりをする場合は注意してください
@@ -262,18 +261,38 @@ LZ4 解凍後のセーブデータは、
 
 ## Licenses
 
-- C-BIOS:
+micro MSX2+ には次のソフトウェアが含まれています。
+
+利用に当たっては、著作権（財産権）及び著作者人格権は各作者に帰属する点の理解と、ライセンス条項の厳守をお願いいたします。
+
+- LZ4 Library
+  - Web Site: [https://github.com/lz4/lz4](https://github.com/lz4/lz4) - [lib](https://github.com/lz4/lz4/tree/dev/lib)
+  - License: 2-Clause BSD
+  - `Copyright (c) 2011-2020, Yann Collet`
+- C-BIOS
   - Web Site: [https://cbios.sourceforge.net/](https://cbios.sourceforge.net/)
   - License: 2-Clause BSD
-- emu2413:
+  - `Copyright (c) 2002-2005 BouKiCHi.  All rights reserved.`
+  - `Copyright (c) 2003 Reikan.  All rights reserved.`
+  - `Copyright (c) 2004-2006,2008-2010 Maarten ter Huurne.  All rights reserved.`
+  - `Copyright (c) 2004-2006,2008-2011 Albert Beevendorp.  All rights reserved.`
+  - `Copyright (c) 2004-2005 Patrick van Arkel.  All rights reserved.`
+  - `Copyright (c) 2004,2010-2011 Manuel Bilderbeek.  All rights reserved.`
+  - `Copyright (c) 2004-2006 Joost Yervante Damad.  All rights reserved.`
+  - `Copyright (c) 2004-2006 Jussi Pitkänen.  All rights reserved.`
+  - `Copyright (c) 2004-2007 Eric Boon.  All rights reserved.`
+- emu2413
   - Web Site: [https://github.com/digital-sound-antiques/emu2413](https://github.com/digital-sound-antiques/emu2413)
   - License: MIT
+  - `Copyright (c) 2001-2019 Mitsutaka Okazaki`
 - SUZUKI PLAN - Z80 Emulator
   - Web Site: [https://github.com/suzukiplan/z80](https://github.com/suzukiplan/z80)
   - License: MIT
+  - `Copyright (c) 2019 Yoji Suzuki.`
 - micro MSX2+
   - Web Site: [https://github.com/suzukiplan/micro-msx2p](https://github.com/suzukiplan/micro-msx2p)
   - License: MIT
+  - `Copyright (c) 2023 Yoji Suzuki.`
 
 ### About 2-Clause BSD
 
@@ -283,7 +302,7 @@ LZ4 解凍後のセーブデータは、
   - ok: Distribution (再配布可)
   - ok: Private use (個人利用可)
 - Limitations
-  - No Liability (作者は責任を追わない)
+  - No Liability (作者責任を負わない)
   - No Warranty (無保証)
 - Conditions
   - License and copyright notice (製品にライセンス及びコピーライトの記載が必要)
@@ -296,7 +315,7 @@ LZ4 解凍後のセーブデータは、
   - ok: Distribution (再配布可)
   - ok: Private use (個人利用可)
 - Limitations
-  - No Liability (作者は責任を追わない)
+  - No Liability (作者責任を負わない)
   - No Warranty (無保証)
 - Conditions
   - License and copyright notice (製品にライセンス及びコピーライトの記載が必要)
