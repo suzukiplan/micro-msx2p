@@ -2,34 +2,37 @@
 
 ## Description
 
-- micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを Nintendo Switch、PlayStation、XBOX などの家庭用ゲーム機、スマートフォンアプリ、PCアプリ（Steam等）などとして販売する用途（組み込み用途）に特化した最小構成の MSX2+ エミュレータです。
-- 一応実機 BIOS で動作することも可能ですが、基本的には C-BIOS を用いた ROM カートリッジ形式のゲームソフトの販売用途での利用を想定しています。
+- micro MSX2+ は、自作の MSX, MSX2, MSX2+ 用のゲームソフトを 家庭用ゲーム機（Nintendo Switch, PlayStation, XBOXなど）、スマートフォンアプリ（iOS, Adnrdoiなど）、PCアプリ（Windows, macOS, Linuxなど）として販売する用途（組み込み用途）を想定して **各種プロジェクトへの組み込みのし易さ** に特化することを目指した最小構成の MSX2+ エミュレータです。
+- 実機 BIOS で動作させることも可能ですが、基本的には C-BIOS を用いて ROM カートリッジ形式のゲームソフトで利用する用途を想定しています。
   - [ROMカートリッジ形式のゲームソフトの作成方法についての参考資料](https://qiita.com/suzukiplan/items/b369d3f9b41be55b247e)
   - MSX-BASIC のプログラムは C-BIOS では動かせません（実機BIOSが必要です）
-  - FDC (東芝製) の実装は入っていますが FDC へのアクセスには実機 DISK BIOS が必要です
+  - FDC (東芝製) の実装は入っていますが FDC へのアクセスには実機の DISK BIOS が必要です
   - OPLL (YM-2413) の実装は入ってますが FM-PAC の BIOS 実装は入ってません（BIOS を経由せずにポート $7C, $7D を直叩きすることで再生可能）
 - 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用のエミュレータ実装が付随しています。
 
-## Unimplemented Features
+## Unimplemented Features　(TODO List)
+
+幾つかの MSX2/MSX2+ の機能はまだ実装されていません。（将来的に実装する可能性があります）
 
 - VDP
   - Screen Mode: TEXT1
     - そもそもこの機能が無いと動かないゲームがあるのか？
     - TEXT2 については vdptest というプログラムの動作検証のため一応実装済み
   - インタレース機能
-    - 実装そのものは簡単にできるが処理負荷が無駄に上がってしまうため実装していない
-    - そもそもこの機能が無いと動かないゲームがあるのか？
+    - 実装そのものは簡単にできるが、処理負荷が増大してしまうため実装を省略
+    - _そもそもこの機能が無いと動かないゲームがあるのか？_
   - Even/Oddフラグ
-    - そもそもこの機能が無いと動かないゲームがあるのか？
+    - _そもそもこの機能が無いと動かないゲームがあるのか？_
   - TEXT2 の BLINK 機能
-    - そもそもこの機能が無いと動かないゲームがあるのか？
+    - _そもそもこの機能が無いと動かないゲームがあるのか？_
 - Sound
   - Y8950 (MSX-AUDIO)
+    - 主流は OPLL (FM-PAC) だと考えられるので実装省略
 
 ## Core Modules
 
-- エミュレータ・コアモジュール([./msx2-osx/core](./msx2-osx/core))はOS非依存
-  - iOS, Android, Windows, macOS, PlayStation, NintendoSwitch などで使用可能な筈
+- エミュレータ・コアモジュール([./msx2-osx/core](./msx2-osx/core))はOS非依存（要 C++11 以降）
+  - Nintendo Switch、PlayStation、XBOX, iOS, Android, Windows, macOS, PlayStation, NintendoSwitch などで使用可能な筈
   - 64bit CPU 専用（32bit CPU は非サポート）
 - セーブデータはエンディアンモデルが異なるコンピュータ間では互換性が無い
 
