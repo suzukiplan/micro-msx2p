@@ -213,3 +213,18 @@ LZ4 解凍後のセーブデータは、
 |`SRM`|8,192|y|メガROMカートリッジSRAM|
 |`PAC`|8,192|n|FM-PACのSRAM|
 |`R:0`|65,536|n|マッパー0 RAM|
+
+## Licenses
+
+- C-BIOS:
+  - Web Site: [https://cbios.sourceforge.net/](https://cbios.sourceforge.net/)
+  - License: 2 caluse BSD
+- emu2413:
+  - Web Site: [https://github.com/digital-sound-antiques/emu2413](https://github.com/digital-sound-antiques/emu2413)
+  - License: MIT
+- SUZUKI PLAN - Z80 Emulator
+  - Web Site: [https://github.com/suzukiplan/z80](https://github.com/suzukiplan/z80)
+  - License: MIT
+- micro MSX2+
+  - Web Site: [https://github.com/suzukiplan/micro-MSX2+]
+  - License: MIT
