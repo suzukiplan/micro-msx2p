@@ -31,7 +31,6 @@
 #include <stdlib.h>
 #include <string.h>
 //#define COMMAND_DEBUG
-//#define INTERRUPT_LINE_DEBUG
 
 class V9958
 {
@@ -195,13 +194,7 @@ class V9958
         unsigned char hardwareResetFlag;
         unsigned int counter;
         unsigned char lineIE1;
-#ifdef INTERRUPT_LINE_DEBUG
-        unsigned char fireIE0;
-        unsigned char fireIE1;
-        unsigned char reserved[5];
-#else
         unsigned char reserved[7];
-#endif
     } ctx;
 
     void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value))
@@ -713,16 +706,6 @@ class V9958
             if (renderLine < this->getLineNumber()) {
                 this->renderScanline(renderLine, &renderPosition[26 - (this->getAdjustX() << 1)]);
             }
-#ifdef INTERRUPT_LINE_DEBUG
-            if (this->ctx.fireIE0) {
-                this->ctx.fireIE0 = 0;
-                memset(renderPosition, 0xFF, 568 * 2);
-            }
-            if (this->ctx.fireIE1) {
-                this->ctx.fireIE1 = 0;
-                memset(renderPosition, 0x00, 568 * 2);
-            }
-#endif
         }
     }
 
@@ -772,14 +755,12 @@ class V9958
                 this->reset5S();
                 this->resetCollision();
                 if (this->isF()) {
-                    //printf("%3d,%3d: reset F\n",ctx.countV,ctx.counter%100);
                     this->resetF();
                     this->checkIRQ();
                 }
                 break;
             case 1: // |*|*|ID|ID|ID|ID|ID|FH|
                 if (this->isFH() && this->isIE1()) {
-                    //printf("%3d,%3d: reset FH\n",ctx.countV,ctx.counter%100);
                     this->resetFH();
                     this->checkIRQ();
                 }
@@ -840,7 +821,6 @@ class V9958
         int pn = this->ctx.reg[16] & 0b00001111;
         this->ctx.pal[pn][this->ctx.latch2++] = value;
         if (2 == this->ctx.latch2) {
-            //printf("update palette #%d ($%02X%02X)\n", pn, this->ctx.pal[pn][1], this->ctx.pal[pn][0]);
             updatePaletteCacheFromRegister(pn);
             this->ctx.reg[16]++;
             this->ctx.reg[16] &= 0b00001111;
@@ -858,7 +838,7 @@ class V9958
         }
     }
 
-#if 0 // このポートを実装すると一部ゲーム（例: DiskStation5号のマクロスのdemo）で表示がバグるので実装しない
+#if 0 // このポートを実装すると一部ゲームで表示がバグるので実装しない
     inline void outPortF3(unsigned char value) {
         /*
          b0    M3
@@ -986,19 +966,10 @@ class V9958
     inline void checkIRQ()
     {
         if (this->isIE0() && this->isF()) {
-            //printf("%3d,%3d: Detect IE0 (F=%d, FH=%d)\n",ctx.countV,ctx.counter%100,isF()?1:0,isFH()?1:0);
-#ifdef INTERRUPT_LINE_DEBUG
-            this->ctx.fireIE0 = 1;
-#endif
             this->detectInterrupt(this->arg, 0);
         } else if (this->isIE1() && this->isFH()) {
-            //printf("%3d,%3d: Detect IE1 (F=%d, FH=%d)\n",ctx.countV,ctx.counter%100,isF()?1:0,isFH()?1:0);
-#ifdef INTERRUPT_LINE_DEBUG
-            this->ctx.fireIE1 = 1;
-#endif
             this->detectInterrupt(this->arg, 1);
         } else {
-            //printf("%3d,%3d: Cancel Interrupt\n",ctx.countV,ctx.counter%100);
             this->cancelInterrupt(this->arg);
         }
     }
@@ -1076,13 +1047,11 @@ class V9958
                 this->ctx.lineIE1 = value;
                 this->ctx.lineIE1 -= this->ctx.reg[23];
                 this->ctx.lineIE1++;
-                //printf("%3d,%3d: R#%d val=%d, lineIE1=%d\n",ctx.countV,ctx.counter%100,rn,value,this->ctx.lineIE1);
                 break;
             case 23:
                 this->ctx.lineIE1 = this->ctx.reg[19];
                 this->ctx.lineIE1 -= value;
                 this->ctx.lineIE1++;
-                //printf("%3d,%3d: R#%d val=%d, lineIE1=%d\n",ctx.countV,ctx.counter%100,rn,value,this->ctx.lineIE1);
                 break;
             case 44:
                 switch (this->ctx.command) {
