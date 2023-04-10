@@ -1700,10 +1700,10 @@ class V9958
         unsigned char paletteMask = this->getScreenMode() == 0b00100 ? 0x03 : 0x0F;
         unsigned char dlog[256];
         unsigned char wlog[256];
-        unsigned char clog[256];
+        unsigned char skip[256];
         memset(dlog, 0, sizeof(dlog));
         memset(wlog, 0, sizeof(wlog));
-        memset(clog, 0, sizeof(clog));
+        memset(skip, 0, sizeof(skip));
         bool limitOver = false;
         for (int i = 0; i < 32; i++, ct += 16) {
             int cur = sa + i * 4;
@@ -1742,18 +1742,20 @@ class V9958
                             if (dlog[x] && !limitOver && !ic) {
                                 this->setCollision(x, lineNumber);
                             }
-                            if (0 == dlog[x] || cc) {
+                            if (0 == wlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
                                     if (cc) {
-                                        clog[x] |= col;
-                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
+                                        if (!skip[x]) {
+                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
+                                        }
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
                                         dlog[x] = col;
-                                        clog[x] = col;
                                     }
                                     wlog[x] = 1;
                                 }
+                            } else {
+                                skip[x] = 1;
                             }
                             overflow = x == 0xFF;
                         }
@@ -1763,18 +1765,20 @@ class V9958
                             if (dlog[x] && !limitOver && !ic) {
                                 this->setCollision(x, lineNumber);
                             }
-                            if (0 == dlog[x] || cc) {
+                            if (0 == wlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
                                     if (cc) {
-                                        clog[x] |= col;
-                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
+                                        if (!skip[x]) {
+                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
+                                        }
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
                                         dlog[x] = col;
-                                        clog[x] = col;
                                     }
                                     wlog[x] = 1;
                                 }
+                            } else {
+                                skip[x] = 1;
                             }
                             overflow = x == 0xFF;
                         }
@@ -1808,18 +1812,20 @@ class V9958
                             if (dlog[x] && !limitOver && !ic) {
                                 this->setCollision(x, lineNumber);
                             }
-                            if (0 == dlog[x] || cc) {
+                            if (0 == wlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
                                     if (cc) {
-                                        clog[x] |= col;
-                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
+                                        if (!skip[x]) {
+                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
+                                        }
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
                                         dlog[x] = col;
-                                        clog[x] = col;
                                     }
                                     wlog[x] = 1;
                                 }
+                            } else {
+                                skip[x] = 1;
                             }
                             overflow = x == 0xFF;
                         }
@@ -1855,18 +1861,20 @@ class V9958
                             if (dlog[x] && !limitOver && !ic) {
                                 this->setCollision(x, lineNumber);
                             }
-                            if (0 == dlog[x] || cc) {
+                            if (0 == wlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     if (cc) {
-                                        clog[x] |= col;
-                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
+                                        if (!skip[x]) {
+                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
+                                        }
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
                                         dlog[x] = col;
-                                        clog[x] = col;
                                     }
                                     wlog[x] = 1;
                                 }
+                            } else {
+                                skip[x] = 1;
                             }
                             overflow = x == 0xFF;
                         }
@@ -1876,18 +1884,20 @@ class V9958
                             if (dlog[x] && !limitOver && !ic) {
                                 this->setCollision(x, lineNumber);
                             }
-                            if (0 == dlog[x] || cc) {
+                            if (0 == wlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     if (cc) {
-                                        clog[x] |= col;
-                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
+                                        if (!skip[x]) {
+                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
+                                        }
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
                                         dlog[x] = col;
-                                        clog[x] = col;
                                     }
                                     wlog[x] = 1;
                                 }
+                            } else {
+                                skip[x] = 1;
                             }
                             overflow = x == 0xFF;
                         }
@@ -1899,8 +1909,8 @@ class V9958
                         int pixelLine = lineNumber - y;
                         unsigned char col = this->ctx.ram[ct + pixelLine];
                         if (col & 0x80) x -= 32;
-                        bool cc = col & 0x40;
                         bool ic = col & 0x20;
+                        bool cc = col & 0x40;
                         col &= paletteMask;
                         if (!col) tsn++;
                         if (9 == sn) {
@@ -1921,18 +1931,20 @@ class V9958
                             if (dlog[x] && !limitOver && !ic) {
                                 this->setCollision(x, lineNumber);
                             }
-                            if (0 == dlog[x] || cc) {
+                            if (0 == wlog[x] || cc) {
                                 if (this->ctx.ram[cur] & bit[j]) {
                                     if (cc) {
-                                        clog[x] |= col;
-                                        this->renderPixel2S2(&renderPosition[x << 1], clog[x]);
+                                        if (!skip[x]) {
+                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
+                                        }
                                     } else {
                                         this->renderPixel2S2(&renderPosition[x << 1], col);
                                         dlog[x] = col;
-                                        clog[x] = col;
                                     }
                                     wlog[x] = 1;
                                 }
+                            } else {
+                                skip[x] = 1;
                             }
                             overflow = x == 0xFF;
                         }
