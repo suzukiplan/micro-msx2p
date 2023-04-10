@@ -195,7 +195,7 @@ size_t soundSize;
 void* sound = msx2.getSound(&soundSize);
 
 // 1フレーム実行後の映像を取得
-// - Size: 568(width) x 480(height) x 2(16bit-color)
+// - Size: 568(width) x 240(height) x 2(16bit-color)
 // - Color: RGB555 or RGB565 (コンストラクタで指定したもの)
 unsigned short* display = msx2.vdp.display;
 ```
