@@ -1486,8 +1486,8 @@ class V9958
             0b00000100,
             0b00000010,
             0b00000001};
-        bool si = this->isSprite16px();
-        bool mag = this->isSprite2x();
+        int si = this->isSprite16px() ? 16 : 8;
+        int mag = this->isSprite2x() ? 2 : 1;
         int sa = this->getSpriteAttributeTableM1();
         int sg = this->getSpriteGeneratorTable();
         int sn = 0;
@@ -1507,171 +1507,48 @@ class V9958
             if (col & 0x80) x -= 32;
             col &= 0b00001111;
             y += 1 + this->ctx.reg[23];
-            if (mag) {
-                if (si) {
-                    // 16x16 x 2
-                    if (y <= lineNumber && lineNumber < y + 32) {
-                        sn++;
-                        if (!col) tsn++;
-                        if (5 == sn) {
-                            this->set5S(true, i);
-                            if (!this->renderLimitOverSprites) {
-                                break;
-                            } else {
-                                if (4 <= tsn) break;
-                                limitOver = true;
-                            }
-                        } else if (sn < 5) {
-                            this->set5S(false, i);
-                        }
-                        int pixelLine = lineNumber - y;
-                        cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 16; j++, x++) {
-                            if (x < 0) continue;
-                            if (wlog[x] && !limitOver) {
-                                this->setCollision(x, lineNumber);
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel2S1(&renderPosition[x << 1], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
-                        }
-                        cur += 16;
-                        for (int j = 0; !overflow && j < 16; j++, x++) {
-                            if (x < 0) continue;
-                            if (wlog[x] && !limitOver) {
-                                this->setCollision(x, lineNumber);
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel2S1(&renderPosition[x << 1], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
-                        }
+            if (y <= lineNumber && lineNumber < y + si * mag) {
+                sn++;
+                if (!col) tsn++;
+                if (5 == sn) {
+                    this->set5S(true, i);
+                    if (!this->renderLimitOverSprites) {
+                        break;
+                    } else {
+                        if (4 <= tsn) break;
+                        limitOver = true;
                     }
-                } else {
-                    // 8x8 x 2
-                    if (y <= lineNumber && lineNumber < y + 16) {
-                        sn++;
-                        if (!col) tsn++;
-                        if (5 == sn) {
-                            this->set5S(true, i);
-                            if (!this->renderLimitOverSprites) {
-                                break;
-                            } else {
-                                if (4 <= tsn) break;
-                                limitOver = true;
-                            }
-                        } else if (sn < 5) {
-                            this->set5S(false, i);
-                        }
-                        cur = sg + ptn * 8 + lineNumber % 8;
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 16; j++, x++) {
-                            if (x < 0) continue;
-                            if (wlog[x] && !limitOver) {
-                                this->setCollision(x, lineNumber);
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    this->renderPixel2S1(&renderPosition[x << 1], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
+                } else if (sn < 5) {
+                    this->set5S(false, i);
+                }
+                int pixelLine = lineNumber - y;
+                cur = sg + (ptn & 252) * 8 + pixelLine % (8 * mag) / mag + (pixelLine < 8 * mag ? 0 : 8);
+                for (int j = 0; x < 256 && j < 8 * mag; j++, x++) {
+                    if (x < 0) continue;
+                    if (wlog[x] && !limitOver) {
+                        this->setCollision(x, lineNumber);
+                    }
+                    if (0 == dlog[x]) {
+                        if (this->ctx.ram[cur] & bit[j / mag]) {
+                            this->renderPixel2S1(&renderPosition[x << 1], col);
+                            dlog[x] = col;
+                            wlog[x] = 1;
                         }
                     }
                 }
-            } else {
-                if (si) {
-                    // 16x16 x 1
-                    if (y <= lineNumber && lineNumber < y + 16) {
-                        sn++;
-                        if (!col) tsn++;
-                        if (5 == sn) {
-                            this->set5S(true, i);
-                            if (!this->renderLimitOverSprites) {
-                                break;
-                            } else {
-                                if (4 <= tsn) break;
-                                limitOver = true;
-                            }
-                        } else if (sn < 5) {
-                            this->set5S(false, i);
+                if (16 == si) {
+                    cur += 16 * mag;
+                    for (int j = 0; x < 256 && j < 8 * mag; j++, x++) {
+                        if (x < 0) continue;
+                        if (wlog[x] && !limitOver) {
+                            this->setCollision(x, lineNumber);
                         }
-                        int pixelLine = lineNumber - y;
-                        cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 8; j++, x++) {
-                            if (x < 0) continue;
-                            if (wlog[x] && !limitOver) {
-                                this->setCollision(x, lineNumber);
+                        if (0 == dlog[x]) {
+                            if (this->ctx.ram[cur] & bit[j / mag]) {
+                                this->renderPixel2S1(&renderPosition[x << 1], col);
+                                dlog[x] = col;
+                                wlog[x] = 1;
                             }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel2S1(&renderPosition[x << 1], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
-                        }
-                        cur += 16;
-                        for (int j = 0; !overflow && j < 8; j++, x++) {
-                            if (x < 0) continue;
-                            if (wlog[x] && !limitOver) {
-                                this->setCollision(x, lineNumber);
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel2S1(&renderPosition[x << 1], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
-                        }
-                    }
-                } else {
-                    // 8x8 x 1
-                    if (y <= lineNumber && lineNumber < y + 8) {
-                        sn++;
-                        if (!col) tsn++;
-                        if (5 == sn) {
-                            this->set5S(true, i);
-                            if (!this->renderLimitOverSprites) {
-                                break;
-                            } else {
-                                if (4 <= tsn) break;
-                                limitOver = true;
-                            }
-                        } else if (sn < 5) {
-                            this->set5S(false, i);
-                        }
-                        cur = sg + ptn * 8 + lineNumber % 8;
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 8; j++, x++) {
-                            if (x < 0) continue;
-                            if (wlog[x] && !limitOver) {
-                                this->setCollision(x, lineNumber);
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    this->renderPixel2S1(&renderPosition[x << 1], col);
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
                         }
                     }
                 }
