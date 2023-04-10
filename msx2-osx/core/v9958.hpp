@@ -1522,7 +1522,11 @@ class V9958
                     this->set5S(false, i);
                 }
                 int pixelLine = lineNumber - y;
-                cur = sg + (ptn & 252) * 8 + pixelLine % (8 * mag) / mag + (pixelLine < 8 * mag ? 0 : 8);
+                if (16 == si) {
+                    cur = sg + (ptn & 252) * 8 + pixelLine % (8 * mag) / mag + (pixelLine < 8 * mag ? 0 : 8);
+                } else {
+                    cur = sg + ptn * 8 + lineNumber % (8 * mag) / mag;
+                }
                 for (int j = 0; x < 256 && j < 8 * mag; j++, x++) {
                     if (x < 0) continue;
                     if (wlog[x] && !limitOver) {
@@ -1567,8 +1571,8 @@ class V9958
             0b00000100,
             0b00000010,
             0b00000001};
-        bool si = this->isSprite16px();
-        bool mag = this->isSprite2x();
+        int si = this->isSprite16px() ? 16 : 8;
+        int mag = this->isSprite2x() ? 2 : 1;
         int sa = this->getSpriteAttributeTableM2();
         int ct = this->getSpriteColorTable();
         int sg = this->getSpriteGeneratorTable();
@@ -1589,241 +1593,73 @@ class V9958
             int x = this->ctx.ram[cur++];
             unsigned char ptn = this->ctx.ram[cur++];
             y += 1 - this->ctx.reg[23];
-            if (mag) {
-                if (si) {
-                    // 16x16 x 2
-                    if (y <= lineNumber && lineNumber < y + 32) {
-                        sn++;
-                        int pixelLine = lineNumber - y;
-                        unsigned char col = this->ctx.ram[ct + pixelLine / 2];
-                        bool ic = col & 0x20;
-                        bool cc = col & 0x40;
-                        if (col & 0x80) x -= 32;
-                        col &= paletteMask;
-                        if (!col) tsn++;
-                        if (9 == sn) {
-                            this->set5S(true, i);
-                            if (!this->renderLimitOverSprites) {
-                                break;
-                            } else {
-                                if (8 <= tsn) break;
-                                limitOver = true;
-                            }
-                        } else if (sn < 9) {
-                            this->set5S(false, i);
-                        }
-                        cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 16; j++, x++) {
-                            if (x < 0) continue;
-                            if (dlog[x] && !limitOver && !ic) {
-                                this->setCollision(x, lineNumber);
-                            }
-                            if (0 == wlog[x] || cc) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    if (cc) {
-                                        if (!skip[x]) {
-                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
-                                        }
-                                    } else {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col);
-                                        dlog[x] = col;
-                                    }
-                                    wlog[x] = 1;
-                                }
-                            } else {
-                                skip[x] = 1;
-                            }
-                            overflow = x == 0xFF;
-                        }
-                        cur += 16;
-                        for (int j = 0; !overflow && j < 16; j++, x++) {
-                            if (x < 0) continue;
-                            if (dlog[x] && !limitOver && !ic) {
-                                this->setCollision(x, lineNumber);
-                            }
-                            if (0 == wlog[x] || cc) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    if (cc) {
-                                        if (!skip[x]) {
-                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
-                                        }
-                                    } else {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col);
-                                        dlog[x] = col;
-                                    }
-                                    wlog[x] = 1;
-                                }
-                            } else {
-                                skip[x] = 1;
-                            }
-                            overflow = x == 0xFF;
-                        }
+            if (y <= lineNumber && lineNumber < y + si * mag) {
+                sn++;
+                int pixelLine = lineNumber - y;
+                unsigned char col = this->ctx.ram[ct + pixelLine / mag];
+                bool ic = col & 0x20;
+                bool cc = col & 0x40;
+                if (col & 0x80) x -= 32;
+                col &= paletteMask;
+                if (!col) tsn++;
+                if (9 == sn) {
+                    this->set5S(true, i);
+                    if (!this->renderLimitOverSprites) {
+                        break;
+                    } else {
+                        if (8 <= tsn) break;
+                        limitOver = true;
                     }
+                } else if (sn < 9) {
+                    this->set5S(false, i);
+                }
+                if (16 == si) {
+                    cur = sg + (ptn & 252) * 8 + pixelLine % (8 * mag) / mag + (pixelLine < 8 * mag ? 0 : 8);
                 } else {
-                    // 8x8 x 2
-                    if (y <= lineNumber && lineNumber < y + 16) {
-                        sn++;
-                        int pixelLine = lineNumber - y;
-                        unsigned char col = this->ctx.ram[ct + pixelLine / 2];
-                        bool ic = col & 0x20;
-                        bool cc = col & 0x40;
-                        if (col & 0x80) x -= 32;
-                        col &= paletteMask;
-                        if (!col) tsn++;
-                        if (9 == sn) {
-                            this->set5S(true, i);
-                            if (!this->renderLimitOverSprites) {
-                                break;
-                            } else {
-                                if (8 <= tsn) break;
-                                limitOver = true;
-                            }
-                        } else if (sn < 9) {
-                            this->set5S(false, i);
-                        }
-                        cur = sg + ptn * 8 + lineNumber % 8;
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 16; j++, x++) {
-                            if (x < 0) continue;
-                            if (dlog[x] && !limitOver && !ic) {
-                                this->setCollision(x, lineNumber);
-                            }
-                            if (0 == wlog[x] || cc) {
-                                if (this->ctx.ram[cur] & bit[j / 2]) {
-                                    if (cc) {
-                                        if (!skip[x]) {
-                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
-                                        }
-                                    } else {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col);
-                                        dlog[x] = col;
-                                    }
-                                    wlog[x] = 1;
+                    cur = sg + ptn * 8 + lineNumber % (8 * mag) / mag;
+                }
+                for (int j = 0; x < 256 && j < 8 * mag; j++, x++) {
+                    if (x < 0) continue;
+                    if (dlog[x] && !limitOver && !ic) {
+                        this->setCollision(x, lineNumber);
+                    }
+                    if (0 == wlog[x] || cc) {
+                        if (this->ctx.ram[cur] & bit[j / mag]) {
+                            if (cc) {
+                                if (!skip[x]) {
+                                    this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
                                 }
                             } else {
-                                skip[x] = 1;
+                                this->renderPixel2S2(&renderPosition[x << 1], col);
+                                dlog[x] = col;
                             }
-                            overflow = x == 0xFF;
+                            wlog[x] = 1;
                         }
+                    } else {
+                        skip[x] = 1;
                     }
                 }
-            } else {
-                if (si) {
-                    // 16x16 x 1
-                    if (y <= lineNumber && lineNumber < y + 16) {
-                        sn++;
-                        int pixelLine = lineNumber - y;
-                        unsigned char col = this->ctx.ram[ct + pixelLine];
-                        bool ic = col & 0x20;
-                        bool cc = col & 0x40;
-                        if (col & 0x80) x -= 32;
-                        col &= paletteMask;
-                        if (!col) tsn++;
-                        if (9 == sn) {
-                            this->set5S(true, i);
-                            if (!this->renderLimitOverSprites) {
-                                break;
-                            } else {
-                                if (8 <= tsn) break;
-                                limitOver = true;
-                            }
-                        } else if (sn < 9) {
-                            this->set5S(false, i);
+                if (16 == si) {
+                    cur += 16;
+                    for (int j = 0; x < 256 && j < 8 * mag; j++, x++) {
+                        if (x < 0) continue;
+                        if (dlog[x] && !limitOver && !ic) {
+                            this->setCollision(x, lineNumber);
                         }
-                        cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 8; j++, x++) {
-                            if (x < 0) continue;
-                            if (dlog[x] && !limitOver && !ic) {
-                                this->setCollision(x, lineNumber);
-                            }
-                            if (0 == wlog[x] || cc) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    if (cc) {
-                                        if (!skip[x]) {
-                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
-                                        }
-                                    } else {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col);
-                                        dlog[x] = col;
+                        if (0 == wlog[x] || cc) {
+                            if (this->ctx.ram[cur] & bit[j / mag]) {
+                                if (cc) {
+                                    if (!skip[x]) {
+                                        this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
                                     }
-                                    wlog[x] = 1;
+                                } else {
+                                    this->renderPixel2S2(&renderPosition[x << 1], col);
+                                    dlog[x] = col;
                                 }
-                            } else {
-                                skip[x] = 1;
+                                wlog[x] = 1;
                             }
-                            overflow = x == 0xFF;
-                        }
-                        cur += 16;
-                        for (int j = 0; !overflow && j < 8; j++, x++) {
-                            if (x < 0) continue;
-                            if (dlog[x] && !limitOver && !ic) {
-                                this->setCollision(x, lineNumber);
-                            }
-                            if (0 == wlog[x] || cc) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    if (cc) {
-                                        if (!skip[x]) {
-                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
-                                        }
-                                    } else {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col);
-                                        dlog[x] = col;
-                                    }
-                                    wlog[x] = 1;
-                                }
-                            } else {
-                                skip[x] = 1;
-                            }
-                            overflow = x == 0xFF;
-                        }
-                    }
-                } else {
-                    // 8x8 x 1
-                    if (y <= lineNumber && lineNumber < y + 8) {
-                        sn++;
-                        int pixelLine = lineNumber - y;
-                        unsigned char col = this->ctx.ram[ct + pixelLine];
-                        if (col & 0x80) x -= 32;
-                        bool ic = col & 0x20;
-                        bool cc = col & 0x40;
-                        col &= paletteMask;
-                        if (!col) tsn++;
-                        if (9 == sn) {
-                            this->set5S(true, i);
-                            if (!this->renderLimitOverSprites) {
-                                break;
-                            } else {
-                                if (8 <= tsn) break;
-                                limitOver = true;
-                            }
-                        } else if (sn < 9) {
-                            this->set5S(false, i);
-                        }
-                        cur = sg + ptn * 8 + lineNumber % 8;
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 8; j++, x++) {
-                            if (x < 0) continue;
-                            if (dlog[x] && !limitOver && !ic) {
-                                this->setCollision(x, lineNumber);
-                            }
-                            if (0 == wlog[x] || cc) {
-                                if (this->ctx.ram[cur] & bit[j]) {
-                                    if (cc) {
-                                        if (!skip[x]) {
-                                            this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
-                                        }
-                                    } else {
-                                        this->renderPixel2S2(&renderPosition[x << 1], col);
-                                        dlog[x] = col;
-                                    }
-                                    wlog[x] = 1;
-                                }
-                            } else {
-                                skip[x] = 1;
-                            }
-                            overflow = x == 0xFF;
+                        } else {
+                            skip[x] = 1;
                         }
                     }
                 }
