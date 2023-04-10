@@ -29,6 +29,7 @@
 
 #include "msx2def.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 class MSX2MMU

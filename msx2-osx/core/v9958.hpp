@@ -27,6 +27,8 @@
 #ifndef INCLUDE_V9958_HPP
 #define INCLUDE_V9958_HPP
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 //#define COMMAND_DEBUG
 //#define INTERRUPT_LINE_DEBUG
