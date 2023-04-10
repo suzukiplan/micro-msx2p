@@ -329,8 +329,8 @@ micro MSX2+ には次のソフトウェアが含まれています。
   - ok: Distribution (再配布可)
   - ok: Private use (個人利用可)
 - Limitations
-  - No Liability (作者責任を負わない)
-  - No Warranty (無保証)
+  - No Liability (いかなるトラブルが発生しても権利者は責任を負わない)
+  - No Warranty (仮に不具合等があっても権利者は保証義務を負わない)
 - Conditions
   - License and copyright notice (製品にライセンス及びコピーライトの記載が必要)
 
@@ -342,7 +342,7 @@ micro MSX2+ には次のソフトウェアが含まれています。
   - ok: Distribution (再配布可)
   - ok: Private use (個人利用可)
 - Limitations
-  - No Liability (作者責任を負わない)
-  - No Warranty (無保証)
+  - No Liability (いかなるトラブルが発生しても権利者は責任を負わない)
+  - No Warranty (仮に不具合等があっても権利者は保証義務を負わない)
 - Conditions
   - License and copyright notice (製品にライセンス及びコピーライトの記載が必要)
