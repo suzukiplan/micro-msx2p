@@ -162,6 +162,7 @@ class MSX2MMU
                 this->sccEnabled = true;
                 break;
             case MSX2_ROM_TYPE_ASC8_SRAM2:
+            case MSX2_ROM_TYPE_ASC16_SRAM2:
                 for (int i = 0; i < 4; i++) {
                     this->ctx.cpos[pri - 1][i] = 0;
                 }
@@ -358,6 +359,7 @@ class MSX2MMU
                 case MSX2_ROM_TYPE_ASC8: this->asc8(pri - 1, addr, value); return;
                 case MSX2_ROM_TYPE_ASC8_SRAM2: this->asc8sram2(pri - 1, addr, value); return;
                 case MSX2_ROM_TYPE_ASC16: this->asc16(pri - 1, addr, value); return;
+                case MSX2_ROM_TYPE_ASC16_SRAM2: this->asc16sram2(pri - 1, addr, value); return;
                 case MSX2_ROM_TYPE_KONAMI_SCC: this->konamiSCC(pri - 1, addr, value); return;
                 case MSX2_ROM_TYPE_KONAMI: this->konami(pri - 1, addr, value); return;
             }
@@ -395,6 +397,13 @@ class MSX2MMU
             this->ctx.cpos[idx][3] = value * 2 + 1;
             this->bankSwitchover();
         }
+    }
+
+    inline void asc16sram2(int idx, unsigned short addr, unsigned char value)
+    {
+        this->ctx.isSelectSRAM[4] = value & 0b00010000 ? 1 : 0;
+        value &= 0b00001111;
+        this->asc16(idx, addr, value);
     }
 
     inline void konamiSCC(int idx, unsigned short addr, unsigned char value)
