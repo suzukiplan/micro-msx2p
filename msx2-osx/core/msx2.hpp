@@ -85,8 +85,8 @@ class MSX2
     AY8910 psg;
     MSX2Clock clock;
     MSX2Kanji kanji;
-    SCC scc;
-    TC8566AF fdc;
+    SCC* scc;
+    TC8566AF* fdc;
     OPLL* ym2413;
 
     struct Context {
@@ -99,43 +99,46 @@ class MSX2
 
     ~MSX2()
     {
-        OPLL_delete(this->ym2413);
+        if (this->fdc) delete fdc;
+        if (this->scc) delete scc;
+        if (this->ym2413) OPLL_delete(this->ym2413);
         delete this->cpu;
     }
 
-    MSX2(int colorMode)
+    MSX2(int colorMode, bool ym2413Enabled = false)
     {
         this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX2*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX2*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX2*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;
-        this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
+        this->scc = nullptr;
+        if (ym2413Enabled) {
+            this->putlog("create YM2413 instance");
+            this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
+        } else {
+            this->ym2413 = nullptr;
+        }
         this->vdp.initialize(
             colorMode, this, [](void* arg, int ie) {
             //((MSX2*)arg)->putlog("Detect IE%d (vf:%d, hf:%d)", ie, ((MSX2*)arg)->vdp.ctx.stat[0] & 0x80 ? 1 : 0,((MSX2*)arg)->vdp.ctx.stat[1] & 0x01);
             //((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX2*)arg)->cpu->cancelIRQ(); }, [](void* arg) { ((MSX2*)arg)->cpu->requestBreak(); });
         this->mmu.setupCallbacks(
-            this, [](void* arg, unsigned short addr) { return ((MSX2*)arg)->scc.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->scc.write(addr, value); }, [](void* arg, unsigned short addr) {
+            this, [](void* arg, unsigned short addr) { return ((MSX2*)arg)->scc->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->scc->write(addr, value); }, [](void* arg, unsigned short addr) {
             switch (addr) {
-                case 0x3FFA: return ((MSX2*)arg)->fdc.read(4);
-                case 0x3FFB: return ((MSX2*)arg)->fdc.read(5);
+                case 0x3FFA: return ((MSX2*)arg)->fdc->read(4);
+                case 0x3FFB: return ((MSX2*)arg)->fdc->read(5);
                 default: return (unsigned char)0xFF;
             } }, [](void* arg, unsigned short addr, unsigned char value) {
             switch (addr) {
-                case 0x3FF8: ((MSX2*)arg)->fdc.write(2, value); break;
-                case 0x3FF9: ((MSX2*)arg)->fdc.write(3, value); break;
-                case 0x3FFA: ((MSX2*)arg)->fdc.write(4, value); break;
-                case 0x3FFB: ((MSX2*)arg)->fdc.write(5, value); break;
+                case 0x3FF8: ((MSX2*)arg)->fdc->write(2, value); break;
+                case 0x3FF9: ((MSX2*)arg)->fdc->write(3, value); break;
+                case 0x3FFA: ((MSX2*)arg)->fdc->write(4, value); break;
+                case 0x3FFB: ((MSX2*)arg)->fdc->write(5, value); break;
             } }, [](void* arg, unsigned short addr, unsigned char value) {
             switch (addr) {
                 case 0x3FF4: OPLL_writeIO(((MSX2*)arg)->ym2413, 0, value); break;
                 case 0x3FF5: OPLL_writeIO(((MSX2*)arg)->ym2413, 1, value); break;
             } });
-        this->fdc.setDiskReadListener(this, [](void* arg, int driveId, int sector) {
-            //((MSX2*)arg)->putlog("DiskRead: drive=%d, sector=%d", driveId, sector);
-        });
-        this->fdc.setDiskWriteListener(this, [](void* arg, int driveId, int sector) {
-            //((MSX2*)arg)->putlog("DiskWrite: drive=%d, sector=%d", driveId, sector);
-        });
+        this->fdc = nullptr;
 #if 0
         this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
             auto this_ = (MSX2*)arg;
@@ -400,9 +403,9 @@ class MSX2
         this->psg.reset(27);
         this->clock.reset();
         this->kanji.reset();
-        this->scc.reset();
-        this->fdc.reset();
-        OPLL_reset(this->ym2413);
+        if (this->scc) this->scc->reset();
+        if (this->fdc) this->fdc->reset();
+        if (this->ym2413) OPLL_reset(this->ym2413);
     }
 
     void putlog(const char* fmt, ...)
@@ -447,24 +450,61 @@ class MSX2
 
     void setup(int pri, int sec, int idx, void* data, int size, const char* label = NULL)
     {
+        if (0 == strcmp(label, "FM")) {
+            if (!this->ym2413) {
+                this->putlog("create YM2413 instance");
+                this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
+            }
+        } else if (0 == strcmp(label, "DISK")) {
+            if (!this->fdc) {
+                this->putlog("create FDC instance");
+                this->fdc = new TC8566AF();
+                this->fdc->setDiskReadListener(this, [](void* arg, int driveId, int sector) {
+                    //((MSX2*)arg)->putlog("DiskRead: drive=%d, sector=%d", driveId, sector);
+                });
+                this->fdc->setDiskWriteListener(this, [](void* arg, int driveId, int sector) {
+                    //((MSX2*)arg)->putlog("DiskWrite: drive=%d, sector=%d", driveId, sector);
+                });
+            }
+        }
         this->mmu.setup(pri, sec, idx, (unsigned char*)data, size, label);
     }
 
     void loadRom(void* data, int size, int romType)
     {
         this->mmu.setupCartridge(1, 0, 2, data, size, romType);
-        this->scc.enabled = romType == MSX2_ROM_TYPE_KONAMI_SCC;
+        if (romType == MSX2_ROM_TYPE_KONAMI_SCC) {
+            if (!this->scc) {
+                this->putlog("create SCC instance");
+                this->scc = new SCC();
+                this->scc->enabled = true;
+            }
+        } else if (this->scc) {
+            if (this->scc) {
+                this->putlog("remove SCC instance");
+                delete this->scc;
+                this->scc = nullptr;
+            }
+        }
         this->reset();
     }
 
     void insertDisk(int driveId, const void* data, size_t size, bool readOnly)
     {
-        this->fdc.insertDisk(driveId, data, size, readOnly);
+        if (this->fdc) {
+            this->fdc->insertDisk(driveId, data, size, readOnly);
+        } else {
+            this->putlog("Cannot insert disk (FDC is not available)");
+        }
     }
 
     void ejectDisk(int driveId)
     {
-        this->fdc.ejectDisk(driveId);
+        if (this->fdc) {
+            this->fdc->ejectDisk(driveId);
+        } else {
+            this->putlog("Cannot insert disk (FDC is not available)");
+        }
     }
 
     void tick(unsigned char pad1, unsigned char pad2, unsigned char key)
@@ -488,22 +528,26 @@ class MSX2
         while (0 < this->psg.ctx.bobo) {
             this->psg.ctx.bobo -= this->CPU_CLOCK;
             this->psg.tick(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1], 81);
-            this->scc.tick(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1], 81);
-            auto opllWav = OPLL_calc(this->ym2413);
-            int l = this->soundBuffer[this->soundBufferCursor];
-            int r = this->soundBuffer[this->soundBufferCursor + 1];
-            l += opllWav;
-            r += opllWav;
-            if (32767 < l)
-                l = 32767;
-            else if (l < -32768)
-                l = -32768;
-            if (32767 < r)
-                r = 32767;
-            else if (r < -32768)
-                r = -32768;
-            this->soundBuffer[this->soundBufferCursor] = (short)l;
-            this->soundBuffer[this->soundBufferCursor + 1] = (short)r;
+            if (this->scc) {
+                this->scc->tick(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1], 81);
+            }
+            if (this->ym2413) {
+                auto opllWav = OPLL_calc(this->ym2413);
+                int l = this->soundBuffer[this->soundBufferCursor];
+                int r = this->soundBuffer[this->soundBufferCursor + 1];
+                l += opllWav;
+                r += opllWav;
+                if (32767 < l)
+                    l = 32767;
+                else if (l < -32768)
+                    l = -32768;
+                if (32767 < r)
+                    r = 32767;
+                else if (r < -32768)
+                    r = -32768;
+                this->soundBuffer[this->soundBufferCursor] = (short)l;
+                this->soundBuffer[this->soundBufferCursor + 1] = (short)r;
+            }
             this->soundBufferCursor += 2;
         }
         // Asynchronous with VDP
@@ -704,17 +748,21 @@ class MSX2
         if (this->mmu.sramEnabled) {
             this->writeSaveChunk("SRM", &this->mmu.sram, (int)sizeof(this->mmu.sram));
         }
-        if (this->mmu.sccEnabled) {
-            this->writeSaveChunk("SCC", &this->scc.ctx, (int)sizeof(this->scc.ctx));
+        if (this->mmu.sccEnabled && this->scc) {
+            this->writeSaveChunk("SCC", &this->scc->ctx, (int)sizeof(this->scc->ctx));
         }
         this->writeSaveChunk("PSG", &this->psg.ctx, (int)sizeof(this->psg.ctx));
         this->writeSaveChunk("RTC", &this->clock.ctx, (int)sizeof(this->clock.ctx));
         this->writeSaveChunk("KNJ", &this->kanji.ctx, (int)sizeof(this->kanji.ctx));
         this->writeSaveChunk("VDP", &this->vdp.ctx, (int)sizeof(this->vdp.ctx));
-        this->writeSaveChunk("FDC", &this->fdc.ctx, (int)sizeof(this->fdc.ctx));
-        this->writeSaveChunk("JCT", &this->fdc.journalCount, (int)sizeof(this->fdc.journalCount));
-        this->writeSaveChunk("JDT", &this->fdc.journal, (int)sizeof(this->fdc.journal[0]) * this->fdc.journalCount);
-        this->writeSaveChunk("OPL", this->ym2413, (int)sizeof(OPLL));
+        if (this->fdc) {
+            this->writeSaveChunk("FDC", &this->fdc->ctx, (int)sizeof(this->fdc->ctx));
+            this->writeSaveChunk("JCT", &this->fdc->journalCount, (int)sizeof(this->fdc->journalCount));
+            this->writeSaveChunk("JDT", &this->fdc->journal, (int)sizeof(this->fdc->journal[0]) * this->fdc->journalCount);
+        }
+        if (this->ym2413) {
+            this->writeSaveChunk("OPL", this->ym2413, (int)sizeof(OPLL));
+        }
         *size = LZ4_compress_default(this->quickSaveBuffer,
                                      this->quickSaveBufferCompressed,
                                      (int)this->quickSaveBufferSize,
@@ -759,8 +807,12 @@ class MSX2
                 putlog("extract SRM (%d bytes)", chunkSize);
                 memcpy(&this->mmu.sram, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "SCC")) {
-                putlog("extract SCC (%d bytes)", chunkSize);
-                memcpy(&this->scc.ctx, ptr, chunkSize);
+                if (this->scc) {
+                    putlog("extract SCC (%d bytes)", chunkSize);
+                    memcpy(&this->scc->ctx, ptr, chunkSize);
+                } else {
+                    putlog("ignored SCC (%d bytes)", chunkSize);
+                }
             } else if (0 == strcmp(chunk, "PSG")) {
                 putlog("extract PSG (%d bytes)", chunkSize);
                 memcpy(&this->psg.ctx, ptr, chunkSize);
@@ -776,18 +828,34 @@ class MSX2
                 this->vdp.updateAllPalettes();
                 this->vdp.updateEventTables();
             } else if (0 == strcmp(chunk, "FDC")) {
-                putlog("extract FDC (%d bytes)", chunkSize);
-                memcpy(&this->fdc.ctx, ptr, chunkSize);
+                if (this->fdc) {
+                    putlog("extract FDC (%d bytes)", chunkSize);
+                    memcpy(&this->fdc->ctx, ptr, chunkSize);
+                } else {
+                    putlog("ignored FDC (%d bytes)", chunkSize);
+                }
             } else if (0 == strcmp(chunk, "JCT")) {
-                putlog("extract JCT (%d bytes)", chunkSize);
-                memcpy(&this->fdc.journalCount, ptr, chunkSize);
+                if (this->fdc) {
+                    putlog("extract JCT (%d bytes)", chunkSize);
+                    memcpy(&this->fdc->journalCount, ptr, chunkSize);
+                } else {
+                    putlog("ignored JCT (%d bytes)", chunkSize);
+                }
             } else if (0 == strcmp(chunk, "JDT")) {
-                putlog("extract JDT (%d bytes)", chunkSize);
-                memset(&this->fdc.journal, 0, sizeof(this->fdc.journal));
-                memcpy(&this->fdc.journal, ptr, chunkSize);
+                if (this->fdc) {
+                    putlog("extract JDT (%d bytes)", chunkSize);
+                    memset(&this->fdc->journal, 0, sizeof(this->fdc->journal));
+                    memcpy(&this->fdc->journal, ptr, chunkSize);
+                } else {
+                    putlog("ignored JDT (%d bytes)", chunkSize);
+                }
             } else if (0 == strcmp(chunk, "OPL")) {
-                putlog("extract OPL (%d bytes)", chunkSize);
-                memcpy(this->ym2413, ptr, chunkSize);
+                if (this->ym2413) {
+                    putlog("extract OPL (%d bytes)", chunkSize);
+                    memcpy(this->ym2413, ptr, chunkSize);
+                } else {
+                    putlog("ignored OPL (%d bytes)", chunkSize);
+                }
             }
             ptr += chunkSize;
             size -= chunkSize;
