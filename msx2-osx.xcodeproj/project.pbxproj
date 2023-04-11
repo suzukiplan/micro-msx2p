@@ -30,11 +30,11 @@
 		741A1E352991F219001AE497 /* a1wsfirm.rom in Resources */ = {isa = PBXBuildFile; fileRef = 741A1E2C2991F219001AE497 /* a1wsfirm.rom */; };
 		741A1E3A299DA885001AE497 /* vgsspu_al.c in Sources */ = {isa = PBXBuildFile; fileRef = 741A1E39299DA885001AE497 /* vgsspu_al.c */; };
 		7444CCA529E000FB001CBA91 /* cbios_main_msx2+_jp.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7444CC9F29E000FB001CBA91 /* cbios_main_msx2+_jp.rom */; };
-		7444CCA629E000FB001CBA91 /* cbios_sub.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7444CCA029E000FB001CBA91 /* cbios_sub.rom */; };
 		7444CCA729E000FB001CBA91 /* cbios_music.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7444CCA129E000FB001CBA91 /* cbios_music.rom */; };
 		7444CCA829E000FB001CBA91 /* cbios_basic.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7444CCA229E000FB001CBA91 /* cbios_basic.rom */; };
 		7444CCA929E000FB001CBA91 /* cbios_disk.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7444CCA329E000FB001CBA91 /* cbios_disk.rom */; };
 		7444CCAA29E000FB001CBA91 /* cbios_logo_msx2+.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7444CCA429E000FB001CBA91 /* cbios_logo_msx2+.rom */; };
+		7444CCAC29E4DDD2001CBA91 /* cbios_sub.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7444CCAB29E4DDD2001CBA91 /* cbios_sub.rom */; };
 		748D22AC297E652600B504AF /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 748D22AB297E652600B504AF /* AppDelegate.m */; };
 		748D22AF297E652600B504AF /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 748D22AE297E652600B504AF /* ViewController.m */; };
 		748D22B1297E652800B504AF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 748D22B0297E652800B504AF /* Assets.xcassets */; };
@@ -103,11 +103,11 @@
 		741A1E38299DA885001AE497 /* vgsspu_al.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vgsspu_al.h; sourceTree = "<group>"; };
 		741A1E39299DA885001AE497 /* vgsspu_al.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vgsspu_al.c; sourceTree = "<group>"; };
 		7444CC9F29E000FB001CBA91 /* cbios_main_msx2+_jp.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = "cbios_main_msx2+_jp.rom"; sourceTree = "<group>"; };
-		7444CCA029E000FB001CBA91 /* cbios_sub.rom */ = {isa = PBXFileReference; lastKnownFileType = file; name = cbios_sub.rom; path = "../../../../../Downloads/cbios-0.29a/roms/cbios_sub.rom"; sourceTree = "<group>"; };
 		7444CCA129E000FB001CBA91 /* cbios_music.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_music.rom; sourceTree = "<group>"; };
 		7444CCA229E000FB001CBA91 /* cbios_basic.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_basic.rom; sourceTree = "<group>"; };
 		7444CCA329E000FB001CBA91 /* cbios_disk.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_disk.rom; sourceTree = "<group>"; };
 		7444CCA429E000FB001CBA91 /* cbios_logo_msx2+.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = "cbios_logo_msx2+.rom"; sourceTree = "<group>"; };
+		7444CCAB29E4DDD2001CBA91 /* cbios_sub.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_sub.rom; sourceTree = "<group>"; };
 		748D22A7297E652600B504AF /* msx2-osx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "msx2-osx.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		748D22AA297E652600B504AF /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		748D22AB297E652600B504AF /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -246,8 +246,8 @@
 				7444CCA329E000FB001CBA91 /* cbios_disk.rom */,
 				7444CCA429E000FB001CBA91 /* cbios_logo_msx2+.rom */,
 				7444CC9F29E000FB001CBA91 /* cbios_main_msx2+_jp.rom */,
+				7444CCAB29E4DDD2001CBA91 /* cbios_sub.rom */,
 				7444CCA129E000FB001CBA91 /* cbios_music.rom */,
-				7444CCA029E000FB001CBA91 /* cbios_sub.rom */,
 				748D22E4297FB69800B504AF /* cbios_main_msx2_jp.rom */,
 				7407A1D329834DB500D59AA5 /* cbios_logo_msx2.rom */,
 				741A1E0F298FCEDA001AE497 /* tm1pbios.rom */,
@@ -405,8 +405,8 @@
 				749112DA29ACCE01004140F5 /* _KNJDRV.ROM in Resources */,
 				749112DD29ACCE01004140F5 /* _MSX2PEXT.ROM in Resources */,
 				741A1E1F2991C885001AE497 /* FSA1WSX_DISK.ROM in Resources */,
-				7444CCA629E000FB001CBA91 /* cbios_sub.rom in Resources */,
 				741A1E14298FCEDB001AE497 /* tm1pbios.rom in Resources */,
+				7444CCAC29E4DDD2001CBA91 /* cbios_sub.rom in Resources */,
 				741A1E342991F219001AE497 /* a1wsbios.rom in Resources */,
 				748D22DE297E7E2E00B504AF /* DISK.ROM in Resources */,
 				741A1E302991F219001AE497 /* a1wsmus.rom in Resources */,

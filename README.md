@@ -2,7 +2,7 @@
 
 ## Motivation
 
-MSX のエミュレータ開発の歴史は長く、最初期の [fMSX](http://fms.komkon.org/fMSX/) から始まり、高い再現度を実現した [openMSX](https://openmsx.org/) や [blueMSX](http://bluemsx.msxblue.com/jindex.htm)、WEBブラウザでの動作を可能にした [WebMSX](https://github.com/ppeccin/webmsx) など、数多くのディストリビューションが存在します。逆に言えば、既にエミュレータの開発余地があまり無いので研究者の視点では面白みに欠ける分野かもしれません。ただ、以前Qiitaで[「自作のMSXゲームをWebMSXを使ってSteam等で配信できないか？」](https://qiita.com/suzukiplan/items/c012111e0da0c7a9ddb5)という調査を行ってみたのですが、_「ライセンスの関係で厳しいだろう」_ という残念な結論に至りました。そこで、その辺（ライセンス面の煩わしさ）をクリアした MSX Stack のようなものを配布して、新作のMSXゲーム開発に関わるインフラストラクチャ面の改善点を図ってみると、果たして世界は面白く変化するのか。
+MSX のエミュレータ開発の歴史は長く、長い歴史を持つ [fMSX](http://fms.komkon.org/fMSX/)、高い再現度を実現した [openMSX](https://openmsx.org/) や [blueMSX](http://bluemsx.msxblue.com/jindex.htm)、WEBブラウザでの動作を可能にした [WebMSX](https://github.com/ppeccin/webmsx) など、数多くのディストリビューションが存在します。逆に言えば、既にエミュレータの開発余地があまり無いので研究者の視点では面白みに欠ける分野かもしれません。ただ、以前Qiitaで[「自作のMSXゲームをWebMSXを使ってSteam等で配信できないか？」](https://qiita.com/suzukiplan/items/c012111e0da0c7a9ddb5)という調査を行ってみたのですが、_「ライセンスの関係で厳しいだろう」_ という残念な結論に至りました。そこで、その辺（ライセンス面の煩わしさ）をクリアした MSX Stack のようなものを配布して、新作のMSXゲーム開発に関わるインフラストラクチャ面の改善点を図ってみると、果たして世界は面白く変化するのか。
 
 ## Description
 
