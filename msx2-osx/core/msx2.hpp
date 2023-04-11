@@ -140,117 +140,6 @@ class MSX2
             } });
         this->fdc = nullptr;
 #if 0
-        this->vdp.setRegisterUpdateListener(this, [](void* arg, int rn, unsigned char value) {
-            auto this_ = (MSX2*)arg;
-            //this_->putlog("Update VDP register #%d = $%02X", rn, value);
-            int ax = this_->vdp.getAdjustX();
-            int ay = this_->vdp.getAdjustY();
-            int screenMode = this_->vdp.getScreenMode();
-            bool screen = this_->vdp.isEnabledScreen();
-            bool externalVideoInput = this_->vdp.isEnabledExternalVideoInput();
-            int patternGeneratorAddsress = this_->vdp.getPatternGeneratorAddress();
-            int nameTableAddress = this_->vdp.getNameTableAddress();
-            int colorTableAddress = this_->vdp.getColorTableAddress();
-            bool ie0 = this_->vdp.isIE0();
-            bool ie1 = this_->vdp.isIE1();
-            int spriteSize = this_->vdp.getSpriteSize();
-            bool spriteMag = this_->vdp.isSpriteMag();
-            unsigned short backdropColor = this_->vdp.getBackdropColor();
-            unsigned short textColor = this_->vdp.getTextColor();
-            int onTime = this_->vdp.getOnTime();
-            int offTime = this_->vdp.getOffTime();
-            int syncMode = this_->vdp.getSyncMode();
-            int lineNumber = this_->vdp.getLineNumber();
-            int ie1Line = this_->vdp.ctx.reg[19];
-            int scrollV = this_->vdp.ctx.reg[23];
-            int scrollH = (this_->vdp.ctx.reg[26] & 0b00111111) * -8 + (this_->vdp.ctx.reg[27] & 0b00000111);
-            bool spriteDisplay = this_->vdp.isSpriteDisplay();
-            int sa = this_->vdp.getSpriteAttributeTableM2();
-            int sg = this_->vdp.getSpriteGeneratorTable();
-            unsigned char r14 = this_->vdp.ctx.reg[14];
-            
-            this_->vdp.ctx.reg[rn] = value;
-            
-            if (screen != this_->vdp.isEnabledScreen()) {
-                this_->putlog("Change VDP screen enabled: %s", this_->vdp.isEnabledScreen() ? "ENABLED" : "DISABLED");
-            }
-            if (screenMode != this_->vdp.getScreenMode()) {
-                this_->putlog("Screen Mode Changed: %d -> %d", screenMode, this_->vdp.getScreenMode());
-            }
-            if (patternGeneratorAddsress != this_->vdp.getPatternGeneratorAddress()) {
-                this_->putlog("Pattern Generator Address: $%04X -> $%04X", patternGeneratorAddsress, this_->vdp.getPatternGeneratorAddress());
-            }
-            if (nameTableAddress != this_->vdp.getNameTableAddress()) {
-                this_->putlog("Name Table Address: $%04X -> $%04X", nameTableAddress, this_->vdp.getNameTableAddress());
-            }
-            if (sa != this_->vdp.getSpriteAttributeTableM2()) {
-                this_->putlog("Sprite Attribute Table Address: $%04X -> $%04X", sa, this_->vdp.getSpriteAttributeTableM2());
-            }
-            if (sg != this_->vdp.getSpriteGeneratorTable()) {
-                this_->putlog("Sprite Generator Table Address: $%04X -> $%04X", sg, this_->vdp.getSpriteGeneratorTable());
-            }
-            if (colorTableAddress != this_->vdp.getColorTableAddress()) {
-                this_->putlog("Color Table Address: $%04X -> $%04X", colorTableAddress, this_->vdp.getColorTableAddress());
-            }
-            if (externalVideoInput != this_->vdp.isEnabledExternalVideoInput()) {
-                this_->putlog("Change VDP external video input enabled: %s", this_->vdp.isEnabledExternalVideoInput() ? "ENABLED" : "DISABLED");
-            }
-            if (r14 != this_->vdp.ctx.reg[14]) {
-                this_->putlog("AddressCounter R#14: $%02X -> $%02X", r14, this_->vdp.ctx.reg[14]);
-            }
-             if (ie0 != this_->vdp.isIE0()) {
-             this_->putlog("Change IE0 enabled: %s", ie0 ? "OFF" : "ON");
-             }
-            if (ie1 != this_->vdp.isIE1()) {
-                this_->putlog("Change IE1 enabled: %s", ie1 ? "OFF" : "ON");
-            }
-            if (ie1Line != this_->vdp.ctx.reg[19]) {
-                this_->putlog("Change IE1 Line: %d -> %d", ie1Line, this_->vdp.ctx.reg[19]);
-            }
-            if (spriteSize != this_->vdp.getSpriteSize()) {
-                this_->putlog("Change Sprite Size: %d -> %d", spriteSize, this_->vdp.getSpriteSize());
-            }
-            if (spriteMag != this_->vdp.isSpriteMag()) {
-                this_->putlog("Change Sprite MAG mode: %s", spriteMag ? "OFF" : "ON");
-            }
-            if (backdropColor != this_->vdp.getBackdropColor()) {
-                this_->putlog("Change Backdrop Color: $%04X -> $%04X", backdropColor, this_->vdp.getBackdropColor());
-            }
-            if (textColor != this_->vdp.getTextColor()) {
-                this_->putlog("Change Text Color: $%04X -> $%04X", textColor, this_->vdp.getTextColor());
-            }
-            if (onTime != this_->vdp.getOnTime()) {
-                this_->putlog("OnTime changed: %d -> %d", onTime, this_->vdp.getOnTime());
-            }
-            if (offTime != this_->vdp.getOffTime()) {
-                this_->putlog("OffTime changed: %d -> %d", offTime, this_->vdp.getOffTime());
-            }
-            if (syncMode != this_->vdp.getSyncMode()) {
-                this_->putlog("SyncMode changed: %d -> %d", syncMode, this_->vdp.getSyncMode());
-            }
-            if (lineNumber != this_->vdp.getLineNumber()) {
-                this_->putlog("LineNumber changed: %d -> %d", lineNumber, this_->vdp.getLineNumber());
-            }
-            if (scrollV != this_->vdp.ctx.reg[23]) {
-                this_->putlog("Vertical Scroll changed: %d -> %d", scrollV, this_->vdp.ctx.reg[23]);
-            }
-            int scrollH2 = (this_->vdp.ctx.reg[26] & 0b00111111) * -8 + (this_->vdp.ctx.reg[27] & 0b00000111);
-            if (scrollH != scrollH2) {
-                this_->putlog("Horizontal Scroll changed: %d -> %d", scrollH, scrollH2);
-            }
-            
-            if (spriteDisplay != this_->vdp.isSpriteDisplay()) {
-                this_->putlog("Change Sprite Display: %s", spriteDisplay ? "OFF" : "ON");
-            }
-            if (ax != this_->vdp.getAdjustX() || ay != this_->vdp.getAdjustY()) {
-                this_->putlog("Adjust(%d,%d)", this_->vdp.getAdjustX(), this_->vdp.getAdjustY());
-            }
-        });
-#endif
-
-        this->cpu->addBreakPoint(0, [](void* arg) {
-            puts("RESET!");
-        });
         // CALL命令をページ3にRAMを割り当てていない状態で実行した時に落とす
         this->cpu->addBreakOperand(0xCD, [](void* arg, unsigned char* op, int size) {
             int pri3 = ((MSX2*)arg)->mmu.ctx.pri[3];
@@ -268,7 +157,7 @@ class MSX2
                 exit(-1);
             }
         });
-
+#endif
         this->cpu->setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX2*)arg)->consumeClock(cpuClocks);
         });

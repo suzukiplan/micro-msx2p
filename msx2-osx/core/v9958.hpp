@@ -141,14 +141,6 @@ class V9958
     void (*detectBreak)(void* arg);
     inline int min(int a, int b) { return a < b ? a : b; }
     inline int max(int a, int b) { return a > b ? a : b; }
-
-    struct DebugTool {
-        void (*registerUpdateListener)(void* arg, int number, unsigned char value);
-        void (*vramAddrChangedListener)(void* arg, int addr);
-        void (*vramReadListener)(void* arg, int addr, unsigned char value);
-        void (*vramWriteListener)(void* arg, int addr, unsigned char value);
-        void* arg;
-    } debug;
     const int adjust[16] = {0, 1, 2, 3, 4, 5, 6, 7, -8, -7, -6, -5, -4, -3, -2, -1};
 
   public:
@@ -197,34 +189,9 @@ class V9958
         unsigned char reserved[7];
     } ctx;
 
-    void setRegisterUpdateListener(void* arg, void (*listener)(void* arg, int number, unsigned char value))
-    {
-        debug.arg = arg;
-        debug.registerUpdateListener = listener;
-    }
-
-    void setVramAddrChangedListener(void* arg, void (*listener)(void* arg, int addr))
-    {
-        debug.arg = arg;
-        debug.vramAddrChangedListener = listener;
-    }
-
-    void setVramReadListener(void* arg, void (*listener)(void* arg, int addr, unsigned char value))
-    {
-        debug.arg = arg;
-        debug.vramReadListener = listener;
-    }
-
-    void setVramWriteListener(void* arg, void (*listener)(void* arg, int addr, unsigned char value))
-    {
-        debug.arg = arg;
-        debug.vramWriteListener = listener;
-    }
-
     V9958()
     {
         memset(palette, 0, sizeof(palette));
-        memset(&debug, 0, sizeof(debug));
         this->reset();
     }
 
@@ -737,9 +704,6 @@ class V9958
 
     inline unsigned char inPort98()
     {
-        if (debug.vramReadListener) {
-            debug.vramReadListener(debug.arg, this->ctx.addr, this->ctx.readBuffer);
-        }
         unsigned char result = this->ctx.readBuffer;
         this->readVideoMemory();
         this->ctx.latch1 = 0;
@@ -791,9 +755,6 @@ class V9958
     {
         this->ctx.readBuffer = value;
         this->ctx.ram[this->ctx.addr] = this->ctx.readBuffer;
-        if (this->debug.vramWriteListener) {
-            this->debug.vramWriteListener(this->debug.arg, this->ctx.addr, this->ctx.readBuffer);
-        }
         this->incrementAddress();
         this->ctx.latch1 = 0;
     }
@@ -980,9 +941,6 @@ class V9958
         this->ctx.addr <<= 8;
         this->ctx.addr |= this->ctx.tmpAddr[0];
         this->ctx.addr |= ((int)(this->ctx.reg[14] & 0b00000111)) << 14;
-        if (this->debug.vramAddrChangedListener) {
-            this->debug.vramAddrChangedListener(this->debug.arg, this->ctx.addr);
-        }
     }
 
     inline void readVideoMemory()
@@ -997,9 +955,6 @@ class V9958
         this->ctx.addr &= 0x1FFFF;
         unsigned char r14 = (this->ctx.addr >> 14) & 0b00000111;
         if (r14 != this->ctx.reg[14]) {
-            if (debug.registerUpdateListener) {
-                debug.registerUpdateListener(debug.arg, 14, r14);
-            }
             this->ctx.reg[14] = r14;
         }
     }
@@ -1008,9 +963,6 @@ class V9958
     {
         value &= this->regMask[rn];
         unsigned char mod = this->ctx.reg[rn] ^ value;
-        if (debug.registerUpdateListener) {
-            debug.registerUpdateListener(debug.arg, rn, value);
-        }
         this->ctx.reg[rn] = value;
         switch (rn) {
             case 0:
