@@ -630,8 +630,12 @@ class MSX2
     {
         this->ctx.io[port] = value;
         switch (port) {
-            case 0x7C: OPLL_writeIO(this->ym2413, 0, value); break;
-            case 0x7D: OPLL_writeIO(this->ym2413, 1, value); break;
+            case 0x7C:
+                if (this->ym2413) OPLL_writeIO(this->ym2413, 0, value);
+                break;
+            case 0x7D:
+                if (this->ym2413) OPLL_writeIO(this->ym2413, 1, value);
+                break;
             case 0x81: break; // 8251 status command
             case 0x88: this->vdp.outPort98(value); break;
             case 0x89: this->vdp.outPort99(value); break;
