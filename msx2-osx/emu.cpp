@@ -179,8 +179,14 @@ void emu_loadRom(const void* rom_, size_t romSize, const char* fileName)
         type = MSX2_ROM_TYPE_ASC8_SRAM2;
     } else if (strstr(fileName, "Fire Ball")) {
         type = MSX2_ROM_TYPE_ASC16;
-    } else if (strstr(fileName, "Hydlide III ")) {
+    } else if (strstr(fileName, "yureikun")) {
         type = MSX2_ROM_TYPE_ASC8;
+    } else if (strstr(fileName, "rickmick")) {
+        type = MSX2_ROM_TYPE_ASC8;
+    } else if (strstr(fileName, "Hydlide III ") || strstr(fileName, "hydlide3")) {
+        type = MSX2_ROM_TYPE_ASC8;
+    } else if (strstr(fileName, "Hydlide II ") || strstr(fileName, "hydlide2")) {
+        type = MSX2_ROM_TYPE_ASC16_SRAM2;
     }
     printf("load game: %s (type:%d)\n", fileName, type);
     //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC8);
