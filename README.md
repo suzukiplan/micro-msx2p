@@ -1,17 +1,5 @@
 # micro MSX2+
 
-## Motivation
-
-MSX のエミュレータ開発の歴史は長く、長い歴史を持つ [fMSX](http://fms.komkon.org/fMSX/)、高い再現度を実現した [openMSX](https://openmsx.org/) や [blueMSX](http://bluemsx.msxblue.com/jindex.htm)、WEBブラウザでの動作を可能にした [WebMSX](https://github.com/ppeccin/webmsx) など、数多くのディストリビューションが存在します。
-
-逆に言えば、既にエミュレータの開発余地があまり無いので研究者の視点では面白みに欠ける枯れた分野かもしれません。
-
-ただ、以前Qiitaで[「自作のMSXゲームをWebMSXを使ってSteam等で配信できないか？」](https://qiita.com/suzukiplan/items/c012111e0da0c7a9ddb5)という調査を行ってみたのですが、_「ライセンスの関係で厳しいだろう」_ という結論に至りました。
-
-折角、C-BIOSなどのインフラストラクチャが整っているのに勿体ない。
-
-そこで、その辺（ライセンス面の煩わしさ）をクリアした MSX スタックのようなものを配布して、新作のMSXゲーム開発に関わるインフラストラクチャ面の改善点を図ってみると、果たして世界は面白く変化してくれるのか。
-
 ## Description
 
 - micro MSX2+ は **組み込み用途に特化** した MSX2+ エミュレータです
@@ -30,7 +18,11 @@ MSX のエミュレータ開発の歴史は長く、長い歴史を持つ [fMSX]
     - 商標 `MSX` は MSX Licenses Corporation の登録商標のため、製品に商標を含める等（利用）に当たっては MSX Licensing Corporation からの許諾が必要
       - 商標許諾を得ていない（大半の）ケースでは、ゲームタイトルに「〜 for MSX」と記載したり、商品パッケージ、カセットラベル等に MSX の商標や意匠を含めることができない点を注意
     - 実機 BIOS や登録商標 `MSX` を用いる必要があるケースでは [プロジェクトEGGクリエイターズ](https://www.amusement-center.com/project/egg/creators/) を使った方が良さそうです（具体的な応募手順は2023.04.10時点では公開されていないのでどの程度敷居が高いものなのかは不明ですが）
-- 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用の MSX2+ エミュレータの実装が付随しています
+- 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用のアプリケーション実装用のベースプログラムも提供しています
+  - Windows 用のベースプログラム実装は今のところ提供してません（将来的には作るかも）
+  - Linux 用のベースプログラム実装は今のところ提供してません（将来的には作るかも）
+  - iOS 用のベースプログラム実装は今のところ提供してません（将来的には作るかも）
+  - Android 用のベースプログラム実装は今のところ提供してません（将来的には作るかも）
 
 ## Unimplemented Features
 
