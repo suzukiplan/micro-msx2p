@@ -159,7 +159,8 @@ msx2.setup(基本スロット, 拡張スロット, 開始アドレス÷0x2000, �
 // - MSX2_ROM_TYPE_NORMAL ....... 標準ROM(16KB or 32KB)
 // - MSX2_ROM_TYPE_ASC8 ......... ASCII8 メガロム
 // - MSX2_ROM_TYPE_ASC8_SRAM2 ... ASCII8 メガロム+SRAM
-// - MSX2_ROM_TYPE_ASC16 3 ...... ASCII16 メガロム
+// - MSX2_ROM_TYPE_ASC16 ........ ASCII16 メガロム
+// - MSX2_ROM_TYPE_ASC16_SRAM2 .. ASCII16 メガロム+SRAM
 // - MSX2_ROM_TYPE_KONAMI_SCC ... KONAMI メガロム (SCC搭載)
 // - MSX2_ROM_TYPE_KONAMI ....... KONAMI メガロム
 msx2.loadRom(rom, romSize, megaRomType);
