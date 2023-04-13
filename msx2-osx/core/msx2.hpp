@@ -58,6 +58,11 @@ class MSX2
         bool shift;
     } keyCodes[0x100];
 
+    struct KeyAssign {
+        KeyCode* s1;
+        KeyCode* s2;
+    } keyAssign[2];
+
     void initKeyCode(unsigned char code, int x, int y, bool shift = false)
     {
         keyCodes[code].exist = true;
@@ -107,6 +112,7 @@ class MSX2
 
     MSX2(int colorMode, bool ym2413Enabled = false)
     {
+        memset(&this->keyAssign, 0, sizeof(this->keyAssign));
         this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX2*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX2*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX2*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;
         this->scc = nullptr;
@@ -273,6 +279,17 @@ class MSX2
         initKeyCode(0xF9, 0, 7, true);  // f9
         initKeyCode(0xFA, 1, 7, true);  // f10
         this->reset();
+    }
+
+    void setupKeyAssign(int player, int code, unsigned char assign)
+    {
+        if (player != 0 && player != 1) return;
+        if (!this->keyCodes[assign].exist) return;
+        if (MSX2_JOY_S1 == code) {
+            this->keyAssign[player].s1 = &this->keyCodes[assign];
+        } else if (MSX2_JOY_S2 == code) {
+            this->keyAssign[player].s2 = &this->keyCodes[assign];
+        }
     }
 
     void reset()
@@ -462,7 +479,13 @@ class MSX2
             case 0x90: return 0x00; // printer
             case 0x98: return this->vdp.inPort98();
             case 0x99: return this->vdp.inPort99();
-            case 0xA2: return this->psg.read();
+            case 0xA2: {
+                unsigned char result = this->psg.read();
+                if (14 == this->psg.ctx.latch || 15 == this->psg.ctx.latch) {
+                    result |= 0b11000000; // unpush S1/S2
+                }
+                return result;
+            }
             case 0xA8: return this->mmu.getPrimary();
             case 0xA9: {
                 // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
@@ -487,6 +510,26 @@ class MSX2
                             this->ctx.readKey++;
                             result |= bit[this->keyCodes[this->ctx.key].x[i]];
                         }
+                    }
+                }
+                if (this->keyAssign[0].s1 && 0 == (this->psg.getPad1() & MSX2_JOY_S1)) {
+                    if (this->ctx.selectedKeyRow == this->keyAssign[0].s1->y[0]) {
+                        result |= bit[this->keyAssign[0].s1->x[0]];
+                    }
+                }
+                if (this->keyAssign[0].s2 && 0 == (this->psg.getPad1() & MSX2_JOY_S2)) {
+                    if (this->ctx.selectedKeyRow == this->keyAssign[0].s2->y[0]) {
+                        result |= bit[this->keyAssign[0].s2->x[0]];
+                    }
+                }
+                if (this->keyAssign[1].s1 && 0 == (this->psg.getPad2() & MSX2_JOY_S1)) {
+                    if (this->ctx.selectedKeyRow == this->keyAssign[1].s1->y[0]) {
+                        result |= bit[this->keyAssign[1].s1->x[0]];
+                    }
+                }
+                if (this->keyAssign[1].s2 && 0 == (this->psg.getPad2() & MSX2_JOY_S2)) {
+                    if (this->ctx.selectedKeyRow == this->keyAssign[1].s2->y[0]) {
+                        result |= bit[this->keyAssign[1].s2->x[0]];
                     }
                 }
                 return ~result;
