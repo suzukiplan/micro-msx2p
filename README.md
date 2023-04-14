@@ -52,7 +52,8 @@
 
 - **エミュレータ・コアモジュール**（[./msx2-osx/core以下の全てのファイル](./msx2-osx/core)）と **LZ4 Library**（[./msx2-osx/lz4以下の全てのファイル](./msx2-osx/lz4)）をC++プロジェクトに組み込んで使用します
   - C/C++の標準ライブラリ以外は使用していないので、プラットフォーム（Nintendo Switch、PlayStation、XBOX, iOS, Android, Windows, macOS, PlayStation, NintendoSwitch など）に関係無くビルド可能な筈です
-  - ただし、64bit CPU 専用（32bit CPU は非サポート）です
+  - ただし、64bit CPU 専用（32bit CPU は非サポートというか未確認）です
+  - ESP32 だと動かないんじゃないかな（性能的な意味で）
 - セーブデータはエンディアンモデルが異なるコンピュータ間では互換性が無いため、プラットフォーム間でセーブデータのやりとりをする場合は注意してください
 
 ### 1. Include
