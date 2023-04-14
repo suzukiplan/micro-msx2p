@@ -55,7 +55,7 @@
   - ただし、64bit CPU 専用（32bit CPU は非サポート）です
 - セーブデータはエンディアンモデルが異なるコンピュータ間では互換性が無いため、プラットフォーム間でセーブデータのやりとりをする場合は注意してください
 
-## [./msx2-osx/core](./msx2-osx/core) の使い方
+## How to use [micro MSX2+ core module](./msx2-osx/core)
 
 ### 1. Include
 
@@ -173,10 +173,10 @@ msx2.tick(MSX2_JOY_UP | MSX2_JOY_LE | MSX2_JOY_T1, 0, 0);
 
 MSX のジョイパッドは通常、DPAD（上下左右）と2トリガーの6ボタンの仕様のため、上位2ビット（bit-7, bit-6）の指定は無視されますが、micro MSX2+ ではそれらのボタン（S1/S2）に任意のキーアサインを行うことができます。
 
-例えば、1P側のS1ボタン（ファミコンのスタートボタン相当）に RETURN キー、S2ボタン（ファミコンのセレクトボタン相当）に ESC キーを割り当てる場合は、次のようにセットアップしてください。
+例えば、1P側のS1ボタン（ファミコンのスタートボタン相当）に SPACE キー、S2ボタン（ファミコンのセレクトボタン相当）に ESC キーを割り当てる場合は、次のようにセットアップしてください。
 
 ```c++
-msx2.setKeyAssign(0, MSX2_JOY_S1, '\r'); // RETURN キーを S1 (START) ボタンに割り当てる
+msx2.setKeyAssign(0, MSX2_JOY_S1, ' '); // SPACE キーを S1 (START) ボタンに割り当てる
 msx2.setKeyAssign(0, MSX2_JOY_S2, 0x1B); // ESC キーを S2 (SELECT) ボタンに割り当てる
 ```
 
