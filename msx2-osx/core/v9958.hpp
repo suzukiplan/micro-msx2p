@@ -875,7 +875,7 @@ class V9958
                 break;
             case 1: // RGB565
                 r = this->bit3to5(r) << 11;
-                g = this->bit3to6(g) << 6;
+                g = this->bit3to6(g) << 5;
                 b = this->bit3to5(b);
                 break;
             default:
