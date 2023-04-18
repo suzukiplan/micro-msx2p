@@ -1793,7 +1793,7 @@ class V9958
     {
         this->ctx.cmd.dx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
-        if (this->ctx.cmd.nx <= 0 || 512 <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0) {
+        if (this->ctx.cmd.nx <= 0 || this->getScreenWidth() <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0) {
             this->ctx.cmd.dx = this->getDX();
             this->ctx.cmd.nx = this->getNX();
             this->ctx.cmd.dy += this->ctx.cmd.diy;
@@ -1814,7 +1814,7 @@ class V9958
     {
         this->ctx.cmd.sx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
-        if (this->ctx.cmd.nx <= 0 || 512 <= this->ctx.cmd.sx || this->ctx.cmd.sx < 0) {
+        if (this->ctx.cmd.nx <= 0 || this->getScreenWidth() <= this->ctx.cmd.sx || this->ctx.cmd.sx < 0) {
             this->ctx.cmd.sx = this->getSX();
             this->ctx.cmd.nx = this->getNX();
             this->ctx.cmd.sy += this->ctx.cmd.diy;
@@ -1836,7 +1836,8 @@ class V9958
         this->ctx.cmd.dx += this->ctx.cmd.dix;
         this->ctx.cmd.sx += this->ctx.cmd.dix;
         this->ctx.cmd.nx -= this->abs(this->ctx.cmd.dix);
-        if (this->ctx.cmd.nx <= 0 || 512 <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0 || 512 <= this->ctx.cmd.sx || this->ctx.cmd.sx < 0) {
+        int w = this->getScreenWidth();
+        if (this->ctx.cmd.nx <= 0 || w <= this->ctx.cmd.dx || this->ctx.cmd.dx < 0 || w <= this->ctx.cmd.sx || this->ctx.cmd.sx < 0) {
             this->ctx.cmd.dx = this->getDX();
             this->ctx.cmd.sx = this->getSX();
             this->ctx.cmd.nx = this->getNX();
