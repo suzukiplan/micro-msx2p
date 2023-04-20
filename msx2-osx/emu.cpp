@@ -187,6 +187,14 @@ void emu_loadRom(const void* rom_, size_t romSize, const char* fileName)
         type = MSX2_ROM_TYPE_ASC8;
     } else if (strstr(fileName, "Hydlide II ") || strstr(fileName, "hydlide2")) {
         type = MSX2_ROM_TYPE_ASC16_SRAM2;
+    } else if (strstr(fileName, "Dragon Buster")) {
+        type = MSX2_ROM_TYPE_ASC8;
+    } else if (strstr(fileName, "Dragon Slayer 4")) {
+        type = MSX2_ROM_TYPE_ASC8;
+    } else if (strstr(fileName, "Mad Rider")) {
+        type = MSX2_ROM_TYPE_ASC8;
+    } else if (strstr(fileName, "Metal Gear 2")) {
+        type = MSX2_ROM_TYPE_KONAMI_SCC;
     }
     printf("load game: %s (type:%d)\n", fileName, type);
     //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC8);
