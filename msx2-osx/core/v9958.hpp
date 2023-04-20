@@ -476,7 +476,7 @@ class V9958
             case 0b00101: // GRAPHIC6
             case 0b00111: // GRAPHIC7
                 return this->getLineNumber() == 192 ? 0xC000 : 0xD400;
-            case 0b01000: return 192;     // MULTI COLOR
+            case 0b01000: return 768;     // MULTI COLOR
             case 0b10000: return 40 * 24; // TEXT1
             case 0b10010: return 80 * 27; // TEXT2
             default: return 0;            // n/a
@@ -487,6 +487,7 @@ class V9958
     {
         switch (this->getScreenMode()) {
             case 0b00000: // GRAPHIC1
+            case 0b01000: // MULTI COLOR
             case 0b10000: // TEXT1
                 return (this->ctx.reg[4] & 0b00111111) << 11;
             case 0b00001: // GRAPHIC2
@@ -503,6 +504,7 @@ class V9958
             case 0b00000: return 2048; // GRAPHIC1
             case 0b00001: return 6144; // GRAPHIC2
             case 0b00010: return 6144; // GRAPHIC3
+            case 0b01000: return 2048; // MULTI COLOR
             case 0b10000: return 2048; // TEXT1
             case 0b10010: return 2048; // TEXT2
             default: return 0;         // n/a
@@ -1054,6 +1056,9 @@ class V9958
                     case 0b00111: // GRAPHIC7
                         this->renderScanlineModeG7(lineNumber, renderPosition);
                         break;
+                    case 0b01000: // MULTI COLOR
+                        this->renderScanlineModeMC(lineNumber, renderPosition);
+                        break;
                     case 0b10000: // TEXT1
                         this->renderScanlineModeT1(lineNumber, renderPosition);
                         break;
@@ -1369,6 +1374,24 @@ class V9958
             }
         }
         renderSpritesMode2(lineNumber, renderPosition);
+    }
+
+    inline void renderScanlineModeMC(int lineNumber, unsigned short* renderPosition)
+    {
+        int pn = this->getNameTableAddress();
+        int pg = this->getPatternGeneratorAddress();
+        unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
+        int cur = 0;
+        for (int i = 0; i < 32; i++) {
+            unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + lineNumber % 32 / 4];
+            unsigned char col[2];
+            col[0] = (ptn & 0xF0) >> 4;
+            col[1] = ptn & 0x0F;
+            for (int k = 0; k < 8; k++) {
+                this->renderPixel2(&renderPosition[cur], col[k / 4]);
+                cur += 2;
+            }
+        }
     }
 
     inline void renderScanlineModeT1(int lineNumber, unsigned short* renderPosition)
