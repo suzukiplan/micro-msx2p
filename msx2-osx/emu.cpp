@@ -194,7 +194,7 @@ void emu_loadRom(const void* rom_, size_t romSize, const char* fileName)
     } else if (strstr(fileName, "Mad Rider")) {
         type = MSX2_ROM_TYPE_ASC8;
     } else if (strstr(fileName, "Metal Gear 2")) {
-        type = MSX2_ROM_TYPE_KONAMI_SCC;
+        type = MSX2_ROM_TYPE_KONAMI_SCC; // currently cannot execute
     }
     printf("load game: %s (type:%d)\n", fileName, type);
     //msx2.loadRom(rom, (int)romSize, MSX2_ROM_TYPE_ASC8);
