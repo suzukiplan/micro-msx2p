@@ -18,6 +18,14 @@
     - 商標 `MSX` は MSX Licenses Corporation の登録商標のため、製品に商標を含める等（利用）に当たっては MSX Licensing Corporation からの許諾が必要
       - 商標許諾を得ていない（大半の）ケースでは、ゲームタイトルに「〜 for MSX」と記載したり、商品パッケージ、カセットラベル等に MSX の商標や意匠を含めることができない点を注意
     - 実機 BIOS や登録商標 `MSX` を用いる必要があるケースでは [プロジェクトEGGクリエイターズ](https://www.amusement-center.com/project/egg/creators/) を使った方が良さそうです（具体的な応募手順は2023.04.10時点では公開されていないのでどの程度敷居が高いものなのかは不明ですが）
+- micro MSX2+ が対応するメガロムの種別は [msx2def.h](https://github.com/suzukiplan/micro-msx2p/blob/master/msx2-osx/core/msx2def.h) を参照してください
+  - `MSX2_ROM_TYPE_NORMAL` 標準ROM (16KB, 32KB)
+  - `MSX2_ROM_TYPE_ASC8` ASCII8 メガロム
+  - `MSX2_ROM_TYPE_ASC8_SRAM2` ASCII8 + SRAM メガロム
+  - `MSX2_ROM_TYPE_ASC16` ASCII16 メガロム
+  - `MSX2_ROM_TYPE_ASC16_SRAM2` ASCII16 + SRAM メガロム
+  - `MSX2_ROM_TYPE_KONAMI_SCC` KONAMI SCC メガロム
+  - `MSX2_ROM_TYPE_KONAMI` KONAMI 標準メガロム
 - 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用のアプリケーション実装用のベースプログラムも提供しています
   - Windows 用のベースプログラム実装は今のところ提供してません（将来的には作るかも）
   - Linux 用のベースプログラム実装は今のところ提供してません（将来的には作るかも）
