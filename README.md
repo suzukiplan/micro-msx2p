@@ -186,6 +186,28 @@ msx2.setKeyAssign(0, MSX2_JOY_S2, 0x1B); // ESC キーを S2 (SELECT) ボタン�
 
 > 大半のゲームデザインでは、ジョイパッド以外のキーアサインが2つあれば問題ないものと思われます。しかし、実用プログラムなどで3つ以上のキーを利用することが不可避なケースでは、tickの第3引数にキーコードを指定する方式での実装が必要になります。
 
+実用的なプログラムでより細かなキー操作を行いたい場合 `tickWithKeyCodeMap` でキーコードマップを指定することも可能です。
+
+```c++
+msx2.tickWithKeyCodeMap(pad1, pad2, keyCodeMap);
+```
+
+`keyCodeMap` は、MSXのキーマトリクスと対応する 11 bytes の unsigned char 型配列で、各要素・各 bit でキーの押下状態を指定します。
+
+|要素番号|bit-7|bit-6|bit-5|bit-4|bit-3|bit-2|bit-1|bit-0|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|0|`7`|`6`|`5`|`4`|`3`|`2`|`1`|`0`|
+|1|`;`|`[`|`@`|`\`|`^`|`-`|`9`|`8`|
+|2|`B`|`A`|`_`|`/`|`.`|`,`|`]`|`:`|
+|3|`J`|`I`|`H`|`G`|`F`|`E`|`D`|`C`|
+|4|`R`|`Q`|`P`|`O`|`N`|`M`|`L`|`K`|
+|5|`Z`|`Y`|`X`|`W`|`V`|`U`|`T`|`S`|
+|6|F3|F2|F1|かな|CAPS|GRAPH|CTRL|SHIFT|
+|7|RETURN|SELECT|BS|STOP|TAB|ESC|F5|F4|
+|8|→|↓|↑|←|DEL|INS|HOME|SPACE|
+|9 (tenkey)|`4`|`3`|`2`|`1`|`0`|option|option|option|
+|10 (tenkey)|`,`|`.`|`-`|`9`|`8`|`7`|`6`|`5`|
+
 ### 3. Load External Media
 
 #### 3-1. ROM cartridges

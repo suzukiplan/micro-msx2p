@@ -101,6 +101,7 @@ class MSX2
         unsigned char regC;
         unsigned char selectedKeyRow;
     } ctx;
+    unsigned char* keyCodeMap;
 
     ~MSX2()
     {
@@ -301,6 +302,7 @@ class MSX2
         memset(&this->cpu->reg.back, 0xFF, sizeof(this->cpu->reg.back));
         memset(&this->ctx, 0, sizeof(this->ctx));
         this->ctx.regC = 0x50;
+        this->keyCodeMap = nullptr;
         this->cpu->reg.SP = 0xF000;
         this->cpu->reg.IX = 0xFFFF;
         this->cpu->reg.IY = 0xFFFF;
@@ -417,6 +419,15 @@ class MSX2
     {
         this->psg.setPads(pad1, pad2);
         this->ctx.key = key;
+        this->keyCodeMap = nullptr;
+        this->cpu->execute(0x7FFFFFFF);
+    }
+
+    void tickWithKeyCodeMap(unsigned char pad1, unsigned char pad2, unsigned char* keyCodeMap)
+    {
+        this->psg.setPads(pad1, pad2);
+        this->ctx.key = 0;
+        this->keyCodeMap = keyCodeMap;
         this->cpu->execute(0x7FFFFFFF);
     }
 
@@ -499,16 +510,20 @@ class MSX2
                     0b01000000,
                     0b10000000};
                 unsigned char result = 0;
-                if (this->ctx.key && this->keyCodes[this->ctx.key].exist) {
-                    if (this->keyCodes[this->ctx.key].shift) {
-                        if (this->ctx.selectedKeyRow == 6) {
-                            result |= bit[0];
+                if (this->keyCodeMap) {
+                    result |= this->keyCodeMap[this->ctx.selectedKeyRow];
+                } else {
+                    if (this->ctx.key && this->keyCodes[this->ctx.key].exist) {
+                        if (this->keyCodes[this->ctx.key].shift) {
+                            if (this->ctx.selectedKeyRow == 6) {
+                                result |= bit[0];
+                            }
                         }
-                    }
-                    for (int i = 0; i < this->keyCodes[this->ctx.key].num; i++) {
-                        if (this->ctx.selectedKeyRow == this->keyCodes[this->ctx.key].y[i]) {
-                            this->ctx.readKey++;
-                            result |= bit[this->keyCodes[this->ctx.key].x[i]];
+                        for (int i = 0; i < this->keyCodes[this->ctx.key].num; i++) {
+                            if (this->ctx.selectedKeyRow == this->keyCodes[this->ctx.key].y[i]) {
+                                this->ctx.readKey++;
+                                result |= bit[this->keyCodes[this->ctx.key].x[i]];
+                            }
                         }
                     }
                 }
