@@ -47,60 +47,27 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     NSData* biosSub = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_sub" ofType:@"rom"]];
     emu_init_cbios(biosMain.bytes, biosLogo.bytes, biosSub.bytes);
 #elif 0
+    // MSX2
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2" ofType:@"ROM"]];
     NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2EXT" ofType:@"ROM"]];
     NSData* biosDisk = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DISK" ofType:@"ROM"]];
     NSData* biosFm = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FMBIOS" ofType:@"ROM"]];
     NSData* biosKnj = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJDRV" ofType:@"ROM"]];
     NSData* biosFont = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJFNT16" ofType:@"ROM"]];
-    emu_init_bios(biosMain.bytes, biosMain.length,
-                  biosExt.bytes, biosExt.length,
-                  biosDisk.bytes, biosDisk.length,
-                  biosFm.bytes, biosFm.length,
-                  biosKnj.bytes, biosKnj.length,
-                  biosFont.bytes, biosFont.length);
-#elif 0
-    /*
-     void emu_init_bios_tm1p(const void* tm1pbios,
-                             const void* tm1pext,
-                             const void* tm1pkdr,
-                             const void* tm1pdesk1,
-                             const void* tm1pdesk2);
-     */
-    NSData* tm1pbios = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"tm1pbios" ofType:@"rom"]];
-    NSData* tm1pext = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"tm1pext" ofType:@"rom"]];
-    NSData* tm1pkdr = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"tm1pkdr" ofType:@"rom"]];
-    NSData* tm1pdesk1 = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"tm1pdesk1" ofType:@"rom"]];
-    NSData* tm1pdesk2 = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"tm1pdesk2" ofType:@"rom"]];
-    NSData* font = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJFNT16" ofType:@"ROM"]];
-    emu_init_bios_tm1p(tm1pbios.bytes,
-                       tm1pext.bytes,
-                       tm1pkdr.bytes,
-                       tm1pdesk1.bytes,
-                       tm1pdesk2.bytes,
-                       font.bytes, font.length);
-#elif 0
-    NSData* msx2p = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wsbios" ofType:@"rom"]];
-    NSData* msx2pext = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wsext" ofType:@"rom"]];
-    NSData* msx2pmus = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wsmus" ofType:@"rom"]];
-    NSData* disk = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wsdisk" ofType:@"rom"]];
-    NSData* msxkanji = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wskdr" ofType:@"rom"]];
-    NSData* kanji = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wskfn" ofType:@"rom"]];
-    NSData* firm = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"a1wsfirm" ofType:@"rom"]];
-    emu_init_bios_fsa1wsx(msx2p.bytes,
-                          msx2pext.bytes,
-                          msx2pmus.bytes,
-                          disk.bytes,
-                          msxkanji.bytes,
-                          kanji.bytes,
-                          firm.bytes);
+    emu_init_bios(biosMain.bytes,
+                  biosExt.bytes,
+                  biosDisk.bytes,
+                  biosFm.bytes,
+                  biosKnj.bytes,
+                  biosFont.bytes);
 #else
-    NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"_MSX2P_a" ofType:@"ROM"]];
-    NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"_MSX2PEXT" ofType:@"ROM"]];
-    NSData* biosDisk = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FSA1WSX_DISK" ofType:@"ROM"]];
-    NSData* biosFm = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"_FMPAC" ofType:@"ROM"]];
-    NSData* biosKnj = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"_KNJDRV" ofType:@"ROM"]];
-    NSData* biosFont = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"_KNJFNT16" ofType:@"ROM"]];
+    // MSX2+
+    NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2P" ofType:@"ROM"]];
+    NSData* biosExt = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"MSX2PEXT" ofType:@"ROM"]];
+    NSData* biosDisk = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DISK" ofType:@"ROM"]];
+    NSData* biosFm = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FMBIOS" ofType:@"ROM"]];
+    NSData* biosKnj = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJDRV" ofType:@"ROM"]];
+    NSData* biosFont = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KNJFNT16" ofType:@"ROM"]];
     emu_init_bios(biosMain.bytes,
                   biosExt.bytes,
                   biosDisk.bytes,
