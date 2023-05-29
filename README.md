@@ -336,6 +336,7 @@ LZ4 解凍後のセーブデータは、
 
 |Chunk|Size in Byte|Optional|Describe|
 |:-:|:-:|:-:|:-|
+|`BRD`|260|n|VMコンテキスト|
 |`Z80`|40|n|CPUコンテキスト（レジスタ等）|
 |`MMU`|48|n|メモリ管理システム（スロット）のコンテキスト（レジスタ等）|
 |`SCC`|204|y|Sound Creative Chip（コナミ音源）のコンテキスト|
