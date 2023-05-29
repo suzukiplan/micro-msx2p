@@ -250,8 +250,11 @@ msx2.fdc.setDiskWriteListener(this, [](void* arg, int driveId, int sector) {
 // リセット
 msx2.reset();
 
-// 1フレーム実行 (キー入力は1フレームに1キーのみ送信可能な仕様)
+// 1フレーム実行 (キー入力は1フレームに1キーのみ送信で十分な場合)
 msx2.tick(pad1, pad2, key);
+
+// 1フレーム実行（キー入力にコードマップを用いる場合）
+msx2.tickWithKeyCodeMap(pad1, pad2, keyCodeMap);
 
 // 1フレーム実行後の音声データを取得 (44100Hz 16bit Stereo)
 size_t soundSize;
