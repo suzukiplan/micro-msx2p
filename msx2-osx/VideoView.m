@@ -11,6 +11,9 @@
 #import "msx2def.h"
 #include <ctype.h>
 
+// Comment out the following #define if you want to assign cursor, Z and X on the keyboard as the original key, not the joypad.
+#define ASSIGN_KEYBOARD_TO_JOYPAD
+
 static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const CVTimeStamp* outputTime, CVOptionFlags flagsIn, CVOptionFlags* flagsOut, void* context);
 extern unsigned char emu_key;
 extern unsigned char emu_keycode;
@@ -112,14 +115,21 @@ extern unsigned char emu_keycode;
 - (void)keyDown:(NSEvent*)event
 {
     unichar c = [self keyMapFrom:[event.charactersIgnoringModifiers characterAtIndex:0]];
-    //NSLog(@"keyDown: %04X", tolower(c));
+    NSLog(@"keyDown: %04X", tolower(c));
     switch (tolower(c)) {
+#ifdef ASSIGN_KEYBOARD_TO_JOYPAD
         case 0xF703: emu_key |= MSX2_JOY_RI; break;
         case 0xF702: emu_key |= MSX2_JOY_LE; break;
         case 0xF701: emu_key |= MSX2_JOY_DW; break;
         case 0xF700: emu_key |= MSX2_JOY_UP; break;
         case 0x0078: emu_key |= MSX2_JOY_T2; break;
         case 0x007A: emu_key |= MSX2_JOY_T1; break;
+#else
+        case 0xF700: emu_keycode = 0xC0; break;
+        case 0xF701: emu_keycode = 0xC1; break;
+        case 0xF702: emu_keycode = 0xC2; break;
+        case 0xF703: emu_keycode = 0xC3; break;
+#endif
         case 0xF704: emu_keycode = 0xF1; break;
         case 0xF705: emu_keycode = 0xF2; break;
         case 0xF706: emu_keycode = 0xF3; break;
@@ -130,9 +140,6 @@ extern unsigned char emu_keycode;
         case 0xF70B: emu_keycode = 0xF8; break;
         case 0xF70C: emu_keycode = 0xF9; break;
         case 0xF70D: emu_keycode = 0xFA; break;
-        //case 0x0061: emu_startDebug(); break;
-        //case 0x0064: emu_dumpVideoMemory(); break;
-        //case 0x0072: emu_reset(); break;
         default: emu_keycode = c;
     }
 }
@@ -140,6 +147,7 @@ extern unsigned char emu_keycode;
 - (void)keyUp:(NSEvent*)event
 {
     unichar c = [self keyMapFrom:[event.charactersIgnoringModifiers characterAtIndex:0]];
+#ifdef ASSIGN_KEYBOARD_TO_JOYPAD
     switch (tolower(c)) {
         case 0xF703: emu_key &= ~MSX2_JOY_RI; break;
         case 0xF702: emu_key &= ~MSX2_JOY_LE; break;
@@ -148,6 +156,7 @@ extern unsigned char emu_keycode;
         case 0x0078: emu_key &= ~MSX2_JOY_T2; break;
         case 0x007A: emu_key &= ~MSX2_JOY_T1; break;
     }
+#endif
     emu_keycode = 0;
 }
 

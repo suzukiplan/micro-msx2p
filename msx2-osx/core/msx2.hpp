@@ -269,6 +269,10 @@ class MSX2
         initKeyCode2(0x18, 1, 6, 4, 7); // CTRL + STOP
         initKeyCode(0x1B, 2, 7);        // ESC
         initKeyCode(0x7F, 5, 7);        // DEL as Back Space
+        initKeyCode(0xC0, 5, 8);        // up cursor
+        initKeyCode(0xC1, 6, 8);        // down cursor
+        initKeyCode(0xC2, 4, 8);        // left cursor
+        initKeyCode(0xC3, 7, 8);        // right cursor
         initKeyCode(0xF1, 5, 6);        // f1
         initKeyCode(0xF2, 6, 6);        // f2
         initKeyCode(0xF3, 7, 6);        // f3

@@ -185,9 +185,33 @@ msx2.setKeyAssign(0, MSX2_JOY_S1, ' '); // SPACE キーを S1 (START) ボタン�
 msx2.setKeyAssign(0, MSX2_JOY_S2, 0x1B); // ESC キーを S2 (SELECT) ボタンに割り当てる
 ```
 
-> 大半のゲームデザインでは、ジョイパッド以外のキーアサインが2つあれば問題ないものと思われます。しかし、実用プログラムなどで3つ以上のキーを利用することが不可避なケースでは、tickの第3引数にキーコードを指定する方式での実装が必要になります。
+大半のゲームデザインでは、ジョイパッド以外のキーアサインが2つあれば問題ないものと思われます。しかし、実用プログラムなどで3つ以上のキーを利用することが不可避なケースでは、tickの第3引数にキーコードを指定する方式での実装が必要になります。
 
-実用的なプログラムでより細かなキー操作を行いたい場合 `tickWithKeyCodeMap` でキーコードマップを指定することも可能です。
+キーコードは通常 ASCII コード（`'A'` など）で指定できますが、一部の制御コードには特殊な割り当てがされています。
+
+（特殊キーコード）
+
+- `'\r'` : RETURN
+- `'\n'` : RETURN
+- `0x18` : CTRL + STOP
+- `0x1B` : ESC
+- `0x7F` : DEL
+- `0xC0` : up cursor
+- `0xC1` : down cursor
+- `0xC2` : left cursor
+- `0xC3` : right cursor
+- `0xF1` : f1
+- `0xF2` : f2
+- `0xF3` : f3
+- `0xF4` : f4
+- `0xF5` : f5
+- `0xF6` : f6 (shift + f1)
+- `0xF7` : f7 (shift + f2)
+- `0xF8` : f8 (shift + f3)
+- `0xF9` : f9 (shift + f4)
+- `0xFA` : f10 (shift + f5)
+
+実用的なプログラムで、上記以外のキー（HOME, SELECTなど）やより細かなキー操作を行いたい場合 `tickWithKeyCodeMap` でキーコードマップを指定することも可能です。
 
 ```c++
 msx2.tickWithKeyCodeMap(pad1, pad2, keyCodeMap);
