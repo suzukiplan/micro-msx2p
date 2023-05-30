@@ -265,6 +265,7 @@ class MSX2
         initKeyCode('z', 7, 5, false);
         initKeyCode('\r', 7, 7);
         initKeyCode('\n', 7, 7);
+        initKeyCode('\t', 3, 7);
         initKeyCode(' ', 0, 8);
         initKeyCode2(0x18, 1, 6, 4, 7); // CTRL + STOP
         initKeyCode(0x1B, 2, 7);        // ESC
