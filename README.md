@@ -191,6 +191,7 @@ msx2.setKeyAssign(0, MSX2_JOY_S2, 0x1B); // ESC キーを S2 (SELECT) ボタン�
 
 （特殊キーコード）
 
+- `'\t'` : TAB
 - `'\r'` : RETURN
 - `'\n'` : RETURN
 - `0x18` : CTRL + STOP
