@@ -1,4 +1,4 @@
-# micro MSX2+
+# micro MSX2+ [![CircleCI](https://dl.circleci.com/status-badge/img/gh/suzukiplan/micro-msx2p/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/suzukiplan/micro-msx2p/tree/master)
 
 ## Description
 
