@@ -144,6 +144,17 @@ class MSX2MMU
         this->sccEnabled = false;
         switch (romType) {
             case MSX2_ROM_TYPE_NORMAL:
+                if (size == 0x4000) {
+                    setup(pri, sec, idx + 2, this->cartridge.ptr, 0x4000, "CART/M");
+                    for (int i = 0; i < 4; i++) {
+                        this->ctx.cpos[pri - 1][i] = i & 1;
+                    }
+                } else {
+                    for (int i = 0; i < 4; i++) {
+                        this->ctx.cpos[pri - 1][i] = i;
+                    }
+                }
+                break;
             case MSX2_ROM_TYPE_KONAMI:
                 for (int i = 0; i < 4; i++) {
                     this->ctx.cpos[pri - 1][i] = i;
