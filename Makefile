@@ -1,6 +1,5 @@
 all:
-	clang++ --std=c++14 -o dskmgr src/dskmgr.cpp
-	cd test && make
+	cd test/performance && make
 
 format:
 	make execute-format FILENAME=ay8910.hpp
