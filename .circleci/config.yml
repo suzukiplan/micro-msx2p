@@ -1,0 +1,19 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: "Install Prerequests"
+          command: "sudo apt-get install -y clang"
+      - run:
+          name: "Build and Test micro MSX2+"
+          command: "make"
+
+workflows:
+  test-workflow:
+    jobs:
+      - test
