@@ -146,8 +146,8 @@ extern unsigned char emu_keycode;
 
 - (void)keyUp:(NSEvent*)event
 {
-    unichar c = [self keyMapFrom:[event.charactersIgnoringModifiers characterAtIndex:0]];
 #ifdef ASSIGN_KEYBOARD_TO_JOYPAD
+    unichar c = [self keyMapFrom:[event.charactersIgnoringModifiers characterAtIndex:0]];
     switch (tolower(c)) {
         case 0xF703: emu_key &= ~MSX2_JOY_RI; break;
         case 0xF702: emu_key &= ~MSX2_JOY_LE; break;
