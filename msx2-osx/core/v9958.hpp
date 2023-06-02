@@ -1244,7 +1244,7 @@ class V9958
             curD += 2;
             if (512 <= curD) break;
             x++;
-            x &= 0x7F;
+            x &= 0xFF;
             if (0 == x && sp2) {
                 addr ^= 0x8000;
             }
