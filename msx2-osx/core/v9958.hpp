@@ -1246,7 +1246,7 @@ class V9958
             x++;
             x &= 0x7F;
             if (0 == x && sp2) {
-                addr ^= 0x8000;
+                addr &= 0x17FFF;
             }
         }
         renderSpritesMode2(lineNumber, renderPosition);
