@@ -1219,14 +1219,17 @@ class V9958
     {
         int curD = this->ctx.reg[27] & 0b00000111;
         int addr = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 128 + this->getNameTableAddress();
+        int addr2 = 0;
         int sp2 = this->getSP2();
-        int x = this->ctx.reg[26] & 0b00111111;
+        int x = this->ctx.reg[26];
         if (sp2) {
             x &= 0b00111111;
             if (x < 32) {
+                addr2 = addr;
                 addr &= 0x17FFF;
             } else {
                 addr |= 0x8000;
+                addr2 = addr & 0x17FFF;
             }
         } else {
             x &= 0b00011111;
@@ -1246,7 +1249,7 @@ class V9958
             x++;
             x &= 0x7F;
             if (0 == x && sp2) {
-                addr &= 0x17FFF;
+                addr = addr2;
             }
         }
         renderSpritesMode2(lineNumber, renderPosition);
