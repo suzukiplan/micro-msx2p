@@ -48,7 +48,7 @@ make
 10 ?"THIS IS TEST"
 ```
 
-```bash
+```text
 % make
 clang++ -Os -std=c++11 -I../../msx2-osx/lz4 -o runbas runbas.cpp emu2413.o lz4.o
 suzukiplan@YojinoMacBook-Air runbas % rm *.sav
