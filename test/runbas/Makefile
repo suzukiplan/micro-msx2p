@@ -8,4 +8,10 @@ lz4.o: ../../msx2-osx/lz4/lz4.c
 	clang -Os -c ../../msx2-osx/lz4/lz4.c
 
 png:
+	make png-`uname`
+
+png-Darwin:
 	sips -s format png result.bmp --out result.png
+
+png-Linux:
+	mogrify -format png result.bmp
