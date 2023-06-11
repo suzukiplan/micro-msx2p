@@ -50,9 +50,6 @@ make
 
 ```text
 % ./runbas test.bas
-Setup SLOT 3-0 $0000~$FFFF = RAM
-Setup SLOT 0-0 $0000~$7FFF = MAIN
-Setup SLOT 3-1 $0000~$3FFF = SUB
 Waiting for launch MSX-BASIC...
 Typing test.bas...
 ---------- START ----------

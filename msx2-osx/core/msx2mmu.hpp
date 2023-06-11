@@ -188,7 +188,9 @@ class MSX2MMU
 
     void setupRAM(int pri, int sec)
     {
+#ifdef DEBUG
         printf("Setup SLOT %d-%d $%04X~$%04X = %s\n", pri, sec, 0, 0xFFFF, "RAM");
+#endif
         for (int i = 0; i < 8; i++) {
             strcpy(this->slots[pri][sec].data[i].label, "RAM");
             this->slots[pri][sec].data[i].isRAM = true;
@@ -201,9 +203,11 @@ class MSX2MMU
 
     void setup(int pri, int sec, int idx, unsigned char* data, int size, const char* label)
     {
+#ifdef DEBUG
         if (label) {
             printf("Setup SLOT %d-%d $%04X~$%04X = %s\n", pri, sec, idx * 0x2000, idx * 0x2000 + size - 1, label);
         }
+#endif
         do {
             memset(this->slots[pri][sec].data[idx].label, 0, sizeof(this->slots[pri][sec].data[idx].label));
             if (label) {

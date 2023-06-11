@@ -49,6 +49,7 @@ class MSX2
     char quickSaveBuffer[1024 * 1024 * 4];
     char quickSaveBufferCompressed[1024 * 1024 * 4];
     size_t quickSaveBufferSize;
+    bool debug;
 
     struct KeyCode {
         int num;
@@ -113,6 +114,11 @@ class MSX2
 
     MSX2(int colorMode, bool ym2413Enabled = false)
     {
+#ifdef DEBUG
+        this->debug = true;
+#else
+        this->debug = false;
+#endif
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
         this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX2*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX2*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX2*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;
@@ -323,6 +329,7 @@ class MSX2
 
     void putlog(const char* fmt, ...)
     {
+        if (!this->debug) return;
         static int seqno = 0;
         char buf[256];
         va_list args;
@@ -573,7 +580,7 @@ class MSX2
             case 0xDB: return this->kanji.inPortDB(); // kanji
             case 0xF4: return this->vdp.inPortF4();
             case 0xF7: return 0xFF; // AV control
-            default: printf("ignore an unknown input port $%02X\n", port);
+            default: this->putlog("ignore an unknown input port $%02X\n", port);
         }
         return this->ctx.io[port];
     }
@@ -689,7 +696,7 @@ class MSX2
             case 0xFD: this->mmu.updateMemoryMapper(1, value); break;
             case 0xFE: this->mmu.updateMemoryMapper(2, value); break;
             case 0xFF: this->mmu.updateMemoryMapper(3, value); break;
-            default: printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
+            default: this->putlog("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
     }
 

@@ -11,11 +11,6 @@
 clang -Os -c ../../msx2-osx/core/emu2413.c
 clang++ -Os -std=c++11 -o test test.cpp emu2413.o
 ./test
-Setup SLOT 0-0 $0000~$7FFF = MAIN
-Setup SLOT 0-0 $8000~$BFFF = LOGO
-Setup SLOT 3-0 $0000~$3FFF = SUB
-Setup SLOT 3-3 $0000~$FFFF = RAM
-RESET!
 Total time: 12124ms
 Frame average: 3.367778ms
 Frame usage: 20.21%
