@@ -6,3 +6,6 @@ emu2413.o: ../../msx2-osx/core/emu2413.c
 
 lz4.o: ../../msx2-osx/lz4/lz4.c
 	clang -Os -c ../../msx2-osx/lz4/lz4.c
+
+png:
+	sips -s format png result.bmp --out result.png
