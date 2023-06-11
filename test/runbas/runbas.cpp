@@ -200,9 +200,12 @@ int main(int argc, char* argv[])
     fclose(bas);
 
     // プログラムを実行
-    printf("Executing %s...\n", argv[1]);
-    typeText(msx2, "\nRUN\n");
+    typeText(msx2, "\n");
+    puts("---------- START ----------");
+    msx2->cpu->addBreakPoint(0xFDA4, [](void* arg) { putc(((MSX2*)arg)->cpu->reg.pair.A, stdout); });
+    typeText(msx2, "RUN\n");
     waitFrames(msx2, frames);
+    puts("----------- END -----------");
 
     // スクショをresult.bmpに保存
     puts("Writing result.bmp...");

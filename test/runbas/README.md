@@ -49,13 +49,20 @@ make
 ```
 
 ```bash
-% ./runbas test.bas
+% make
+clang++ -Os -std=c++11 -I../../msx2-osx/lz4 -o runbas runbas.cpp emu2413.o lz4.o
+suzukiplan@YojinoMacBook-Air runbas % rm *.sav
+suzukiplan@YojinoMacBook-Air runbas % ./runbas hello.bas
 Setup SLOT 3-0 $0000~$FFFF = RAM
 Setup SLOT 0-0 $0000~$7FFF = MAIN
 Setup SLOT 3-1 $0000~$3FFF = SUB
 Waiting for launch MSX-BASIC...
-Typing test.bas...
-Executing test.bas...
+Typing hello.bas...
+---------- START ----------
+RUN' 
+THIS IS TEST
+Ok
+----------- END -----------
 Writing result.bmp...
 %
 ```
@@ -63,4 +70,3 @@ Writing result.bmp...
 |result.bmp|
 |:-|
 |![result.bmp](result_example.png)|
-
