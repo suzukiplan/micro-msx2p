@@ -49,10 +49,7 @@ make
 ```
 
 ```text
-% make
-clang++ -Os -std=c++11 -I../../msx2-osx/lz4 -o runbas runbas.cpp emu2413.o lz4.o
-suzukiplan@YojinoMacBook-Air runbas % rm *.sav
-suzukiplan@YojinoMacBook-Air runbas % ./runbas hello.bas
+% ./runbas hello.bas
 Setup SLOT 3-0 $0000~$FFFF = RAM
 Setup SLOT 0-0 $0000~$7FFF = MAIN
 Setup SLOT 3-1 $0000~$3FFF = SUB
