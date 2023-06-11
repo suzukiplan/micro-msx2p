@@ -129,19 +129,32 @@ int main(int argc, char* argv[])
     }
     const int frames = 3 <= argc ? atoi(argv[2]) : 600;
 
-    unsigned char* msx2p = (unsigned char*)loadBinaryFile("MSX2P.ROM");
+    char path[4096];
+    char* basePath = getenv("RUNBAS_PATH");
+    if (basePath) {
+        snprintf(path, sizeof(path), "%s/MSX2P.ROM", basePath);
+    } else {
+        strcpy(path, "MSX2P.ROM");
+    }
+    unsigned char* msx2p = (unsigned char*)loadBinaryFile(path);
     if (!msx2p) {
         puts("Could not open: MSX2P.ROM");
         fclose(bas);
         return -1;
     }
-    unsigned char* msx2pext = (unsigned char*)loadBinaryFile("MSX2PEXT.ROM");
+    if (basePath) {
+        snprintf(path, sizeof(path), "%s/MSX2PEXT.ROM", basePath);
+    } else {
+        strcpy(path, "MSX2PEXT.ROM");
+    }
+    unsigned char* msx2pext = (unsigned char*)loadBinaryFile(path);
     if (!msx2pext) {
         puts("Could not open: MSX2PEXT.ROM");
         free(msx2p);
         fclose(bas);
         return -1;
     }
+
     MSX2* msx2 = new MSX2(MSX2_COLOR_MODE_RGB555);
     msx2->setupSecondaryExist(false, false, false, true);
     msx2->setupRAM(3, 0);
@@ -149,7 +162,12 @@ int main(int argc, char* argv[])
     msx2->setup(3, 1, 0, msx2pext, 0x4000, "SUB");
 
     // runbas.sav があればロード
-    FILE* sav = fopen("runbas.sav", "rb");
+    if (basePath) {
+        snprintf(path, sizeof(path), "%s/runbas.sav", basePath);
+    } else {
+        strcpy(path, "runbas.sav");
+    }
+    FILE* sav = fopen(path, "rb");
     bool loaded = false;
     if (sav) {
         fseek(sav, 0, SEEK_END);
@@ -177,7 +195,7 @@ int main(int argc, char* argv[])
         // BASIC起動後の状態を runbas.sav に保持
         size_t saveSize;
         const void* saveData = msx2->quickSave(&saveSize);
-        sav = fopen("runbas.sav", "wb");
+        sav = fopen(path, "wb");
         if (sav) {
             fwrite(saveData, 1, saveSize, sav);
             fclose(sav);
@@ -207,7 +225,7 @@ int main(int argc, char* argv[])
     waitFrames(msx2, frames);
     puts("----------- END -----------");
 
-    // スクショをresult.bmpに保存
+    // スクショをカレントディレクトリのresult.bmpに保存
     puts("Writing result.bmp...");
     size_t bitmapSize;
     const void* bitmap = getBitmapScreen(msx2, &bitmapSize);

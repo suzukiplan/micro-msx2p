@@ -18,6 +18,13 @@
 
 > 吸い出した機種によってはこの手順では正常に動作しないことがあります。その場合、[こちら](https://github.com/suzukiplan/micro-msx2p#2-2-setup-slot) を参考にして必要な BIOS ファイルの追加と `setup` の修正をすることで動作する場合があります。（起動時に BASIC が起動せずに初期ユーティリティが動作する機種の場合、BASIC を起動するように操作処理を追加する必要があることもあります）
 
+なお、環境変数 `RUNBAS_PATH` を指定することで、BIOSファイルの読み込み先ディレクトリを指定することができます。
+
+```bash
+export RUNBAS_PATH=/path/to/bios/dir
+./runbas test.bas
+```
+
 ## How to Build
 
 ```bash
@@ -39,6 +46,8 @@ make
 - `result.bmp` ... 指定した BASIC コード実行後の画面スクショ
 
 なお、カレントパスに `runbas.sav` が存在する環境では実行時間が（BASIC起動処理にかかる時間分）短縮されます。
+
+> `runbas.sav` の入出力ディレクトリは環境変数 `RUNBAS_PATH` の指定に依存します。
 
 ## Example
 
@@ -64,6 +73,8 @@ Writing result.bmp...
 |result.bmp|
 |:-|
 |![result.bmp](result_example.png)|
+
+> `result.bmp` の出力先ディレクトリは環境変数 `RUNBAS_PATH` の指定による影響を受けず常にカレントディレクトリです。
 
 ## License
 
