@@ -1,3 +1,5 @@
+// MSX-BASIC Runner
+// License: Public Domain
 #include "../../msx2-osx/core/msx2.hpp"
 
 typedef struct BitmapHeader_ {
