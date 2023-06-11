@@ -73,17 +73,17 @@ Writing result.bmp...
 
 - LZ4 Library
   - Web Site: [https://github.com/lz4/lz4](https://github.com/lz4/lz4) - [lib](https://github.com/lz4/lz4/tree/dev/lib)
-  - License: [2-Clause BSD](./licenses-copy/lz4-library.txt)
+  - License: [2-Clause BSD](../../licenses-copy/lz4-library.txt)
   - `Copyright (c) 2011-2020, Yann Collet`
 - emu2413
   - Web Site: [https://github.com/digital-sound-antiques/emu2413](https://github.com/digital-sound-antiques/emu2413)
-  - License: [MIT](./licenses-copy/emu2413.txt)
+  - License: [MIT](../../licenses-copy/emu2413.txt)
   - `Copyright (c) 2001-2019 Mitsutaka Okazaki`
 - SUZUKI PLAN - Z80 Emulator
   - Web Site: [https://github.com/suzukiplan/z80](https://github.com/suzukiplan/z80)
-  - License: [MIT](./licenses-copy/z80.txt)
+  - License: [MIT](../../licenses-copy/z80.txt)
   - `Copyright (c) 2019 Yoji Suzuki.`
 - micro MSX2+
   - Web Site: [https://github.com/suzukiplan/micro-msx2p](https://github.com/suzukiplan/micro-msx2p)
-  - License: [MIT](LICENSE.txt)
+  - License: [MIT](../../LICENSE.txt)
   - `Copyright (c) 2023 Yoji Suzuki.`
