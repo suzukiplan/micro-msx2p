@@ -82,7 +82,7 @@ MSX2 msx2(0);
 MSX2 msx2(0, true);
 ```
 
-ディスプレイカラーモードの指定により `msx2.vdp.display` に格納される画面表示用データのピクセル形式が RGB555 (0) または RGB565 (1) の何れかになります。
+ディスプレイカラーモードの指定により `msx2.getDisplay()` に格納される画面表示用データのピクセル形式が RGB555 (0) または RGB565 (1) の何れかになります。
 
 #### 2-2. Setup Slot
 
@@ -288,7 +288,9 @@ void* sound = msx2.getSound(&soundSize);
 // 1フレーム実行後の映像を取得
 // - Size: 568(width) x 240(height) x 2(16bit-color)
 // - Color: RGB555 or RGB565 (コンストラクタで指定したもの)
-unsigned short* display = msx2.vdp.display;
+unsigned short* display = msx2.getDisplay();
+int displayWidth = msx2.getDisplayWidth(); // 568
+int displayHeight = msx2.getDisplayHeight(); // 240 (※将来的にインタレース対応時に480になる可能性がある)
 ```
 
 ### 5. Quick Save/Load

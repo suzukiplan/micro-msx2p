@@ -44,11 +44,16 @@ class MSX2
     const int CPU_CLOCK = 3584160;
     const int VDP_CLOCK = 21504960;
     const int PSG_CLOCK = 44100;
-    short soundBuffer[65536];
-    unsigned short soundBufferCursor;
-    char quickSaveBuffer[1024 * 1024 * 4];
-    char quickSaveBufferCompressed[1024 * 1024 * 4];
-    size_t quickSaveBufferSize;
+    class InternalBuffer
+    {
+      public:
+        short soundBuffer[65536];
+        unsigned short soundBufferCursor;
+        char quickSaveBuffer[1024 * 1024 * 4];
+        char quickSaveBufferCompressed[1024 * 1024 * 4];
+        size_t quickSaveBufferSize;
+    };
+    InternalBuffer* ib;
     bool debug;
 
     struct KeyCode {
@@ -86,11 +91,11 @@ class MSX2
 
   public:
     Z80* cpu;
-    MSX2MMU mmu;
-    V9958 vdp;
-    AY8910 psg;
-    MSX2Clock clock;
-    MSX2Kanji kanji;
+    MSX2MMU* mmu;
+    V9958* vdp;
+    AY8910* psg;
+    MSX2Clock* clock;
+    MSX2Kanji* kanji;
     SCC* scc;
     TC8566AF* fdc;
     OPLL* ym2413;
@@ -110,6 +115,12 @@ class MSX2
         if (this->scc) delete scc;
         if (this->ym2413) OPLL_delete(this->ym2413);
         delete this->cpu;
+        delete this->vdp;
+        delete this->mmu;
+        delete this->psg;
+        delete this->clock;
+        delete this->kanji;
+        delete this->ib;
     }
 
     MSX2(int colorMode, bool ym2413Enabled = false)
@@ -120,7 +131,13 @@ class MSX2
         this->debug = false;
 #endif
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
-        this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX2*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX2*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX2*)arg)->outPort((unsigned char)port, value); }, this, false);
+        this->ib = new InternalBuffer();
+        this->mmu = new MSX2MMU();
+        this->vdp = new V9958();
+        this->psg = new AY8910();
+        this->clock = new MSX2Clock();
+        this->kanji = new MSX2Kanji();
+        this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX2*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX2*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX2*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;
         this->scc = nullptr;
         if (ym2413Enabled) {
@@ -129,12 +146,12 @@ class MSX2
         } else {
             this->ym2413 = nullptr;
         }
-        this->vdp.initialize(
+        this->vdp->initialize(
             colorMode, this, [](void* arg, int ie) {
-            //((MSX2*)arg)->putlog("Detect IE%d (vf:%d, hf:%d)", ie, ((MSX2*)arg)->vdp.ctx.stat[0] & 0x80 ? 1 : 0,((MSX2*)arg)->vdp.ctx.stat[1] & 0x01);
+            //((MSX2*)arg)->putlog("Detect IE%d (vf:%d, hf:%d)", ie, ((MSX2*)arg)->vdp->ctx.stat[0] & 0x80 ? 1 : 0,((MSX2*)arg)->vdp->ctx.stat[1] & 0x01);
             //((MSX2*)arg)->cpu->resetDebugMessage();
             ((MSX2*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX2*)arg)->cpu->cancelIRQ(); }, [](void* arg) { ((MSX2*)arg)->cpu->requestBreak(); });
-        this->mmu.setupCallbacks(
+        this->mmu->setupCallbacks(
             this, [](void* arg, unsigned short addr) { return ((MSX2*)arg)->scc->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->scc->write(addr, value); }, [](void* arg, unsigned short addr) {
             switch (addr) {
                 case 0x3FFA: return ((MSX2*)arg)->fdc->read(4);
@@ -155,9 +172,9 @@ class MSX2
 #if 0
         // CALL命令をページ3にRAMを割り当てていない状態で実行した時に落とす
         this->cpu->addBreakOperand(0xCD, [](void* arg, unsigned char* op, int size) {
-            int pri3 = ((MSX2*)arg)->mmu.ctx.pri[3];
-            int sec3 = ((MSX2*)arg)->mmu.ctx.sec[3];
-            auto data = &((MSX2*)arg)->mmu.slots[pri3][sec3].data[7];
+            int pri3 = ((MSX2*)arg)->mmu->ctx.pri[3];
+            int sec3 = ((MSX2*)arg)->mmu->ctx.sec[3];
+            auto data = &((MSX2*)arg)->mmu->slots[pri3][sec3].data[7];
             if (!data->isRAM) {
                 ((MSX2*)arg)->putlog("invalid call $%02X%02X", op[2], op[1]);
                 exit(-1);
@@ -306,8 +323,8 @@ class MSX2
 
     void reset()
     {
-        memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
-        this->soundBufferCursor = 0;
+        memset(this->ib->soundBuffer, 0, sizeof(this->ib->soundBuffer));
+        this->ib->soundBufferCursor = 0;
         memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
         memset(&this->cpu->reg.pair, 0xFF, sizeof(this->cpu->reg.pair));
         memset(&this->cpu->reg.back, 0xFF, sizeof(this->cpu->reg.back));
@@ -317,11 +334,11 @@ class MSX2
         this->cpu->reg.SP = 0xF000;
         this->cpu->reg.IX = 0xFFFF;
         this->cpu->reg.IY = 0xFFFF;
-        this->mmu.reset();
-        this->vdp.reset();
-        this->psg.reset(27);
-        this->clock.reset();
-        this->kanji.reset();
+        this->mmu->reset();
+        this->vdp->reset();
+        this->psg->reset(27);
+        this->clock->reset();
+        this->kanji->reset();
         if (this->scc) this->scc->reset();
         if (this->fdc) this->fdc->reset();
         if (this->ym2413) OPLL_reset(this->ym2413);
@@ -337,35 +354,35 @@ class MSX2
         vsnprintf(buf, sizeof(buf), fmt, args);
         va_end(args);
         char addr[256];
-        auto db = this->mmu.getDataBlock(this->cpu->reg.PC);
+        auto db = this->mmu->getDataBlock(this->cpu->reg.PC);
         if (db->isCartridge) {
-            int romAddr = (int)(db->ptr - this->mmu.cartridge.ptr);
+            int romAddr = (int)(db->ptr - this->mmu->cartridge.ptr);
             snprintf(addr, sizeof(addr), "[PC=%04X:%X+%04X,SP=%04X]", this->cpu->reg.PC, this->cpu->reg.SP, romAddr, this->cpu->reg.PC & 0x1FFF);
         } else {
             snprintf(addr, sizeof(addr), "[PC=%04X,SP=%04X]", this->cpu->reg.PC, this->cpu->reg.SP);
         }
         printf("%7d %s %d-%d:%d-%d:%d-%d:%d-%d F:%02d,V:%03d %s\n", ++seqno, addr,
-               this->mmu.ctx.pri[0], this->mmu.ctx.sec[0],
-               this->mmu.ctx.pri[1], this->mmu.ctx.sec[1],
-               this->mmu.ctx.pri[2], this->mmu.ctx.sec[2],
-               this->mmu.ctx.pri[3], this->mmu.ctx.sec[3],
-               this->vdp.ctx.counter % 100,
-               this->vdp.ctx.countV, buf);
+               this->mmu->ctx.pri[0], this->mmu->ctx.sec[0],
+               this->mmu->ctx.pri[1], this->mmu->ctx.sec[1],
+               this->mmu->ctx.pri[2], this->mmu->ctx.sec[2],
+               this->mmu->ctx.pri[3], this->mmu->ctx.sec[3],
+               this->vdp->ctx.counter % 100,
+               this->vdp->ctx.countV, buf);
     }
 
     void loadFont(const void* font, size_t fontSize)
     {
-        this->kanji.loadFont(font, fontSize);
+        this->kanji->loadFont(font, fontSize);
     }
 
     void setupSecondaryExist(bool page0, bool page1, bool page2, bool page3)
     {
-        this->mmu.setupSecondaryExist(page0, page1, page2, page3);
+        this->mmu->setupSecondaryExist(page0, page1, page2, page3);
     }
 
     void setupRAM(int pri, int sec)
     {
-        this->mmu.setupRAM(pri, sec);
+        this->mmu->setupRAM(pri, sec);
     }
 
     void setup(int pri, int sec, int idx, void* data, int size, const char* label = NULL)
@@ -387,12 +404,12 @@ class MSX2
                 });
             }
         }
-        this->mmu.setup(pri, sec, idx, (unsigned char*)data, size, label);
+        this->mmu->setup(pri, sec, idx, (unsigned char*)data, size, label);
     }
 
     void loadRom(void* data, int size, int romType)
     {
-        this->mmu.setupCartridge(1, 0, 2, data, size, romType);
+        this->mmu->setupCartridge(1, 0, 2, data, size, romType);
         if (romType == MSX2_ROM_TYPE_KONAMI_SCC) {
             if (!this->scc) {
                 this->putlog("create SCC instance");
@@ -429,7 +446,7 @@ class MSX2
 
     void tick(unsigned char pad1, unsigned char pad2, unsigned char key)
     {
-        this->psg.setPads(pad1, pad2);
+        this->psg->setPads(pad1, pad2);
         this->ctx.key = key;
         this->keyCodeMap = nullptr;
         this->cpu->execute(0x7FFFFFFF);
@@ -437,7 +454,7 @@ class MSX2
 
     void tickWithKeyCodeMap(unsigned char pad1, unsigned char pad2, unsigned char* keyCodeMap)
     {
-        this->psg.setPads(pad1, pad2);
+        this->psg->setPads(pad1, pad2);
         this->ctx.key = 0;
         this->keyCodeMap = keyCodeMap;
         this->cpu->execute(0x7FFFFFFF);
@@ -445,25 +462,29 @@ class MSX2
 
     void* getSound(size_t* soundSize)
     {
-        *soundSize = this->soundBufferCursor * 2;
-        this->soundBufferCursor = 0;
-        return this->soundBuffer;
+        *soundSize = this->ib->soundBufferCursor * 2;
+        this->ib->soundBufferCursor = 0;
+        return this->ib->soundBuffer;
     }
+
+    inline unsigned short* getDisplay() { return this->vdp->display; }
+    inline int getDisplayWidth() { return 568; }
+    inline int getDisplayHeight() { return 240; }
 
     inline void consumeClock(int cpuClocks)
     {
         // Asynchronous with PSG/SCC
-        this->psg.ctx.bobo += cpuClocks * this->PSG_CLOCK;
-        while (0 < this->psg.ctx.bobo) {
-            this->psg.ctx.bobo -= this->CPU_CLOCK;
-            this->psg.tick(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1], 81);
+        this->psg->ctx.bobo += cpuClocks * this->PSG_CLOCK;
+        while (0 < this->psg->ctx.bobo) {
+            this->psg->ctx.bobo -= this->CPU_CLOCK;
+            this->psg->tick(&this->ib->soundBuffer[this->ib->soundBufferCursor], &this->ib->soundBuffer[this->ib->soundBufferCursor + 1], 81);
             if (this->scc) {
-                this->scc->tick(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1], 81);
+                this->scc->tick(&this->ib->soundBuffer[this->ib->soundBufferCursor], &this->ib->soundBuffer[this->ib->soundBufferCursor + 1], 81);
             }
             if (this->ym2413) {
                 auto opllWav = OPLL_calc(this->ym2413);
-                int l = this->soundBuffer[this->soundBufferCursor];
-                int r = this->soundBuffer[this->soundBufferCursor + 1];
+                int l = this->ib->soundBuffer[this->ib->soundBufferCursor];
+                int r = this->ib->soundBuffer[this->ib->soundBufferCursor + 1];
                 l += opllWav;
                 r += opllWav;
                 if (32767 < l)
@@ -474,22 +495,22 @@ class MSX2
                     r = 32767;
                 else if (r < -32768)
                     r = -32768;
-                this->soundBuffer[this->soundBufferCursor] = (short)l;
-                this->soundBuffer[this->soundBufferCursor + 1] = (short)r;
+                this->ib->soundBuffer[this->ib->soundBufferCursor] = (short)l;
+                this->ib->soundBuffer[this->ib->soundBufferCursor + 1] = (short)r;
             }
-            this->soundBufferCursor += 2;
+            this->ib->soundBufferCursor += 2;
         }
         // Asynchronous with VDP
-        this->vdp.ctx.bobo += cpuClocks * VDP_CLOCK;
-        while (0 < this->vdp.ctx.bobo) {
-            this->vdp.ctx.bobo -= CPU_CLOCK;
-            this->vdp.tick();
+        this->vdp->ctx.bobo += cpuClocks * VDP_CLOCK;
+        while (0 < this->vdp->ctx.bobo) {
+            this->vdp->ctx.bobo -= CPU_CLOCK;
+            this->vdp->tick();
         }
         // Asynchronous with Clock IC
-        this->clock.ctx.bobo += cpuClocks;
-        while (CPU_CLOCK <= this->clock.ctx.bobo) {
-            this->clock.ctx.bobo -= CPU_CLOCK;
-            this->clock.tick();
+        this->clock->ctx.bobo += cpuClocks;
+        while (CPU_CLOCK <= this->clock->ctx.bobo) {
+            this->clock->ctx.bobo -= CPU_CLOCK;
+            this->clock->tick();
         }
     }
 
@@ -497,19 +518,19 @@ class MSX2
     {
         switch (port) {
             case 0x81: return 0xFF; // 8251 status command
-            case 0x88: return this->vdp.inPort98();
-            case 0x89: return this->vdp.inPort99();
+            case 0x88: return this->vdp->inPort98();
+            case 0x89: return this->vdp->inPort99();
             case 0x90: return 0x00; // printer
-            case 0x98: return this->vdp.inPort98();
-            case 0x99: return this->vdp.inPort99();
+            case 0x98: return this->vdp->inPort98();
+            case 0x99: return this->vdp->inPort99();
             case 0xA2: {
-                unsigned char result = this->psg.read();
-                if (14 == this->psg.ctx.latch || 15 == this->psg.ctx.latch) {
+                unsigned char result = this->psg->read();
+                if (14 == this->psg->ctx.latch || 15 == this->psg->ctx.latch) {
                     result |= 0b11000000; // unpush S1/S2
                 }
                 return result;
             }
-            case 0xA8: return this->mmu.getPrimary();
+            case 0xA8: return this->mmu->getPrimary();
             case 0xA9: {
                 // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
                 static unsigned char bit[8] = {
@@ -539,22 +560,22 @@ class MSX2
                         }
                     }
                 }
-                if (this->keyAssign[0].s1 && 0 == (this->psg.getPad1() & MSX2_JOY_S1)) {
+                if (this->keyAssign[0].s1 && 0 == (this->psg->getPad1() & MSX2_JOY_S1)) {
                     if (this->ctx.selectedKeyRow == this->keyAssign[0].s1->y[0]) {
                         result |= bit[this->keyAssign[0].s1->x[0]];
                     }
                 }
-                if (this->keyAssign[0].s2 && 0 == (this->psg.getPad1() & MSX2_JOY_S2)) {
+                if (this->keyAssign[0].s2 && 0 == (this->psg->getPad1() & MSX2_JOY_S2)) {
                     if (this->ctx.selectedKeyRow == this->keyAssign[0].s2->y[0]) {
                         result |= bit[this->keyAssign[0].s2->x[0]];
                     }
                 }
-                if (this->keyAssign[1].s1 && 0 == (this->psg.getPad2() & MSX2_JOY_S1)) {
+                if (this->keyAssign[1].s1 && 0 == (this->psg->getPad2() & MSX2_JOY_S1)) {
                     if (this->ctx.selectedKeyRow == this->keyAssign[1].s1->y[0]) {
                         result |= bit[this->keyAssign[1].s1->x[0]];
                     }
                 }
-                if (this->keyAssign[1].s2 && 0 == (this->psg.getPad2() & MSX2_JOY_S2)) {
+                if (this->keyAssign[1].s2 && 0 == (this->psg->getPad2() & MSX2_JOY_S2)) {
                     if (this->ctx.selectedKeyRow == this->keyAssign[1].s2->y[0]) {
                         result |= bit[this->keyAssign[1].s2->x[0]];
                     }
@@ -562,23 +583,23 @@ class MSX2
                 return ~result;
             }
             case 0xAA: return this->ctx.regC;
-            case 0xB5: return this->clock.inPortB5();
-            case 0xB8: return 0x00;                   // light pen
-            case 0xB9: return 0x00;                   // light pen
-            case 0xBA: return 0x00;                   // light pen
-            case 0xBB: return 0xFF;                   // light pen
-            case 0xC0: return 0xFF;                   // MSX-Audio (Y8950?)
-            case 0xC8: return 0xFF;                   // MSX interface
-            case 0xC9: return 0x00;                   // MSX interface
-            case 0xCA: return 0x00;                   // MSX interface
-            case 0xCB: return 0x00;                   // MSX interface
-            case 0xCC: return 0x00;                   // MSX interface
-            case 0xCD: return 0x00;                   // MSX interface
-            case 0xCE: return 0x00;                   // MSX interface
-            case 0xCF: return 0x00;                   // MSX interface
-            case 0xD9: return this->kanji.inPortD9(); // kanji
-            case 0xDB: return this->kanji.inPortDB(); // kanji
-            case 0xF4: return this->vdp.inPortF4();
+            case 0xB5: return this->clock->inPortB5();
+            case 0xB8: return 0x00;                    // light pen
+            case 0xB9: return 0x00;                    // light pen
+            case 0xBA: return 0x00;                    // light pen
+            case 0xBB: return 0xFF;                    // light pen
+            case 0xC0: return 0xFF;                    // MSX-Audio (Y8950?)
+            case 0xC8: return 0xFF;                    // MSX interface
+            case 0xC9: return 0x00;                    // MSX interface
+            case 0xCA: return 0x00;                    // MSX interface
+            case 0xCB: return 0x00;                    // MSX interface
+            case 0xCC: return 0x00;                    // MSX interface
+            case 0xCD: return 0x00;                    // MSX interface
+            case 0xCE: return 0x00;                    // MSX interface
+            case 0xCF: return 0x00;                    // MSX interface
+            case 0xD9: return this->kanji->inPortD9(); // kanji
+            case 0xDB: return this->kanji->inPortDB(); // kanji
+            case 0xF4: return this->vdp->inPortF4();
             case 0xF7: return 0xFF; // AV control
             default: this->putlog("ignore an unknown input port $%02X\n", port);
         }
@@ -596,19 +617,19 @@ class MSX2
                 if (this->ym2413) OPLL_writeIO(this->ym2413, 1, value);
                 break;
             case 0x81: break; // 8251 status command
-            case 0x88: this->vdp.outPort98(value); break;
-            case 0x89: this->vdp.outPort99(value); break;
-            case 0x8A: this->vdp.outPort9A(value); break;
-            case 0x8B: this->vdp.outPort9B(value); break;
+            case 0x88: this->vdp->outPort98(value); break;
+            case 0x89: this->vdp->outPort99(value); break;
+            case 0x8A: this->vdp->outPort9A(value); break;
+            case 0x8B: this->vdp->outPort9B(value); break;
             case 0x90: break; // printer
             case 0x91: break; // printer
-            case 0x98: this->vdp.outPort98(value); break;
-            case 0x99: this->vdp.outPort99(value); break;
-            case 0x9A: this->vdp.outPort9A(value); break;
-            case 0x9B: this->vdp.outPort9B(value); break;
-            case 0xA0: this->psg.latch(value); break;
-            case 0xA1: this->psg.write(value); break;
-            case 0xA8: this->mmu.updatePrimary(value); break;
+            case 0x98: this->vdp->outPort98(value); break;
+            case 0x99: this->vdp->outPort99(value); break;
+            case 0x9A: this->vdp->outPort9A(value); break;
+            case 0x9B: this->vdp->outPort9B(value); break;
+            case 0xA0: this->psg->latch(value); break;
+            case 0xA1: this->psg->write(value); break;
+            case 0xA8: this->mmu->updatePrimary(value); break;
             case 0xAA: {
                 unsigned char mod = this->ctx.regC ^ value;
                 if (mod) {
@@ -643,18 +664,18 @@ class MSX2
                 }
                 break;
             }
-            case 0xB4: this->clock.outPortB4(value); break;
-            case 0xB5: this->clock.outPortB5(value); break;
+            case 0xB4: this->clock->outPortB4(value); break;
+            case 0xB5: this->clock->outPortB5(value); break;
             case 0xB8: break; // light pen
             case 0xB9: break; // light pen
             case 0xBA: break; // light pen
             case 0xBB: break; // light pen
-            case 0xD8: this->kanji.outPortD8(value); break;
-            case 0xD9: this->kanji.outPortD9(value); break;
-            case 0xDA: this->kanji.outPortDA(value); break;
-            case 0xDB: this->kanji.outPortDB(value); break;
+            case 0xD8: this->kanji->outPortD8(value); break;
+            case 0xD9: this->kanji->outPortD9(value); break;
+            case 0xDA: this->kanji->outPortDA(value); break;
+            case 0xDB: this->kanji->outPortDB(value); break;
             case 0xF3: break;
-            case 0xF4: this->vdp.outPortF4(value); break;
+            case 0xF4: this->vdp->outPortF4(value); break;
             case 0xF5: {
 #if 0
                 putlog("Update System Control:");
@@ -688,36 +709,36 @@ class MSX2
                 putlog(" - reverseVdpR9Bit4: %s", reverseVdpR9Bit4 ? "Yes" : "No");
                 putlog(" - reverseVdpR9Bit5: %s", reverseVdpR9Bit5 ? "Yes" : "No");
 #endif
-                this->vdp.ctx.reverseVdpR9Bit4 = value & 0b01000000 ? 1 : 0;
-                this->vdp.ctx.reverseVdpR9Bit5 = value & 0b10000000 ? 1 : 0;
+                this->vdp->ctx.reverseVdpR9Bit4 = value & 0b01000000 ? 1 : 0;
+                this->vdp->ctx.reverseVdpR9Bit5 = value & 0b10000000 ? 1 : 0;
                 break;
             }
-            case 0xFC: this->mmu.updateMemoryMapper(0, value); break;
-            case 0xFD: this->mmu.updateMemoryMapper(1, value); break;
-            case 0xFE: this->mmu.updateMemoryMapper(2, value); break;
-            case 0xFF: this->mmu.updateMemoryMapper(3, value); break;
+            case 0xFC: this->mmu->updateMemoryMapper(0, value); break;
+            case 0xFD: this->mmu->updateMemoryMapper(1, value); break;
+            case 0xFE: this->mmu->updateMemoryMapper(2, value); break;
+            case 0xFF: this->mmu->updateMemoryMapper(3, value); break;
             default: this->putlog("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
     }
 
     const void* quickSave(size_t* size)
     {
-        this->quickSaveBufferSize = 0;
+        this->ib->quickSaveBufferSize = 0;
         this->writeSaveChunk("BRD", &this->ctx, (int)sizeof(this->ctx));
         this->writeSaveChunk("Z80", &this->cpu->reg, (int)sizeof(this->cpu->reg));
-        this->writeSaveChunk("MMU", &this->mmu.ctx, (int)sizeof(this->mmu.ctx));
-        this->writeSaveChunk("PAC", &this->mmu.pac, (int)sizeof(this->mmu.pac));
-        this->writeSaveChunk("R:0", &this->mmu.ram, (int)sizeof(this->mmu.ram));
-        if (this->mmu.sramEnabled) {
-            this->writeSaveChunk("SRM", &this->mmu.sram, (int)sizeof(this->mmu.sram));
+        this->writeSaveChunk("MMU", &this->mmu->ctx, (int)sizeof(this->mmu->ctx));
+        this->writeSaveChunk("PAC", &this->mmu->pac, (int)sizeof(this->mmu->pac));
+        this->writeSaveChunk("R:0", &this->mmu->ram, (int)sizeof(this->mmu->ram));
+        if (this->mmu->sramEnabled) {
+            this->writeSaveChunk("SRM", &this->mmu->sram, (int)sizeof(this->mmu->sram));
         }
-        if (this->mmu.sccEnabled && this->scc) {
+        if (this->mmu->sccEnabled && this->scc) {
             this->writeSaveChunk("SCC", &this->scc->ctx, (int)sizeof(this->scc->ctx));
         }
-        this->writeSaveChunk("PSG", &this->psg.ctx, (int)sizeof(this->psg.ctx));
-        this->writeSaveChunk("RTC", &this->clock.ctx, (int)sizeof(this->clock.ctx));
-        this->writeSaveChunk("KNJ", &this->kanji.ctx, (int)sizeof(this->kanji.ctx));
-        this->writeSaveChunk("VDP", &this->vdp.ctx, (int)sizeof(this->vdp.ctx));
+        this->writeSaveChunk("PSG", &this->psg->ctx, (int)sizeof(this->psg->ctx));
+        this->writeSaveChunk("RTC", &this->clock->ctx, (int)sizeof(this->clock->ctx));
+        this->writeSaveChunk("KNJ", &this->kanji->ctx, (int)sizeof(this->kanji->ctx));
+        this->writeSaveChunk("VDP", &this->vdp->ctx, (int)sizeof(this->vdp->ctx));
         if (this->fdc) {
             this->writeSaveChunk("FDC", &this->fdc->ctx, (int)sizeof(this->fdc->ctx));
             this->writeSaveChunk("JCT", &this->fdc->journalCount, (int)sizeof(this->fdc->journalCount));
@@ -726,21 +747,21 @@ class MSX2
         if (this->ym2413) {
             this->writeSaveChunk("OPL", this->ym2413, (int)sizeof(OPLL));
         }
-        *size = LZ4_compress_default(this->quickSaveBuffer,
-                                     this->quickSaveBufferCompressed,
-                                     (int)this->quickSaveBufferSize,
-                                     sizeof(this->quickSaveBufferCompressed));
-        return this->quickSaveBufferCompressed;
+        *size = LZ4_compress_default(this->ib->quickSaveBuffer,
+                                     this->ib->quickSaveBufferCompressed,
+                                     (int)this->ib->quickSaveBufferSize,
+                                     sizeof(this->ib->quickSaveBufferCompressed));
+        return this->ib->quickSaveBufferCompressed;
     }
 
     void quickLoad(const void* buffer, size_t bufferSize)
     {
         this->reset();
         int size = LZ4_decompress_safe((const char*)buffer,
-                                       this->quickSaveBuffer,
+                                       this->ib->quickSaveBuffer,
                                        (int)bufferSize,
-                                       sizeof(this->quickSaveBuffer));
-        const char* ptr = this->quickSaveBuffer;
+                                       sizeof(this->ib->quickSaveBuffer));
+        const char* ptr = this->ib->quickSaveBuffer;
         while (8 <= size) {
             char chunk[4];
             int chunkSize;
@@ -758,17 +779,17 @@ class MSX2
                 memcpy(&this->cpu->reg, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "MMU")) {
                 putlog("extract MMU (%d bytes)", chunkSize);
-                memcpy(&this->mmu.ctx, ptr, chunkSize);
-                this->mmu.bankSwitchover();
+                memcpy(&this->mmu->ctx, ptr, chunkSize);
+                this->mmu->bankSwitchover();
             } else if (0 == strcmp(chunk, "PAC")) {
                 putlog("extract PAC (%d bytes)", chunkSize);
-                memcpy(&this->mmu.pac, ptr, chunkSize);
+                memcpy(&this->mmu->pac, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "R:0")) {
                 putlog("extract R:0 (%d bytes)", chunkSize);
-                memcpy(&this->mmu.ram, ptr, chunkSize);
+                memcpy(&this->mmu->ram, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "SRM")) {
                 putlog("extract SRM (%d bytes)", chunkSize);
-                memcpy(&this->mmu.sram, ptr, chunkSize);
+                memcpy(&this->mmu->sram, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "SCC")) {
                 if (this->scc) {
                     putlog("extract SCC (%d bytes)", chunkSize);
@@ -778,18 +799,18 @@ class MSX2
                 }
             } else if (0 == strcmp(chunk, "PSG")) {
                 putlog("extract PSG (%d bytes)", chunkSize);
-                memcpy(&this->psg.ctx, ptr, chunkSize);
+                memcpy(&this->psg->ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "RTC")) {
                 putlog("extract RTC (%d bytes)", chunkSize);
-                memcpy(&this->clock.ctx, ptr, chunkSize);
+                memcpy(&this->clock->ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "KNJ")) {
                 putlog("extract KNJ (%d bytes)", chunkSize);
-                memcpy(&this->kanji.ctx, ptr, chunkSize);
+                memcpy(&this->kanji->ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "VDP")) {
                 putlog("extract VDP (%d bytes)", chunkSize);
-                memcpy(&this->vdp.ctx, ptr, chunkSize);
-                this->vdp.updateAllPalettes();
-                this->vdp.updateEventTables();
+                memcpy(&this->vdp->ctx, ptr, chunkSize);
+                this->vdp->updateAllPalettes();
+                this->vdp->updateEventTables();
             } else if (0 == strcmp(chunk, "FDC")) {
                 if (this->fdc) {
                     putlog("extract FDC (%d bytes)", chunkSize);
@@ -828,12 +849,12 @@ class MSX2
   private:
     void writeSaveChunk(const char* name, const void* data, int size)
     {
-        memcpy(&this->quickSaveBuffer[this->quickSaveBufferSize], name, 4);
-        this->quickSaveBufferSize += 4;
-        memcpy(&this->quickSaveBuffer[this->quickSaveBufferSize], &size, 4);
-        this->quickSaveBufferSize += 4;
-        memcpy(&this->quickSaveBuffer[this->quickSaveBufferSize], data, size);
-        this->quickSaveBufferSize += size;
+        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferSize], name, 4);
+        this->ib->quickSaveBufferSize += 4;
+        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferSize], &size, 4);
+        this->ib->quickSaveBufferSize += 4;
+        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferSize], data, size);
+        this->ib->quickSaveBufferSize += size;
     }
 };
 

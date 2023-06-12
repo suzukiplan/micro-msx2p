@@ -250,7 +250,7 @@ extern "C" void emu_vsync()
     } else {
         msx2.tick(emu_key, 0, emu_keycode);
     }
-    memcpy(emu_vram, msx2.vdp.display, sizeof(emu_vram));
+    memcpy(emu_vram, msx2.getDisplay(), sizeof(emu_vram));
     
     size_t pcmSize;
     void* pcm = msx2.getSound(&pcmSize);
@@ -304,8 +304,8 @@ static void dump(const char* label, unsigned char* vram, int addr, int size)
 
 extern "C" void emu_dumpVideoMemory()
 {
-    unsigned char* vram = msx2.vdp.ctx.ram;
-    auto vdp = &msx2.vdp;
+    unsigned char* vram = msx2.vdp->ctx.ram;
+    auto vdp = msx2.vdp;
     printf("ScreenMode = %d\n", vdp->getScreenMode());
     printf("NameTable = $%04X\n", vdp->getNameTableAddress());
     printf("R#23(VS) = $%02X\n", vdp->ctx.reg[23]);
@@ -330,11 +330,11 @@ extern "C" void emu_startDebug()
     msx2.cpu->setDebugMessage([](void* arg, const char* msg) {
         auto msx2 = (MSX2*)arg;
         printf("[%d-%d:%d-%d:%d-%d:%d-%d] L=%3d %s\n",
-               msx2->mmu.ctx.pri[0], msx2->mmu.ctx.sec[0],
-               msx2->mmu.ctx.pri[1], msx2->mmu.ctx.sec[1],
-               msx2->mmu.ctx.pri[2], msx2->mmu.ctx.sec[2],
-               msx2->mmu.ctx.pri[3], msx2->mmu.ctx.sec[3],
-               msx2->vdp.ctx.countV,
+               msx2->mmu->ctx.pri[0], msx2->mmu->ctx.sec[0],
+               msx2->mmu->ctx.pri[1], msx2->mmu->ctx.sec[1],
+               msx2->mmu->ctx.pri[2], msx2->mmu->ctx.sec[2],
+               msx2->mmu->ctx.pri[3], msx2->mmu->ctx.sec[3],
+               msx2->vdp->ctx.countV,
                msg);
     });
 }
@@ -361,12 +361,12 @@ void emu_quickLoad(const void* data, size_t size)
 
 const void* emu_getRAM(void)
 {
-    return msx2.mmu.ram;
+    return msx2.mmu->ram;
 }
 
 const void* emu_getVRAM(void)
 {
-    return msx2.vdp.ctx.ram;
+    return msx2.vdp->ctx.ram;
 }
 
 typedef struct BitmapHeader_ {
@@ -394,8 +394,8 @@ const void* emu_getBitmapSprite(size_t* size) {
         0b00000010,
         0b00000001};
     static unsigned char buf[14 + 40 + 4 * 256 + 128 * 128];
-    int sg = msx2.vdp.getSpriteGeneratorTable();
-    unsigned char* vram = msx2.vdp.ctx.ram;
+    int sg = msx2.vdp->getSpriteGeneratorTable();
+    unsigned char* vram = msx2.vdp->ctx.ram;
     int iSize = (int)sizeof(buf);
     *size = iSize;
     memset(buf, 0, sizeof(buf));
@@ -450,7 +450,7 @@ const void* emu_getBitmapSprite(size_t* size) {
 }
 
 const void* emu_getBitmapVRAM(size_t* size) {
-    auto screenMode = msx2.vdp.getScreenMode();
+    auto screenMode = msx2.vdp->getScreenMode();
     switch (screenMode) {
         case 0b00011: // Graphic4
         {
@@ -483,7 +483,7 @@ const void* emu_getBitmapVRAM(size_t* size) {
             memcpy(&buf[ptr], &header, sizeof(header));
             ptr += sizeof(header);
             for (int i = 0; i < 16; i++) {
-                unsigned short pal = msx2.vdp.palette[i];
+                unsigned short pal = msx2.vdp->palette[i];
                 buf[ptr++] = (unsigned char)((pal & 0b0000000000011111) << 3);
                 buf[ptr++] = (unsigned char)((pal & 0b0000001111100000) >> 2);
                 buf[ptr++] = (unsigned char)((pal & 0b0111110000000000) >> 7);
@@ -497,7 +497,7 @@ const void* emu_getBitmapVRAM(size_t* size) {
             }
             for (int vptr = 1023 * 0x80; 0 <= vptr; vptr -= 0x80) {
                 for (int i = 0; i < 256; i++) {
-                    unsigned char v = msx2.vdp.ctx.ram[vptr + i / 2];
+                    unsigned char v = msx2.vdp->ctx.ram[vptr + i / 2];
                     v >>= i & 1 ? 0 : 4;
                     v &= 0x0F;
                     buf[ptr++] = v;
@@ -536,7 +536,7 @@ const void* emu_getBitmapVRAM(size_t* size) {
             memcpy(&buf[ptr], &header, sizeof(header));
             ptr += sizeof(header);
             for (int i = 0; i < 4; i++) {
-                unsigned short pal = msx2.vdp.palette[i];
+                unsigned short pal = msx2.vdp->palette[i];
                 buf[ptr++] = (unsigned char)((pal & 0b0000000000011111) << 3);
                 buf[ptr++] = (unsigned char)((pal & 0b0000001111100000) >> 2);
                 buf[ptr++] = (unsigned char)((pal & 0b0111110000000000) >> 7);
@@ -550,7 +550,7 @@ const void* emu_getBitmapVRAM(size_t* size) {
             }
             for (int vptr = 1023 * 0x80; 0 <= vptr; vptr -= 0x80) {
                 for (int i = 0; i < 512; i++) {
-                    unsigned char v = msx2.vdp.ctx.ram[vptr + i / 4];
+                    unsigned char v = msx2.vdp->ctx.ram[vptr + i / 4];
                     switch (i & 3) {
                         case 0: v >>= 6; break;
                         case 1: v >>= 4; break;
@@ -593,7 +593,7 @@ const void* emu_getBitmapVRAM(size_t* size) {
             memcpy(&buf[ptr], &header, sizeof(header));
             ptr += sizeof(header);
             for (int i = 0; i < 16; i++) {
-                unsigned short pal = msx2.vdp.palette[i];
+                unsigned short pal = msx2.vdp->palette[i];
                 buf[ptr++] = (unsigned char)((pal & 0b0000000000011111) << 3);
                 buf[ptr++] = (unsigned char)((pal & 0b0000001111100000) >> 2);
                 buf[ptr++] = (unsigned char)((pal & 0b0111110000000000) >> 7);
@@ -607,7 +607,7 @@ const void* emu_getBitmapVRAM(size_t* size) {
             }
             for (int vptr = 511 * 0x100; 0 <= vptr; vptr -= 0x100) {
                 for (int i = 0; i < 512; i++) {
-                    unsigned char v = msx2.vdp.ctx.ram[vptr + i / 2];
+                    unsigned char v = msx2.vdp->ctx.ram[vptr + i / 2];
                     v >>= i & 1 ? 0 : 4;
                     v &= 0x0F;
                     buf[ptr++] = v;
@@ -646,7 +646,7 @@ const void* emu_getBitmapVRAM(size_t* size) {
             memcpy(&buf[ptr], &header, sizeof(header));
             ptr += sizeof(header);
             for (int i = 0; i < 256; i++) {
-                unsigned short pal = msx2.vdp.convertColor_8bit_to_16bit((unsigned char) i);
+                unsigned short pal = msx2.vdp->convertColor_8bit_to_16bit((unsigned char) i);
                 buf[ptr++] = (unsigned char)((pal & 0b0000000000011111) << 3);
                 buf[ptr++] = (unsigned char)((pal & 0b0000001111100000) >> 2);
                 buf[ptr++] = (unsigned char)((pal & 0b0111110000000000) >> 7);
@@ -654,7 +654,7 @@ const void* emu_getBitmapVRAM(size_t* size) {
             }
             for (int vptr = 511 * 0x100; 0 <= vptr; vptr -= 0x100) {
                 for (int i = 0; i < 256; i++) {
-                    buf[ptr++] = msx2.vdp.ctx.ram[vptr + i];
+                    buf[ptr++] = msx2.vdp->ctx.ram[vptr + i];
                 }
             }
             return buf;
@@ -704,7 +704,7 @@ const void* emu_getBitmapScreen(size_t* size) {
     ptr += sizeof(header);
     for (int y = 0; y < 240; y++) {
         for (int x = 0; x < 568; x++) {
-            auto col = msx2.vdp.display[(239 - y) * 568 + x];
+            auto col = msx2.getDisplay()[(239 - y) * 568 + x];
             buf[ptr++] = bit5_to_bit8(col & 0b0000000000011111);
             buf[ptr++] = bit5_to_bit8((col & 0b0000001111100000) >> 5);
             buf[ptr++] = bit5_to_bit8((col & 0b0111110000000000) >> 10);
