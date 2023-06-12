@@ -2,12 +2,18 @@
 
 - コマンドラインで MSX-BASIC の実行結果を確認できるツールです
 - 本プログラムを動作させるには MSX2+ の BIOS ファイルが必要です
-- CLANG と GNU MAKE が動く OS なら問題なく動作する筈です
+- だいたいの OS で問題なく動作する筈です
 
 ## Pre-requests
 
+### UNIX, Linux, macOS
+
 - CLANG C++
 - GNU MAKE
+
+### Windows (Visual C++ Platform SDK)
+
+- Visual C++ Platform SDK (CLI)
 
 ## Setup BIOS files
 
