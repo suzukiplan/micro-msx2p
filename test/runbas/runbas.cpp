@@ -105,13 +105,17 @@ const void* getBitmapScreen(MSX2* msx2, size_t* size) {
 
 void typeText(MSX2* msx2, const char* text)
 {
+    size_t soundSize;
     while (*text) {
         msx2->ctx.readKey = 0;
         while (msx2->ctx.readKey < 1) {
             msx2->tick(0, 0, *text);
+            msx2->getSound(&soundSize);
         }
         msx2->tick(0, 0, 0);
+        msx2->getSound(&soundSize);
         msx2->tick(0, 0, 0);
+        msx2->getSound(&soundSize);
         text++;
     }
 }
