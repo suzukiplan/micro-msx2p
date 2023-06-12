@@ -34,11 +34,13 @@ make
 ## How to Execute
 
 ```
-./runbas /path/to/file.bas [frames]
+./runbas [-f frames] [/path/to/file.bas]
 ```
 
 - `/path/to/file.bas` ... 実行する BASIC ファイル（※テキスト形式）
-- `frames` ... 実行フレーム数（省略時は `600` ≒ 10秒 を仮定）
+  - 省略時は[標準入力モード](#stdin-mode)で動作
+- `-f frames` ... 実行フレーム数
+  - 省略時は `600` ≒ 10秒 を仮定
 
 実行が成功するとカレントディレクトリに次のファイルが生成されます。
 
@@ -48,6 +50,13 @@ make
 なお、カレントディレクトリに `runbas.sav` が存在する環境では実行時間が（BASIC起動処理にかかる時間分）短縮されます。
 
 > `runbas.sav` の入出力ディレクトリは環境変数 `RUNBAS_PATH` の指定に依存します。
+
+### STDIN mode
+
+- `runbas` を BASIC ファイルを指定せずに実行すると標準入力モードで動作します。
+- 標準入力モードは次のいずれかの方法で抜けて実行することができます
+  - control + d (`^+d`)
+  - 空行を入力
 
 ## Example
 

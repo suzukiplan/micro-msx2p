@@ -116,18 +116,62 @@ void typeText(MSX2* msx2, const char* text)
     }
 }
 
+void trimstring(char* src)
+{
+    int i;
+    for (i = 0; ' ' == src[i] || '\t' == src[i]; i++) {
+        ;
+    }
+    if (i) {
+        memmove(src, &src[i], strlen(&src[i]) + 1);
+    }
+    for (int len = (int)strlen(src) - 1; 0 <= len && (' ' == src[len] || '\t' == src[len]); len--) {
+        src[len] = '\0';
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    if (argc < 2) {
-        puts("usage: runbas /path/to/file.bas [frames]");
+    struct Options {
+        const char* basFile;
+        int frames;
+    } opt;
+    memset(&opt, 0, sizeof(opt));
+    opt.frames = 600;
+    bool optError = false;
+    for (int i = 1; i < argc; i++) {
+        if ('-' == argv[i][0]) {
+            switch (argv[i][1]) {
+                case 'f':
+                    i++;
+                    if (argc <= i) {
+                        optError = true;
+                    } else {
+                        opt.frames = atoi(argv[i]);
+                    }
+                    break;
+               default:
+                    optError = true;
+                    break;
+            }
+        } else {
+            if (opt.basFile) {
+                optError = true;
+                break;
+            } else {
+                opt.basFile = argv[i];
+            }
+        }
+    } 
+    if (optError) {
+        puts("usage: runbas /path/to/file.bas [-f frames]");
         return -1;
     }
-    FILE* bas = fopen(argv[1], "r");
+    FILE* bas = opt.basFile ? fopen(argv[1], "r") : stdin;
     if (!bas) {
         printf("%s not found.\n", argv[1]);
         return -1;
     }
-    const int frames = 3 <= argc ? atoi(argv[2]) : 600;
 
     char path[4096];
     char* basePath = getenv("RUNBAS_PATH");
@@ -203,7 +247,11 @@ int main(int argc, char* argv[])
     }
 
     // プログラムを打ち込む
-    printf("Typing %s...\n", argv[1]);
+    if (opt.basFile) {
+        printf("Typing %s...\n", opt.basFile);
+    } else {
+        puts("[STDIN mode]");
+    }
     char buf[65536];
     while (fgets(buf, sizeof(buf), bas)) {
         // CRLF -> LF
@@ -213,16 +261,24 @@ int main(int argc, char* argv[])
             cr++;
             *cr = 0;
         }
-        typeText(msx2, buf);
+        trimstring(buf);
+        // 標準入力モードの場合は空行検出で抜ける
+        if (!opt.basFile && (0 == buf[0] || '\n' == buf[0])) {
+            break;
+        } else {
+            typeText(msx2, buf);
+        }
     }
-    fclose(bas);
+    if (opt.basFile) {
+        fclose(bas);
+    }
 
     // プログラムを実行
     typeText(msx2, "\n");
     puts("---------- START ----------");
     msx2->cpu->addBreakPoint(0xFDA4, [](void* arg) { putc(((MSX2*)arg)->cpu->reg.pair.A, stdout); });
     typeText(msx2, "RUN\n");
-    waitFrames(msx2, frames);
+    waitFrames(msx2, opt.frames);
     puts("----------- END -----------");
 
     // スクショをカレントディレクトリのresult.bmpに保存
