@@ -91,7 +91,7 @@ const void* getBitmapScreen(MSX2* msx2, size_t* size) {
     ptr += sizeof(header);
     for (int y = 0; y < 240; y++) {
         for (int x = 0; x < 568; x++) {
-            auto col = msx2->vdp.display[(239 - y) * 568 + x];
+            auto col = msx2->getDisplay()[(239 - y) * 568 + x];
             buf[ptr++] = bit5_to_bit8(col & 0b0000000000011111);
             buf[ptr++] = bit5_to_bit8((col & 0b0000001111100000) >> 5);
             buf[ptr++] = bit5_to_bit8((col & 0b0111110000000000) >> 10);
@@ -137,7 +137,7 @@ void trimstring(char* src)
 // カレントディレクトリにスクショ（result.bmp）を書き出す
 void writeResultBitmap(MSX2* msx2, const char* output)
 {
-    printf("Writing %s...", output);
+    printf("Writing %s...\n", output);
     size_t bitmapSize;
     const void* bitmap = getBitmapScreen(msx2, &bitmapSize);
     FILE* fp = fopen(output, "wb");
@@ -218,11 +218,11 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    MSX2* msx2 = new MSX2(MSX2_COLOR_MODE_RGB555);
-    msx2->setupSecondaryExist(false, false, false, true);
-    msx2->setupRAM(3, 0);
-    msx2->setup(0, 0, 0, msx2p, 0x8000, "MAIN");
-    msx2->setup(3, 1, 0, msx2pext, 0x4000, "SUB");
+    MSX2 msx2(MSX2_COLOR_MODE_RGB555);
+    msx2.setupSecondaryExist(false, false, false, true);
+    msx2.setupRAM(3, 0);
+    msx2.setup(0, 0, 0, msx2p, 0x8000, "MAIN");
+    msx2.setup(3, 1, 0, msx2pext, 0x4000, "SUB");
 
     // runbas.sav があればロード
     if (basePath) {
@@ -240,7 +240,7 @@ int main(int argc, char* argv[])
             void* saveData = malloc(saveSize);
             if (saveData) {
                 fread(saveData, 1, saveSize, sav);
-                msx2->quickLoad(saveData, saveSize);
+                msx2.quickLoad(saveData, saveSize);
                 free(saveData);
                 loaded = true;
                 puts("Loaded runbas.sav");
@@ -252,12 +252,12 @@ int main(int argc, char* argv[])
     if (!loaded) {
         // BASICの起動を待機
         puts("Waiting for launch MSX-BASIC...");
-        msx2->reset();
-        waitFrames(msx2, 600);
+        msx2.reset();
+        waitFrames(&msx2, 600);
 
         // BASIC起動後の状態を runbas.sav に保持
         size_t saveSize;
-        const void* saveData = msx2->quickSave(&saveSize);
+        const void* saveData = msx2.quickSave(&saveSize);
         sav = fopen(path, "wb");
         if (sav) {
             fwrite(saveData, 1, saveSize, sav);
@@ -285,7 +285,7 @@ int main(int argc, char* argv[])
         if (!opt.basFile && (0 == buf[0] || '\n' == buf[0])) {
             break;
         } else {
-            typeText(msx2, buf);
+            typeText(&msx2, buf);
         }
     }
     if (opt.basFile) {
@@ -293,10 +293,10 @@ int main(int argc, char* argv[])
     }
 
     // プログラムを実行
-    typeText(msx2, "\n");
+    typeText(&msx2, "\n");
     puts("---------- START ----------");
     int errorIndex = 0;
-    msx2->cpu->addBreakPoint(0xFDA4, [&](void* arg) {
+    msx2.cpu->addBreakPoint(0xFDA4, [&](void* arg) {
         char c = (char)(((MSX2*)arg)->cpu->reg.pair.A);
         putc(c, stdout);
         if (opt.error) {
@@ -311,12 +311,11 @@ int main(int argc, char* argv[])
             }
         }
     });
-    typeText(msx2, "RUN\n");
-    waitFrames(msx2, opt.frames);
+    typeText(&msx2, "RUN\n");
+    waitFrames(&msx2, opt.frames);
     puts("----------- END -----------");
-    writeResultBitmap(msx2, opt.output);
+    writeResultBitmap(&msx2, opt.output);
     free(msx2p);
     free(msx2pext);
-    delete msx2;
     return 0;
 }
