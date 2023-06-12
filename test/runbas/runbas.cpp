@@ -131,12 +131,12 @@ void trimstring(char* src)
 }
 
 // カレントディレクトリにスクショ（result.bmp）を書き出す
-void writeResultBitmap(MSX2* msx2)
+void writeResultBitmap(MSX2* msx2, const char* output)
 {
-    puts("Writing result.bmp...");
+    printf("Writing %s...", output);
     size_t bitmapSize;
     const void* bitmap = getBitmapScreen(msx2, &bitmapSize);
-    FILE* fp = fopen("result.bmp", "wb");
+    FILE* fp = fopen(output, "wb");
     fwrite(bitmap, 1, bitmapSize, fp);
     fclose(fp);
 }
@@ -146,10 +146,12 @@ int main(int argc, char* argv[])
     struct Options {
         const char* basFile;
         const char* error;
+        const char* output;
         int frames;
     } opt;
     memset(&opt, 0, sizeof(opt));
     opt.frames = 600;
+    opt.output = "result.bmp";
     bool optError = false;
     for (int i = 1; i < argc; i++) {
         if ('-' == argv[i][0]) {
@@ -160,6 +162,7 @@ int main(int argc, char* argv[])
                 switch (argv[i - 1][1]) {
                     case 'f': opt.frames = atoi(argv[i]); break;
                     case 'e': opt.error = argv[i]; break;
+                    case 'o': opt.output = argv[i]; break;
                     default: optError = true;
                 }
             }
@@ -173,7 +176,10 @@ int main(int argc, char* argv[])
         }
     } 
     if (optError) {
-        puts("usage: runbas [-f frames] [-e message] [/path/to/file.bas]");
+        puts("usage: runbas [-f frames]");
+        puts("              [-e message]");
+        puts("              [-o /path/to/result.bmp]");
+        puts("              [/path/to/file.bas]");
         return -1;
     }
     FILE* bas = opt.basFile ? fopen(argv[1], "r") : stdin;
@@ -304,7 +310,7 @@ int main(int argc, char* argv[])
     typeText(msx2, "RUN\n");
     waitFrames(msx2, opt.frames);
     puts("----------- END -----------");
-    writeResultBitmap(msx2);
+    writeResultBitmap(msx2, opt.output);
     free(msx2p);
     free(msx2pext);
     delete msx2;
