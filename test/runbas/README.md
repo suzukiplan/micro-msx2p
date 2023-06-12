@@ -34,13 +34,15 @@ make
 ## How to Execute
 
 ```
-./runbas [-f frames] [/path/to/file.bas]
+./runbas [-f frames] [-e message] [/path/to/file.bas]
 ```
 
-- `/path/to/file.bas` ... 実行する BASIC ファイル（※テキスト形式）
-  - 省略時は[標準入力モード](#stdin-mode)で動作
 - `-f frames` ... 実行フレーム数
   - 省略時は `600` ≒ 10秒 を仮定
+- `-e message` ... `message` の出力を検出したらコマンドを異常終了させる
+  - 自動テスト（CI）などで利用する想定
+- `/path/to/file.bas` ... 実行する BASIC ファイル（※テキスト形式）
+  - 省略時は[標準入力モード](#stdin-mode)で動作
 
 実行が成功するとカレントディレクトリに次のファイルが生成されます。
 
