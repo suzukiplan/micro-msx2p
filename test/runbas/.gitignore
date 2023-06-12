@@ -1,5 +1,7 @@
 *.ROM
 *.bas
+*.obj
+*.exe
 runbas.sav
 runbas
 emu2413.o
