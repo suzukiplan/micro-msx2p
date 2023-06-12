@@ -40,13 +40,13 @@ usage: runbas [-f frames]
               [/path/to/file.bas]
 ```
 
-- `-f frames` ... 実行フレーム数
+- `[-f frames]` ... 実行フレーム数
   - 省略時は `600` ≒ 10秒 を仮定
-- `-e message` ... `message` の出力を検出したらコマンドを異常終了させる
+- `[-e message]` ... `message` の出力を検出したらコマンドを異常終了させる
   - 自動テスト（CI）などで利用する想定
 - `[-o /path/to/result.bmp]` ... 実行後のスクリーンショット（bmpファイル）の出力先
   - 省略時は `result.bmp` を仮定 
-- `/path/to/file.bas` ... 実行する BASIC ファイル（※テキスト形式）
+- `[/path/to/file.bas]` ... 実行する BASIC ファイル（※テキスト形式）
   - 省略時は[標準入力モード](#stdin-mode)で動作
 
 実行が成功するとカレントディレクトリに次のファイルが生成されます。
