@@ -27,8 +27,16 @@ export RUNBAS_PATH=/path/to/bios/dir
 
 ## How to Build
 
+### UNIX, Linux, macOS
+
 ```bash
 make
+```
+
+### Windows (Visual C++ Platform SDK)
+
+```bash
+nmake /f Makefile.win
 ```
 
 ## How to Execute
