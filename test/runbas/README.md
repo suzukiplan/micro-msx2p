@@ -11,7 +11,7 @@
 - CLANG C++
 - GNU MAKE
 
-### Windows (Visual C++ Platform SDK)
+### Windows
 
 - Visual C++ Platform SDK (CLI)
 
@@ -39,7 +39,7 @@ export RUNBAS_PATH=/path/to/bios/dir
 make
 ```
 
-### Windows (Visual C++ Platform SDK)
+### Windows
 
 ```bash
 nmake /f Makefile.win
