@@ -1,5 +1,6 @@
 *.ROM
 *.bas
+*.dsk
 *.obj
 *.exe
 runbas.sav

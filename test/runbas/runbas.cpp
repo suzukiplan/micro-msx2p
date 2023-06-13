@@ -151,6 +151,9 @@ int main(int argc, char* argv[])
         const char* basFile;
         const char* error;
         const char* output;
+        const char* diskImage;
+        void* diskImageRaw;
+        size_t diskImageSize;
         int frames;
     } opt;
     memset(&opt, 0, sizeof(opt));
@@ -166,6 +169,7 @@ int main(int argc, char* argv[])
                 switch (argv[i - 1][1]) {
                     case 'f': opt.frames = atoi(argv[i]); break;
                     case 'e': opt.error = argv[i]; break;
+                    case 'd': opt.diskImage = argv[i]; break;
                     case 'o': opt.output = argv[i]; break;
                     default: optError = true;
                 }
@@ -182,6 +186,7 @@ int main(int argc, char* argv[])
     if (optError) {
         puts("usage: runbas [-f frames]");
         puts("              [-e message]");
+        puts("              [-d /path/to/image.dsk]");
         puts("              [-o /path/to/result.bmp]");
         puts("              [/path/to/file.bas]");
         return -1;
@@ -194,6 +199,8 @@ int main(int argc, char* argv[])
 
     char path[4096];
     char* basePath = getenv("RUNBAS_PATH");
+
+    // MSX2P.ROM をロード（required）
     if (basePath) {
         snprintf(path, sizeof(path), "%s/MSX2P.ROM", basePath);
     } else {
@@ -205,6 +212,8 @@ int main(int argc, char* argv[])
         fclose(bas);
         return -1;
     }
+
+    // MSX2PEXT.ROM をロード（required）
     if (basePath) {
         snprintf(path, sizeof(path), "%s/MSX2PEXT.ROM", basePath);
     } else {
@@ -218,35 +227,72 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    // DISK.ROM をロード（-dオプション指定時のみ）
+    unsigned char* disk = nullptr;
+    unsigned char empty[0x4000];
+    memset(empty, 0, sizeof(empty));
+    if (opt.diskImage) {
+        if (basePath) {
+            snprintf(path, sizeof(path), "%s/DISK.ROM", basePath);
+        } else {
+            strcpy(path, "DISK.ROM");
+        }
+        disk = (unsigned char*)loadBinaryFile(path);
+        if (!disk) {
+            puts("Could not open: DISK.ROM");
+            free(msx2pext);
+            free(msx2p);
+            fclose(bas);
+            return -1;
+        }
+        opt.diskImageRaw = loadBinaryFile(opt.diskImage, &opt.diskImageSize);
+        if (!opt.diskImageRaw) {
+            printf("Could not open: %s\n", opt.diskImage);
+            free(msx2pext);
+            free(msx2p);
+            fclose(bas);
+            return -1;
+        }
+    }
+
     MSX2 msx2(MSX2_COLOR_MODE_RGB555);
     msx2.setupSecondaryExist(false, false, false, true);
     msx2.setupRAM(3, 0);
     msx2.setup(0, 0, 0, msx2p, 0x8000, "MAIN");
     msx2.setup(3, 1, 0, msx2pext, 0x4000, "SUB");
-
-    // runbas.sav があればロード
-    if (basePath) {
-        snprintf(path, sizeof(path), "%s/runbas.sav", basePath);
-    } else {
-        strcpy(path, "runbas.sav");
-    }
-    FILE* sav = fopen(path, "rb");
     bool loaded = false;
-    if (sav) {
-        fseek(sav, 0, SEEK_END);
-        long saveSize = ftell(sav);
-        if (0 < saveSize) {
-            fseek(sav, 0, SEEK_SET);
-            void* saveData = malloc(saveSize);
-            if (saveData) {
-                fread(saveData, 1, saveSize, sav);
-                msx2.quickLoad(saveData, saveSize);
-                free(saveData);
-                loaded = true;
-                puts("Loaded runbas.sav");
-            }
+    if (disk) {
+        // ディスク使用時はシステムに認識させるため常にステートロードしない
+        msx2.setup(3, 2, 0, empty, 0x4000, "DISK");
+        msx2.setup(3, 2, 2, disk, 0x4000, "DISK");
+        msx2.setup(3, 2, 4, empty, 0x4000, "DISK");
+        msx2.setup(3, 2, 6, empty, 0x4000, "DISK");
+        msx2.insertDisk(0, opt.diskImageRaw, opt.diskImageSize, false);
+        printf("Insert disk: %s\n", opt.diskImage);
+    } else {
+        // runbas.sav があればロード
+        if (basePath) {
+            snprintf(path, sizeof(path), "%s/runbas.sav", basePath);
+        } else {
+            strcpy(path, "runbas.sav");
         }
-        fclose(sav);
+        FILE* sav = fopen(path, "rb");
+        if (sav) {
+            fseek(sav, 0, SEEK_END);
+            long saveSize = ftell(sav);
+            if (0 < saveSize) {
+                fseek(sav, 0, SEEK_SET);
+                void* saveData = malloc(saveSize);
+                if (saveData) {
+                    fread(saveData, 1, saveSize, sav);
+                    msx2.quickLoad(saveData, saveSize);
+                    free(saveData);
+                    loaded = true;
+                    puts("Loaded runbas.sav");
+                }
+            }
+            fclose(sav);
+        }
     }
 
     if (!loaded) {
@@ -256,12 +302,15 @@ int main(int argc, char* argv[])
         waitFrames(&msx2, 600);
 
         // BASIC起動後の状態を runbas.sav に保持
-        size_t saveSize;
-        const void* saveData = msx2.quickSave(&saveSize);
-        sav = fopen(path, "wb");
-        if (sav) {
-            fwrite(saveData, 1, saveSize, sav);
-            fclose(sav);
+        if (!disk) {
+            size_t saveSize;
+            const void* saveData = msx2.quickSave(&saveSize);
+            FILE* sav = fopen(path, "wb");
+            if (sav) {
+                fwrite(saveData, 1, saveSize, sav);
+                fclose(sav);
+                puts("Saved runbas.sav");
+            }
         }
     }
 
@@ -317,5 +366,7 @@ int main(int argc, char* argv[])
     writeResultBitmap(&msx2, opt.output);
     free(msx2p);
     free(msx2pext);
+    if (disk) free(disk);
+    if (opt.diskImageRaw) free(opt.diskImageRaw);
     return 0;
 }

@@ -22,6 +22,10 @@
 - `MSX2P.ROM` メイン BIOS
 - `MSX2PEXT.ROM` サブ BIOS
 
+また、必須ではないですが以下の BIOS を使用することもできます。
+
+- `DISK.ROM` 東芝製 FDC のディスク BIOS (-dオプション利用時のみ)
+
 > 吸い出した機種によってはこの手順では正常に動作しないことがあります。その場合、[こちら](https://github.com/suzukiplan/micro-msx2p#2-2-setup-slot) を参考にして必要な BIOS ファイルの追加と `setup` の修正をすることで動作する場合があります。（起動時に BASIC が起動せずに初期ユーティリティが動作する機種の場合、BASIC を起動するように操作処理を追加する必要があることもあります）
 
 なお、環境変数 `RUNBAS_PATH` を指定することで、BIOSファイルの読み込み先ディレクトリを指定することができます。
@@ -50,6 +54,7 @@ nmake /f Makefile.win
 ```
 usage: runbas [-f frames]
               [-e message]
+              [-d /path/to/image.dsk]
               [-o /path/to/result.bmp]
               [/path/to/file.bas]
 ```
@@ -58,6 +63,11 @@ usage: runbas [-f frames]
   - 省略時は `600` ≒ 10秒 を仮定
 - `[-e message]` ... `message` の出力を検出したらコマンドを異常終了させる
   - 自動テスト（CI）などで利用する想定
+- `[-d /path/to/image.dsk]` ... ディスクイメージを使用する
+  - 本オプションで動作させた場合 `runbas.sav` の入出力は行われません
+  - 本オプションで動作させるには DISK.ROM が必要です
+  - DISK.ROM は東芝製 FDC (TC8566AF) のもののみ利用できます
+  - 未対応の DISK.ROM (Philips 製 FDC など) を用いた場合 `Illegal function call` でファイル I/O 命令が失敗します
 - `[-o /path/to/result.bmp]` ... 実行後のスクリーンショット（bmpファイル）の出力先
   - 省略時は `result.bmp` を仮定 
 - `[/path/to/file.bas]` ... 実行する BASIC ファイル（※テキスト形式）
