@@ -36,6 +36,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
 @property (nonatomic) NSData* rom;
 @property (nonatomic) BOOL isFullScreen;
 @property (nonatomic, nullable) NSData* saveData;
+@property (nonatomic, weak) NSMenuItem* menuReset;
 @property (nonatomic, weak) NSMenuItem* menuOpenROM;
 @property (nonatomic, weak) NSMenuItem* menuInsertDisk1;
 @property (nonatomic, weak) NSMenuItem* menuEjectDisk1;
@@ -128,6 +129,8 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
                 _menuReplayRecordedPlaylog = sub;
             } else if ([sub.identifier isEqualToString:@"StopReplayPlaylog"]) {
                 _menuStopReplayPlaylog = sub;
+            } else if ([sub.identifier isEqualToString:@"Reset"]) {
+                _menuReset = sub;
             }
         }
     }
@@ -136,6 +139,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
 
 - (void)_setMenuItemEnabledForDefault
 {
+    [_menuReset setEnabled:YES];
     [_menuOpenROM setEnabled:YES];
     [_menuInsertDisk1 setEnabled:YES];
     [_menuEjectDisk1 setEnabled:YES];
@@ -151,6 +155,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
 
 - (void)_setMenuItemEnabledForStartRecoding
 {
+    [_menuReset setEnabled:NO];
     [_menuOpenROM setEnabled:NO];
     [_menuInsertDisk1 setEnabled:NO];
     [_menuEjectDisk1 setEnabled:NO];
@@ -166,6 +171,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
 
 - (void)_setMenuItemEnabledForStartReplay
 {
+    [_menuReset setEnabled:NO];
     [_menuOpenROM setEnabled:NO];
     [_menuInsertDisk1 setEnabled:NO];
     [_menuEjectDisk1 setEnabled:NO];

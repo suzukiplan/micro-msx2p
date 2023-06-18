@@ -48,7 +48,7 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="kCx-OE-vgT"/>
-                                        <menuItem title="Reset" keyEquivalent="r" id="APx-PU-rQR">
+                                        <menuItem title="Reset" keyEquivalent="r" identifier="Reset" id="APx-PU-rQR">
                                             <connections>
                                                 <action selector="menuReset:" target="Ady-hI-5gd" id="WNr-sL-Y5i"/>
                                             </connections>
