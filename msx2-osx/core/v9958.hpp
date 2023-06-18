@@ -952,10 +952,20 @@ class V9958
         this->incrementAddress();
     }
 
+    inline bool isTMS9918ACompatMode() {
+        switch (this->getScreenMode()) {
+            case 0b00000: return true; // GRAPHIC1
+            case 0b00001: return true; // GRAPHIC2
+            case 0b01000: return true; // MULTI COLOR
+            case 0b10000: return true; // TEXT1
+            default: return false;
+        }
+    }
+
     inline void incrementAddress()
     {
         this->ctx.addr++;
-        this->ctx.addr &= 0x1FFFF;
+        this->ctx.addr &= this->isTMS9918ACompatMode() ? 0x3FFF : 0x1FFFF;
         unsigned char r14 = (this->ctx.addr >> 14) & 0b00000111;
         if (r14 != this->ctx.reg[14]) {
             this->ctx.reg[14] = r14;
