@@ -132,14 +132,14 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="ss1-Do-7mZ"/>
-                                        <menuItem title="Start Recording Playlog" identifier="StartRecordingPlaylog" id="3AQ-Kn-n0H">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                        <menuItem title="Start Recording Playlog" keyEquivalent="&lt;" identifier="StartRecordingPlaylog" id="3AQ-Kn-n0H">
+                                            <modifierMask key="keyEquivalentModifierMask" shift="YES" command="YES"/>
                                             <connections>
                                                 <action selector="menuStartRcodingPlaylog:" target="Ady-hI-5gd" id="i24-Kj-1he"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Stop Recording Playlog" identifier="StopRecordingPlaylog" id="nqK-92-Wbq" userLabel="Stop Recoding Playlog">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                        <menuItem title="Stop Recording Playlog" keyEquivalent="&gt;" identifier="StopRecordingPlaylog" id="nqK-92-Wbq" userLabel="Stop Recoding Playlog">
+                                            <modifierMask key="keyEquivalentModifierMask" shift="YES" command="YES"/>
                                             <connections>
                                                 <action selector="menuStopRcodingPlaylog:" target="Ady-hI-5gd" id="iC9-wC-Gpv"/>
                                             </connections>
