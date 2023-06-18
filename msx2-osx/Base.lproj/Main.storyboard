@@ -66,29 +66,29 @@
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" title="File" id="bib-Uj-vzu">
                                     <items>
-                                        <menuItem title="Open ROM file" keyEquivalent="o" id="eRI-UE-Fgx">
+                                        <menuItem title="Open ROM file" keyEquivalent="o" identifier="OpenROM" id="eRI-UE-Fgx">
                                             <connections>
                                                 <action selector="menuOpenRomFile:" target="Ady-hI-5gd" id="PxJ-JT-NZl"/>
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="0ji-NX-QrA"/>
-                                        <menuItem title="Insert Disk to A drive" keyEquivalent="1" id="Bq6-qW-51a">
+                                        <menuItem title="Insert Disk to A drive" keyEquivalent="1" identifier="InsertDisk1" id="Bq6-qW-51a">
                                             <connections>
                                                 <action selector="menuInsertDiskA:" target="Ady-hI-5gd" id="ymy-bJ-me4"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Eject Disk from A drive" keyEquivalent="e" id="JZR-Da-SrY">
+                                        <menuItem title="Eject Disk from A drive" keyEquivalent="e" identifier="EjectDisk1" id="JZR-Da-SrY">
                                             <connections>
                                                 <action selector="menuEjectDiskA:" target="Ady-hI-5gd" id="a7L-sh-8TW"/>
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="Z4Z-UG-yYf"/>
-                                        <menuItem title="Insert Disk to B drive" keyEquivalent="2" id="PWm-EB-LXg">
+                                        <menuItem title="Insert Disk to B drive" keyEquivalent="2" identifier="InsertDisk2" id="PWm-EB-LXg">
                                             <connections>
                                                 <action selector="menuInsertDiskB:" target="Ady-hI-5gd" id="K34-qR-DJz"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Eject Disk from B drive" id="EUX-pb-Grl">
+                                        <menuItem title="Eject Disk from B drive" identifier="EjectDisk2" id="EUX-pb-Grl">
                                             <modifierMask key="keyEquivalentModifierMask"/>
                                             <connections>
                                                 <action selector="menuEjectDiskB:" target="Ady-hI-5gd" id="QA6-0G-KQz"/>
@@ -100,7 +100,7 @@
                                                 <action selector="menuQuickSave:" target="Ady-hI-5gd" id="T4J-v3-OFm"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Quick Load" keyEquivalent="l" id="hby-2u-CfZ">
+                                        <menuItem title="Quick Load" keyEquivalent="l" identifier="QuickLoad" id="hby-2u-CfZ">
                                             <connections>
                                                 <action selector="menuQuickLoad:" target="Ady-hI-5gd" id="LWJ-X8-Rg9"/>
                                             </connections>
@@ -129,6 +129,31 @@
                                         <menuItem title="Save Sprite Pattern" keyEquivalent="g" id="URz-nq-hv5">
                                             <connections>
                                                 <action selector="menuSaveSpritePattern:" target="Ady-hI-5gd" id="GIo-Hp-STo"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="ss1-Do-7mZ"/>
+                                        <menuItem title="Start Recording Playlog" identifier="StartRecordingPlaylog" id="3AQ-Kn-n0H">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="menuStartRcodingPlaylog:" target="Ady-hI-5gd" id="i24-Kj-1he"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Stop Recording Playlog" identifier="StopRecordingPlaylog" id="nqK-92-Wbq" userLabel="Stop Recoding Playlog">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="menuStopRcodingPlaylog:" target="Ady-hI-5gd" id="iC9-wC-Gpv"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Replay Recorded Playlog" identifier="ReplayRecordedPlaylog" id="Jmr-Dx-GB6">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="menuReplayRecordedPlaylog:" target="Ady-hI-5gd" id="Pbg-U0-oDl"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Stop Replay Playlog" identifier="StopReplayPlaylog" id="cAT-Yo-Tuo">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="menuStopReplayPlaylog:" target="Ady-hI-5gd" id="ryd-r4-YnM"/>
                                             </connections>
                                         </menuItem>
                                     </items>

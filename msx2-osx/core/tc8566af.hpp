@@ -144,6 +144,20 @@ class TC8566AF
         this->reset();
     }
 
+    const void* getDriveData(int driveId, size_t* size, bool* isReadOnly)
+    {
+        *size = 0;
+        *isReadOnly = false;
+        if (driveId < 0 || NUMBER_OF_DRIVES <= driveId) {
+            return nullptr;
+        } else if (0 < this->drives[driveId].size) {
+            *size = this->drives[driveId].size;
+            *isReadOnly = this->drives[driveId].readOnly;
+            return this->drives[driveId].sectors;
+        }
+        return nullptr;
+    }
+
     void setDiskReadListener(void* arg, void (*diskReadListener)(void* arg, int driveId, int sector))
     {
         this->CB.arg = arg;

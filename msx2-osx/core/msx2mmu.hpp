@@ -134,6 +134,18 @@ class MSX2MMU
         this->ctx.mmap[3] = 0;
     }
 
+    void clearCartridge()
+    {
+        this->cartridge.ptr = nullptr;
+        this->cartridge.size = 0;
+        this->cartridge.romType = 0;
+        memset(this->ctx.cpos, 0, sizeof(this->ctx.cpos));
+        this->sccEnabled = false;
+        for (int pri = 1; pri <= 2; pri++) {
+            memset(&this->slots[pri][0], 0, sizeof(Slot));
+        }
+    }
+
     void setupCartridge(int pri, int sec, int idx, void* data, size_t size, int romType)
     {
         this->cartridge.ptr = (unsigned char*)data;

@@ -25,5 +25,9 @@
 -(IBAction)menuPause:(id)sender;
 -(IBAction)menuTypeFromClipboard:(id)sender;
 -(IBAction)menuLoggingOnce:(id)sender;
+-(IBAction)menuStartRcodingPlaylog:(id)sender;
+-(IBAction)menuStopRcodingPlaylog:(id)sender;
+-(IBAction)menuReplayRecordedPlaylog:(id)sender;
+-(IBAction)menuStopReplayPlaylog:(id)sender;
 @end
 

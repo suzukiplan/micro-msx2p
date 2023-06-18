@@ -426,6 +426,12 @@ class MSX2
         this->reset();
     }
 
+    void ejectRom()
+    {
+        this->mmu->clearCartridge();
+        this->reset();
+    }
+
     void insertDisk(int driveId, const void* data, size_t size, bool readOnly)
     {
         if (this->fdc) {
