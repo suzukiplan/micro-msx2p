@@ -32,6 +32,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
 @interface ViewController () <NSWindowDelegate>
 @property (nonatomic, weak) AppDelegate* appDelegate;
 @property (nonatomic) VideoView* video;
+@property (nonatomic) NSImageView* recIcon;
 @property (nonatomic) NSData* rom;
 @property (nonatomic) BOOL isFullScreen;
 @property (nonatomic, nullable) NSData* saveData;
@@ -53,7 +54,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
 {
     [super viewDidLoad];
     
-#if 1
+#if 0
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_main_msx2+_jp" ofType:@"rom"]];
     NSData* biosLogo = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_logo_msx2+" ofType:@"rom"]];
     NSData* biosSub = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_sub" ofType:@"rom"]];
@@ -95,6 +96,9 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     [self.view setLayer:layer];
     _video = [[VideoView alloc] initWithFrame:[self calcVramRect]];
     [self.view addSubview:_video];
+    _recIcon = [[NSImageView alloc] initWithFrame:CGRectMake(8, 8, 80, 16)];
+    _recIcon.image = [NSImage imageNamed:@"rec"];
+    [self.view addSubview:_recIcon];
     _appDelegate = (AppDelegate*)[NSApplication sharedApplication].delegate;
     [self.view.window makeFirstResponder:_video];
     
@@ -142,6 +146,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     [_menuStopRecordingPlaylog setEnabled:NO];
     [_menuReplayRecordedPlaylog setEnabled:YES];
     [_menuStopReplayPlaylog setEnabled:NO];
+    _recIcon.hidden = YES;
 }
 
 - (void)_setMenuItemEnabledForStartRecoding
@@ -156,6 +161,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     [_menuStopRecordingPlaylog setEnabled:YES];
     [_menuReplayRecordedPlaylog setEnabled:NO];
     [_menuStopReplayPlaylog setEnabled:NO];
+    _recIcon.hidden = NO;
 }
 
 - (void)_setMenuItemEnabledForStartReplay
@@ -170,6 +176,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     [_menuStopRecordingPlaylog setEnabled:NO];
     [_menuReplayRecordedPlaylog setEnabled:NO];
     [_menuStopReplayPlaylog setEnabled:YES];
+    _recIcon.hidden = YES;
 }
 
 - (void)viewWillAppear
