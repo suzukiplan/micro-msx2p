@@ -1,8 +1,12 @@
 #include "emu.h"
 #include "msx2.hpp"
 #include "vgsspu_al.h"
+#include "lz4.h"
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
+
+#define PLAYLOG_MAX_TICK_COUNT 655360
 
 extern "C" {
 unsigned short emu_vram[VRAM_WIDTH * VRAM_HEIGHT];
@@ -23,6 +27,29 @@ static struct TypeWriter {
     int size;
     int wait;
 } tw;
+
+static struct Playlog {
+    bool isRecording;
+    bool isReplay;
+    const void* disk1;
+    size_t disk1Size;
+    bool disk1ReadOnly;
+    const void* disk2;
+    size_t disk2Size;
+    bool disk2ReadOnly;
+    const void* rom;
+    size_t romSize;
+    int romType;
+    void* save;
+    size_t saveSize;
+    int tickCount;
+    unsigned char tickPad1[PLAYLOG_MAX_TICK_COUNT];
+    unsigned char tickPad2[PLAYLOG_MAX_TICK_COUNT];
+    unsigned char tickKey[PLAYLOG_MAX_TICK_COUNT];
+} playlog;
+
+static void* replayBuffer;
+static int replayTickPtr;
 
 extern "C" void emu_init_bios(const void* main,
                               const void* sub,
@@ -221,6 +248,17 @@ static void sound_callback(void* buffer, size_t size)
     pthread_mutex_unlock(&sound_locker);
 }
 
+static void tick(unsigned char pad1, unsigned char pad2, unsigned char key)
+{
+    if (playlog.isRecording && playlog.tickCount < PLAYLOG_MAX_TICK_COUNT) {
+        playlog.tickPad1[playlog.tickCount] = pad1;
+        playlog.tickPad2[playlog.tickCount] = pad2;
+        playlog.tickKey[playlog.tickCount] = key;
+        playlog.tickCount++;
+    }
+    msx2.tick(pad1, pad2, key);
+}
+
 extern "C" void emu_vsync()
 {
     static bool initialized = false;
@@ -229,12 +267,19 @@ extern "C" void emu_vsync()
         spu = vgsspu_start2(44100, 16, 2, 23520, sound_callback);
         initialized = true;
     }
-    if (0 < tw.size) {
+    if (playlog.isReplay) {
+        if (replayTickPtr < playlog.tickCount) {
+            tick(playlog.tickPad1[replayTickPtr],
+                 playlog.tickPad2[replayTickPtr],
+                 playlog.tickKey[replayTickPtr]);
+            replayTickPtr++;
+        }
+    } else if (0 < tw.size) {
         if (tw.wait) {
             if (msx2.ctx.readKey < 1) {
-                msx2.tick(0, 0, tw.buf[tw.index]);
+                tick(0, 0, tw.buf[tw.index]);
             } else {
-                msx2.tick(0, 0, 0);
+                tick(0, 0, 0);
                 tw.wait++;
                 if (3 <= tw.wait) {
                     tw.wait = 0;
@@ -244,11 +289,11 @@ extern "C" void emu_vsync()
             }
         } else {
             msx2.ctx.readKey = 0;
-            msx2.tick(0, 0, tw.buf[tw.index]);
+            tick(0, 0, tw.buf[tw.index]);
             tw.wait = 1;
         }
     } else {
-        msx2.tick(emu_key, 0, emu_keycode);
+        tick(emu_key, 0, emu_keycode);
     }
     memcpy(emu_vram, msx2.getDisplay(), sizeof(emu_vram));
     
@@ -716,7 +761,7 @@ const void* emu_getBitmapScreen(size_t* size) {
     return buf;
 }
 
-const void emu_startTypeWriter(const char* text)
+void emu_startTypeWriter(const char* text)
 {
     tw.size = (int)strlen(text);
     if (65536 <= tw.size) {
@@ -733,7 +778,7 @@ static bool onceLog[65536];
 static unsigned char hextbl[256];
 static int nestLevel = 0;
 
-const void emu_loggingOnce(void)
+void emu_loggingOnce(void)
 {
     memset(onceLog, 0, sizeof(onceLog));
     hextbl['0'] = 0;
@@ -771,4 +816,255 @@ const void emu_loggingOnce(void)
             ((MSX2*)arg)->putlog("[nest:%d] %s", nestLevel, msg);
         }
     });
+}
+
+static size_t serializePlaylog(void* buf)
+{
+    char* ptr = (char*)(buf ? buf : nullptr);
+    unsigned int chunkSize = 0;
+    size_t size = 0;
+    if (playlog.disk1 && 0 < playlog.disk1Size) {
+        chunkSize = (unsigned int)(1 + playlog.disk1Size);
+        size += chunkSize + 6;
+        if (ptr) {
+            memcpy(ptr, "D1", 2);
+            ptr += 2;
+            memcpy(ptr, &chunkSize, 4);
+            ptr += 4;
+            *ptr = playlog.disk1ReadOnly ? 1 : 0;
+            ptr += 1;
+            memcpy(ptr, playlog.disk1, playlog.disk1Size);
+            ptr += playlog.disk1Size;
+        }
+    }
+    if (playlog.disk2 && 0 < playlog.disk2Size) {
+        chunkSize = (unsigned int)(1 + playlog.disk2Size);
+        size += chunkSize + 6;
+        if (ptr) {
+            memcpy(ptr, "D2", 2);
+            ptr += 2;
+            memcpy(ptr, &chunkSize, 4);
+            ptr += 4;
+            *ptr = playlog.disk2ReadOnly ? 1 : 0;
+            ptr += 1;
+            memcpy(ptr, playlog.disk2, playlog.disk2Size);
+            ptr += playlog.disk2Size;
+        }
+    }
+    if (playlog.rom && 0 < playlog.romSize) {
+        chunkSize = (unsigned int)(4 + playlog.romSize);
+        size += chunkSize + 6;
+        if (ptr) {
+            memcpy(ptr, "RO", 2);
+            ptr += 2;
+            memcpy(ptr, &chunkSize, 4);
+            ptr += 4;
+            memcpy(ptr, &playlog.romType, 4);
+            ptr += 4;
+            memcpy(ptr, playlog.rom, playlog.romSize);
+            ptr += playlog.romSize;
+        }
+    }
+    if (playlog.save && 0 < playlog.saveSize) {
+        chunkSize = (unsigned int)playlog.saveSize;
+        size += chunkSize + 6;
+        if (ptr) {
+            memcpy(ptr, "SV", 2);
+            ptr += 2;
+            memcpy(ptr, &chunkSize, 4);
+            ptr += 4;
+            memcpy(ptr, playlog.save, playlog.saveSize);
+            ptr += playlog.saveSize;
+        }
+    }
+    if (0 < playlog.tickCount) {
+        chunkSize = (unsigned int)playlog.tickCount;
+        size += (chunkSize + 6) * 3;
+        if (ptr) {
+            memcpy(ptr, "T1", 2);
+            ptr += 2;
+            memcpy(ptr, &chunkSize, 4);
+            ptr += 4;
+            memcpy(ptr, playlog.tickPad1, playlog.tickCount);
+            ptr += playlog.tickCount;
+        }
+        if (ptr) {
+            memcpy(ptr, "T2", 2);
+            ptr += 2;
+            memcpy(ptr, &chunkSize, 4);
+            ptr += 4;
+            memcpy(ptr, playlog.tickPad2, playlog.tickCount);
+            ptr += playlog.tickCount;
+        }
+        if (ptr) {
+            memcpy(ptr, "TK", 2);
+            ptr += 2;
+            memcpy(ptr, &chunkSize, 4);
+            ptr += 4;
+            memcpy(ptr, playlog.tickKey, playlog.tickCount);
+            ptr += playlog.tickCount;
+        }
+    }
+    return size;
+}
+
+void emu_startRecording(void)
+{
+    if (playlog.save) free(playlog.save);
+    memset(&playlog, 0, sizeof(playlog));
+    if (msx2.fdc) {
+        playlog.disk1 = msx2.fdc->getDriveData(0, &playlog.disk1Size, &playlog.disk1ReadOnly);
+        playlog.disk2 = msx2.fdc->getDriveData(0, &playlog.disk2Size, &playlog.disk2ReadOnly);
+    }
+    playlog.rom = msx2.mmu->cartridge.ptr;
+    playlog.romSize = msx2.mmu->cartridge.size;
+    playlog.romType = msx2.mmu->cartridge.romType;
+    auto saveTmp = msx2.quickSave(&playlog.saveSize);
+    playlog.save = malloc(playlog.saveSize);
+    memcpy(playlog.save, saveTmp, playlog.saveSize);
+    playlog.isRecording = true;
+}
+
+void* emu_stopPlaylog(size_t* size)
+{
+    size_t orgSize = serializePlaylog(nullptr);
+    void* resultUncompressed = malloc(orgSize);
+    serializePlaylog(resultUncompressed);
+    if (playlog.save) {
+        free(playlog.save);
+        playlog.save = nullptr;
+    }
+    void* resultCompressed = malloc(orgSize * 2);
+    *size = LZ4_compress_default((const char*)resultUncompressed,
+                                 (char*)resultCompressed,
+                                 (int)orgSize,
+                                 (int)(orgSize * 2));
+    free(resultUncompressed);
+    playlog.isRecording = false;
+    return resultCompressed;
+}
+
+void emu_startReplay(const void* data, size_t size)
+{
+    if (playlog.save) free(playlog.save);
+    memset(&playlog, 0, sizeof(playlog));
+    replayBuffer = malloc(1024 * 1024 * 16);
+    char* ptr = (char*)replayBuffer;
+    int dsize = LZ4_decompress_safe((const char*)data,
+                                    ptr,
+                                    (int)size,
+                                    1024 * 1024 * 16);
+    while (0 < dsize) {
+        unsigned int uiSize;
+        if (0 == memcmp(ptr, "D1", 2)) {
+            ptr += 2;
+            dsize -= 2;
+            memcpy(&uiSize, ptr, 4);
+            uiSize -= 1;
+            ptr += 4;
+            dsize -= 4;
+            playlog.disk1Size = (size_t)uiSize;
+            playlog.disk1ReadOnly = (*ptr) ? true : false;
+            ptr++;
+            dsize--;
+            playlog.disk1 = ptr;
+            ptr += uiSize;
+            dsize -= uiSize;
+        } else if (0 == memcmp(ptr, "D2", 2)) {
+            ptr += 2;
+            dsize -= 2;
+            memcpy(&uiSize, ptr, 4);
+            uiSize -= 1;
+            ptr += 4;
+            dsize -= 4;
+            playlog.disk2Size = (size_t)uiSize;
+            playlog.disk2ReadOnly = (*ptr) ? true : false;
+            ptr++;
+            dsize--;
+            playlog.disk2 = ptr;
+            ptr += uiSize;
+            dsize -= uiSize;
+        } else if (0 == memcmp(ptr, "RO", 2)) {
+            ptr += 2;
+            dsize -= 2;
+            memcpy(&uiSize, ptr, 4);
+            uiSize -= 4;
+            ptr += 4;
+            dsize -= 4;
+            playlog.romSize = (size_t)uiSize;
+            memcpy(&playlog.romType, ptr, 4);
+            ptr += 4;
+            dsize -= 4;
+            playlog.rom = ptr;
+            ptr += uiSize;
+            dsize -= uiSize;
+        } else if (0 == memcmp(ptr, "SV", 2)) {
+            ptr += 2;
+            dsize -= 2;
+            memcpy(&uiSize, ptr, 4);
+            ptr += 4;
+            dsize -= 4;
+            playlog.saveSize = (size_t)uiSize;
+            playlog.save = ptr;
+            ptr += uiSize;
+            dsize -= uiSize;
+        } else if (0 == memcmp(ptr, "T1", 2)) {
+            ptr += 2;
+            dsize -= 2;
+            memcpy(&uiSize, ptr, 4);
+            ptr += 4;
+            dsize -= 4;
+            playlog.tickCount = (int)uiSize;
+            memcpy(playlog.tickPad1, ptr, playlog.tickCount);
+            ptr += uiSize;
+            dsize -= uiSize;
+        } else if (0 == memcmp(ptr, "T2", 2)) {
+            ptr += 2;
+            dsize -= 2;
+            memcpy(&uiSize, ptr, 4);
+            ptr += 4;
+            dsize -= 4;
+            playlog.tickCount = (int)uiSize;
+            memcpy(playlog.tickPad2, ptr, playlog.tickCount);
+            ptr += uiSize;
+            dsize -= uiSize;
+        } else if (0 == memcmp(ptr, "TK", 2)) {
+            ptr += 2;
+            dsize -= 2;
+            memcpy(&uiSize, ptr, 4);
+            ptr += 4;
+            dsize -= 4;
+            playlog.tickCount = (int)uiSize;
+            memcpy(playlog.tickKey, ptr, playlog.tickCount);
+            ptr += uiSize;
+            dsize -= uiSize;
+        }
+    }
+    msx2.reset();
+    if (playlog.rom) {
+        msx2.loadRom((void*)playlog.rom, (int)playlog.romSize, playlog.romType);
+        msx2.ejectDisk(0);
+        msx2.ejectDisk(1);
+    } else {
+        msx2.ejectRom();
+        if (playlog.disk1) {
+            msx2.insertDisk(0, playlog.disk1, playlog.disk1Size, playlog.disk1ReadOnly);
+        }
+        if (playlog.disk2) {
+            msx2.insertDisk(0, playlog.disk2, playlog.disk2Size, playlog.disk2ReadOnly);
+        }
+    }
+    if (playlog.save) {
+        msx2.quickLoad(playlog.save, playlog.saveSize);
+        playlog.save = nullptr;
+        playlog.saveSize = 0;
+    }
+    replayTickPtr = 0;
+    playlog.isReplay = true;
+}
+
+void emu_stopReplay()
+{
+    if (replayBuffer) free(replayBuffer);
+    playlog.isReplay = false;
 }

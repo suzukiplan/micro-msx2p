@@ -41,8 +41,12 @@ const void* emu_getVRAM(void);
 const void* emu_getBitmapVRAM(size_t* size);
 const void* emu_getBitmapSprite(size_t* size);
 const void* emu_getBitmapScreen(size_t* size);
-const void emu_startTypeWriter(const char* text);
-const void emu_loggingOnce(void);
+void emu_startTypeWriter(const char* text);
+void emu_loggingOnce(void);
+void emu_startRecording(void);
+void* emu_stopPlaylog(size_t* size);
+void emu_startReplay(const void* data, size_t size);
+void emu_stopReplay(void);
 
 #ifdef __cplusplus
 };

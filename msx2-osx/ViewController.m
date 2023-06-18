@@ -16,6 +16,7 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
     OpenFileTypeDiskA,
     OpenFileTypeDiskB,
     OpenFileTypeQuickSave,
+    OpenFileTypeReplay,
 };
 
 typedef NS_ENUM(NSInteger, SaveFileType) {
@@ -25,14 +26,28 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     SaveFileTypeBitmapVRAM,
     SaveFileTypeBitmapSprite,
     SaveFileTypeBitmapScreen,
+    SaveFileTypePlaylog,
 };
 
 @interface ViewController () <NSWindowDelegate>
 @property (nonatomic, weak) AppDelegate* appDelegate;
 @property (nonatomic) VideoView* video;
+@property (nonatomic) NSImageView* recIcon;
+@property (nonatomic) NSImageView* replayIcon;
 @property (nonatomic) NSData* rom;
 @property (nonatomic) BOOL isFullScreen;
 @property (nonatomic, nullable) NSData* saveData;
+@property (nonatomic, weak) NSMenuItem* menuReset;
+@property (nonatomic, weak) NSMenuItem* menuOpenROM;
+@property (nonatomic, weak) NSMenuItem* menuInsertDisk1;
+@property (nonatomic, weak) NSMenuItem* menuEjectDisk1;
+@property (nonatomic, weak) NSMenuItem* menuInsertDisk2;
+@property (nonatomic, weak) NSMenuItem* menuEjectDisk2;
+@property (nonatomic, weak) NSMenuItem* menuQuickLoad;
+@property (nonatomic, weak) NSMenuItem* menuStartRecordingPlaylog;
+@property (nonatomic, weak) NSMenuItem* menuStopRecordingPlaylog;
+@property (nonatomic, weak) NSMenuItem* menuReplayRecordedPlaylog;
+@property (nonatomic, weak) NSMenuItem* menuStopReplayPlaylog;
 @end
 
 @implementation ViewController
@@ -40,7 +55,7 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-
+    
 #if 1
     NSData* biosMain = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_main_msx2+_jp" ofType:@"rom"]];
     NSData* biosLogo = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_logo_msx2+" ofType:@"rom"]];
@@ -83,10 +98,98 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
     [self.view setLayer:layer];
     _video = [[VideoView alloc] initWithFrame:[self calcVramRect]];
     [self.view addSubview:_video];
+    _recIcon = [[NSImageView alloc] initWithFrame:CGRectMake(8, 8, 80, 16)];
+    _recIcon.image = [NSImage imageNamed:@"rec"];
+    [self.view addSubview:_recIcon];
+    _replayIcon = [[NSImageView alloc] initWithFrame:CGRectMake(8, 8, 80, 16)];
+    _replayIcon.image = [NSImage imageNamed:@"replay"];
+    [self.view addSubview:_replayIcon];
     _appDelegate = (AppDelegate*)[NSApplication sharedApplication].delegate;
-    NSLog(@"menu: %@", _appDelegate.menu);
-    _appDelegate.menu.autoenablesItems = NO;
     [self.view.window makeFirstResponder:_video];
+    
+    NSMenu* mainMenu = [NSApplication sharedApplication].mainMenu;
+    [mainMenu setAutoenablesItems:NO];
+    for (NSMenuItem* item in [mainMenu itemArray]) {
+        [item.submenu setAutoenablesItems:NO];
+        for (NSMenuItem* sub in [item.submenu itemArray]) {
+            NSLog(@"identifer: %@", sub.identifier);
+            if ([sub.identifier isEqualToString:@"OpenROM"]) {
+                _menuOpenROM = sub;
+            } else if ([sub.identifier isEqualToString:@"InsertDisk1"]) {
+                _menuInsertDisk1 = sub;
+            } else if ([sub.identifier isEqualToString:@"EjectDisk1"]) {
+                _menuEjectDisk1 = sub;
+            } else if ([sub.identifier isEqualToString:@"InsertDisk2"]) {
+                _menuInsertDisk2 = sub;
+            } else if ([sub.identifier isEqualToString:@"EjectDisk2"]) {
+                _menuEjectDisk2 = sub;
+            } else if ([sub.identifier isEqualToString:@"QuickLoad"]) {
+                _menuQuickLoad = sub;
+            } else if ([sub.identifier isEqualToString:@"StartRecordingPlaylog"]) {
+                _menuStartRecordingPlaylog = sub;
+            } else if ([sub.identifier isEqualToString:@"StopRecordingPlaylog"]) {
+                _menuStopRecordingPlaylog = sub;
+            } else if ([sub.identifier isEqualToString:@"ReplayRecordedPlaylog"]) {
+                _menuReplayRecordedPlaylog = sub;
+            } else if ([sub.identifier isEqualToString:@"StopReplayPlaylog"]) {
+                _menuStopReplayPlaylog = sub;
+            } else if ([sub.identifier isEqualToString:@"Reset"]) {
+                _menuReset = sub;
+            }
+        }
+    }
+    [self _setMenuItemEnabledForDefault];
+}
+
+- (void)_setMenuItemEnabledForDefault
+{
+    [_menuReset setEnabled:YES];
+    [_menuOpenROM setEnabled:YES];
+    [_menuInsertDisk1 setEnabled:YES];
+    [_menuEjectDisk1 setEnabled:YES];
+    [_menuInsertDisk2 setEnabled:YES];
+    [_menuEjectDisk2 setEnabled:YES];
+    [_menuQuickLoad setEnabled:YES];
+    [_menuStartRecordingPlaylog setEnabled:YES];
+    [_menuStopRecordingPlaylog setEnabled:NO];
+    [_menuReplayRecordedPlaylog setEnabled:YES];
+    [_menuStopReplayPlaylog setEnabled:NO];
+    _recIcon.hidden = YES;
+    _replayIcon.hidden = YES;
+}
+
+- (void)_setMenuItemEnabledForStartRecoding
+{
+    [_menuReset setEnabled:NO];
+    [_menuOpenROM setEnabled:NO];
+    [_menuInsertDisk1 setEnabled:NO];
+    [_menuEjectDisk1 setEnabled:NO];
+    [_menuInsertDisk2 setEnabled:NO];
+    [_menuEjectDisk2 setEnabled:NO];
+    [_menuQuickLoad setEnabled:NO];
+    [_menuStartRecordingPlaylog setEnabled:NO];
+    [_menuStopRecordingPlaylog setEnabled:YES];
+    [_menuReplayRecordedPlaylog setEnabled:NO];
+    [_menuStopReplayPlaylog setEnabled:NO];
+    _recIcon.hidden = NO;
+    _replayIcon.hidden = YES;
+}
+
+- (void)_setMenuItemEnabledForStartReplay
+{
+    [_menuReset setEnabled:NO];
+    [_menuOpenROM setEnabled:NO];
+    [_menuInsertDisk1 setEnabled:NO];
+    [_menuEjectDisk1 setEnabled:NO];
+    [_menuInsertDisk2 setEnabled:NO];
+    [_menuEjectDisk2 setEnabled:NO];
+    [_menuQuickLoad setEnabled:NO];
+    [_menuStartRecordingPlaylog setEnabled:NO];
+    [_menuStopRecordingPlaylog setEnabled:NO];
+    [_menuReplayRecordedPlaylog setEnabled:NO];
+    [_menuStopReplayPlaylog setEnabled:YES];
+    _recIcon.hidden = YES;
+    _replayIcon.hidden = NO;
 }
 
 - (void)viewWillAppear
@@ -313,6 +416,9 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
             case SaveFileTypeBitmapSprite:
                 panel.nameFieldStringValue = @"sprite.bmp";
                 break;
+            case SaveFileTypePlaylog:
+                panel.nameFieldStringValue = @"playlog.m2p";
+                break;
         }
         panel.level = NSModalPanelWindowLevel;
         __weak ViewController* weakSelf = self;
@@ -381,6 +487,10 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
         case OpenFileTypeQuickSave:
             emu_quickLoad(data.bytes, data.length);
             break;
+        case OpenFileTypeReplay:
+            emu_startReplay(data.bytes, data.length);
+            [self _setMenuItemEnabledForStartReplay];
+            break;
     }
     [_video resumeWithCompletionHandler:^{}];
 }
@@ -423,6 +533,41 @@ typedef NS_ENUM(NSInteger, SaveFileType) {
 {
     NSLog(@"menuLoggingOnce");
     emu_loggingOnce();
+}
+
+-(IBAction)menuStartRcodingPlaylog:(id)sender
+{
+    [self _setMenuItemEnabledForStartRecoding];
+    emu_startRecording();
+}
+
+-(IBAction)menuStopRcodingPlaylog:(id)sender
+{
+    size_t size;
+    void* rawData = emu_stopPlaylog(&size);
+    if (rawData) {
+        NSData* data = [NSData dataWithBytes:rawData length:size];
+        free(rawData);
+        __weak ViewController* weakSelf = self;
+        [_video pauseWithCompletionHandler:^{
+            [weakSelf _setMenuItemEnabledForDefault];
+            [weakSelf _saveData:data type:SaveFileTypePlaylog];
+        }];
+    }
+}
+
+-(IBAction)menuReplayRecordedPlaylog:(id)sender
+{
+    __weak ViewController* weakSelf = self;
+    [_video pauseWithCompletionHandler:^{
+        [weakSelf _openWithType:OpenFileTypeReplay];
+    }];
+}
+
+-(IBAction)menuStopReplayPlaylog:(id)sender
+{
+    emu_stopReplay();
+    [self _setMenuItemEnabledForDefault];
 }
 
 @end
