@@ -1,0 +1,72 @@
+{
+    "slots": [
+        {
+            "name": "slot0",
+            "extra": false,
+            "pages": [
+                {
+                    "name": "slot0,page0",
+                    "data": "../../msx2-osx/bios/cbios_main_msx2+_jp.rom",
+                    "label": "MAIN"
+                },
+                {
+                    "name": "slot0,page1",
+                    "data": "../../msx2-osx/bios/cbios_main_msx2+_jp.rom",
+                    "offset": 1,
+                    "label": "MAIN"
+                },
+                {
+                    "name": "slot0,page2",
+                    "data": "../../msx2-osx/bios/cbios_logo_msx2+.rom",
+                    "label": "LOGO"
+                },
+                {
+                    "name": "slot0,page3"
+                }
+            ]
+        },
+        {
+            "name": "slot1",
+            "extra": false
+        },
+        {
+            "name": "slot2",
+            "extra": false
+        },
+        {
+            "name": "slot3",
+            "extra": true,
+            "extraPages": [
+                {
+                    "name": "slot3-0",
+                    "pages": [
+                        {
+                            "name": "slot3-0,page0",
+                            "data": "../../msx2-osx/bios/cbios_sub.rom",
+                            "label": "SUB"
+                        },
+                        {
+                            "name": "slot3-0,page1"
+                        },
+                        {
+                            "name": "slot3-0,page2"
+                        },
+                        {
+                            "name": "slot3-0,page3"
+                        }
+                    ]
+                },
+                {
+                    "name": "slot3-1"
+                },
+                {
+                    "name": "slot3-2"
+                },
+                {
+                    "name": "slot3-3",
+                    "ram": true
+                }
+            ]
+        }
+    ]
+}

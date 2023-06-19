@@ -1,0 +1,113 @@
+{
+    "font": "../../msx2-osx/bios/KNJFNT16.ROM",
+    "slots": [
+        {
+            "name": "slot0",
+            "extra": false,
+            "pages": [
+                {
+                    "name": "slot0,page0",
+                    "data": "../../msx2-osx/bios/MSX2P.ROM",
+                    "offset": 0,
+                    "label": "MAIN"
+                },
+                {
+                    "name": "slot0,page1",
+                    "data": "../../msx2-osx/bios/MSX2P.ROM",
+                    "offset": 1,
+                    "label": "MAIN"
+                },
+                {
+                    "name": "slot0,page2"
+                },
+                {
+                    "name": "slot0,page3"
+                }
+            ]
+        },
+        {
+            "name": "slot1",
+            "extra": false
+        },
+        {
+            "name": "slot2",
+            "extra": false
+        },
+        {
+            "name": "slot3",
+            "extra": true,
+            "extraPages": [
+                {
+                    "name": "slot3-0",
+                    "ram": true
+                },
+                {
+                    "name": "slot3-1",
+                    "pages": [
+                        {
+                            "name": "slot3-1,page0",
+                            "data": "../../msx2-osx/bios/MSX2PEXT.ROM",
+                            "label": "SUB"
+                        },
+                        {
+                            "name": "slot3-1,page1",
+                            "data": "../../msx2-osx/bios/KNJDRV.ROM",
+                            "offset": 0,
+                            "label": "KNJ"
+                        },
+                        {
+                            "name": "slot3-1,page2",
+                            "data": "../../msx2-osx/bios/KNJDRV.ROM",
+                            "offset": 1,
+                            "label": "KNJ"
+                        },
+                        {
+                            "name": "slot3-1,page3"
+                        }
+                    ]
+                },
+                {
+                    "name": "slot3-2",
+                    "pages": [
+                        {
+                            "name": "slot3-2,page0",
+                            "label": "DISK"
+                        },
+                        {
+                            "name": "slot3-2,page1",
+                            "data": "../../msx2-osx/bios/DISK.ROM",
+                            "label": "DISK"
+                        },
+                        {
+                            "name": "slot3-2,page2",
+                            "label": "DISK"
+                        },
+                        {
+                            "name": "slot3-2,page3",
+                            "label": "DISK"
+                        }
+                    ]
+                },
+                {
+                    "name": "slot3-3",
+                    "pages": [
+                        {
+                            "name": "slot3-3,page0"
+                        },
+                        {
+                            "name": "slot3-3,page1",
+                            "data": "../../msx2-osx/bios/FMBIOS.ROM",
+                            "label": "FM"
+                        },
+                        {
+                            "name": "slot3-3,page2"
+                        },
+                        {
+                            "name": "slot3-3,page3"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
