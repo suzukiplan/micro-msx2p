@@ -417,11 +417,9 @@ class MSX2
                 this->scc->enabled = true;
             }
         } else if (this->scc) {
-            if (this->scc) {
-                this->putlog("remove SCC instance");
-                delete this->scc;
-                this->scc = nullptr;
-            }
+            this->putlog("remove SCC instance");
+            delete this->scc;
+            this->scc = nullptr;
         }
         this->reset();
     }
@@ -429,6 +427,11 @@ class MSX2
     void ejectRom()
     {
         this->mmu->clearCartridge();
+        if (this->scc) {
+            this->putlog("remove SCC instance");
+            delete this->scc;
+            this->scc = nullptr;
+        }
         this->reset();
     }
 
