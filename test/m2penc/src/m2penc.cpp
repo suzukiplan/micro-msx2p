@@ -330,6 +330,10 @@ int main(int argc, char* argv[])
             dsize -= uiSize;
         }
     }
+    if (!pd.save) {
+        puts("Invalid playlog data");
+        exit(-1);
+    }
     if (pd.rom) {
         puts("insert ROM data");
         msx2.loadRom((void*)pd.rom, (int)pd.romSize, pd.romType);
@@ -343,12 +347,8 @@ int main(int argc, char* argv[])
             msx2.insertDisk(0, pd.disk2, pd.disk2Size, pd.disk2ReadOnly);
         }
     }
-    if (pd.save) {
-        puts("load state");
-        msx2.quickLoad(pd.save, pd.saveSize);
-    } else {
-        msx2.reset();
-    }
+    puts("load state");
+    msx2.quickLoad(pd.save, pd.saveSize);
 
     std::string wavPath = opt.workdir + "/sound.wav";
     struct WavHeader {
