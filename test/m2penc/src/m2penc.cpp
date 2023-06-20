@@ -168,12 +168,17 @@ int main(int argc, char* argv[])
     bool error = false;
     for (int i = 1; !error && i < argc; i++) {
         if ('-' == argv[i][0]) {
+            if (argc <= i + 1) {
+                error = true;
+                break;
+            }
             switch (tolower(argv[i][1])) {
-                case 's': opt.settings = argv[i]; break;
-                case 'o': strcpy(opt.output, argv[i]); break;
-                case 'w': opt.workdir = argv[i]; break;
+                case 's': opt.settings = argv[i + 1]; break;
+                case 'o': strcpy(opt.output, argv[i + 1]); break;
+                case 'w': opt.workdir = argv[i + 1]; break;
                 default: error = true;
             }
+            i++;
         } else {
             if (!opt.input.empty()) {
                 error = true;
