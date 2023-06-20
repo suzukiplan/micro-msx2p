@@ -1,0 +1,6 @@
+*.o
+*.m2p
+*.mp4
+m2penc
+.m2penc
+settings.json
