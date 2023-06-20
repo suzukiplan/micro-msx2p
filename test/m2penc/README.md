@@ -1,7 +1,7 @@
-# Playlog to AVI movie encoder
+# Playlog to MP4 movie encoder
 
-- m2p 形式の動画ファイル（Playlog）を無圧縮の AVI 形式動画ファイルにエンコードします
-- ffmpeg コマンドと組み合わせて `H.264+AAC` の `MP4` などにエンコードする想定です
+- m2p 形式の動画ファイル（Playlog）を `H.264+AAC` の `MP4` にエンコードします
+- 本プログラムの利用には `ffmpeg` コマンドが必要です
 
 ## How to Build
 
@@ -9,6 +9,7 @@
 
 - CLANG C++
 - GNU MAKE
+- ffmpeg command
 
 ### Build
 
@@ -21,31 +22,32 @@ make
 ### Using standalone (uncompressed AVI)
 
 ```
-m2penc [-o /path/to/output.avi]
-       [-e /path/to/settings.json]
+m2penc [-o /path/to/output.mp4]
+       [-s /path/to/settings.json]
+       [-w /path/to/workdir]
        /path/to/playlog.m2p
 ```
 
-- `[-o /path/to/output.avi]` を省略した場合、出力先は `/path/to/playlog.avi` になります
-- `[-e /path/to/settings.json]` を省略した場合、カレントパスの `settings.json` が読み込まれます
+- `[-o /path/to/output.mp4]` を省略した場合、出力先は `/path/to/playlog.mp4` になります
+- `[-s /path/to/settings.json]` を省略した場合、カレントパスの `settings.json` が読み込まれます
+- `[-w /path/to/workdir]` を省略した場合、カレントパスの `.m2penc` がワークディレクトリとして作成されます
 
-### Encode to MP4 container style of H.264+AAC
+### Required Condition: `ffmpeg` command
 
-ffmpeg を用いて `H.264+AAC` の `MP4` 形式にエンコードする例（推奨オプション）を示します。
+本プログラムを動作させるとワークディレクトリ `.m2penc` 以下に1フレーム毎の画像データ（png形式）と音声データ（wav形式）が生成され、それらを `ffmpeg` で `H.264+AAC` の `MP4` にエンコードします。
 
-```
-ffmpeg -i output.avi -vcodec libx264 -acodec libfdk_aac -profile:a aac_he -afterburner 1 -f mp4 output.mp4
-```
+`ffmpeg` は次のコーデックが利用できる状態にする必要があります:
 
-なお、ffmpeg 標準の AAC エンコーダの音質はかなり悪いため `libfdk_aac` 等の利用を推奨します。
+- `libx264` H.264 コーデック
+- `libfdk_aac` AAC コーデック
 
 > __参考（macOSのffmpegコマンドで `libfdk_aac` を利用する手順）__
 >
+> macOS の brew でインストールした ffmpeg コマンドには標準では `libfdk_aac` が含まれていません。
+> 以下の手順を参考にして `libfdk_aac` が利用できる `ffmpeg` をインストールしてください。
 > [https://scrapbox.io/craftmemo/mac_で_ffmpeg_で_libfdk_aac_を使う](https://scrapbox.io/craftmemo/mac_%E3%81%A7_ffmpeg_%E3%81%A7_libfdk_aac_%E3%82%92%E4%BD%BF%E3%81%86)
 
-## Settings
-
-### settings.json
+### Settings: settings.json
 
 - m2penc を利用するには BIOS ファイルやスロット構成を定義した設定ファイル `settings.json` が必要です
 - m2p ファイルの録画を行った時と同じ BIOS 構成にしなければ、正常な動画出力がされないことがあります
@@ -76,10 +78,12 @@ __（要素解説）__
   - Web Site: [https://github.com/nlohmann/json](https://github.com/nlohmann/json)
   - License: [MIT](src/json/LICENSE.MIT)
   - `Copyright (c) 2013-2022 Niels Lohmann`
-- avilib
-  - Web Site: [https://github.com/arionik/avilib](https://github.com/arionik/avilib)
-  - License: [MIT](src/avilib/LICENSE)
-  - `Copyright (c) 2017 Arion Neddens`
+- PNGwriter
+  - Web Site: [https://github.com/pngwriter/pngwriter](https://github.com/pngwriter/pngwriter)
+  - License: [GNU General Public License](src/pngwriter/LICENSE)
+  - `(C) 2002-2018 Paul Blackburn`
+  - `(C) 2013-2018 Axel Huebl`
+  - `(C) 2016-2018 Rene Widera`
 - LZ4 Library
   - Web Site: [https://github.com/lz4/lz4](https://github.com/lz4/lz4) - [lib](https://github.com/lz4/lz4/tree/dev/lib)
   - License: [2-Clause BSD](../../licenses-copy/lz4-library.txt)

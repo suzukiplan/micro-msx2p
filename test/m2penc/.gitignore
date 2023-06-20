@@ -1,3 +1,4 @@
 *.o
 m2penc
+.m2penc
 settings.json
