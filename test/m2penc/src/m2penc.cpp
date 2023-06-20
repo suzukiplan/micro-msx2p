@@ -182,6 +182,10 @@ int main(int argc, char* argv[])
             }
         }
     }
+    if (0 == strcmp(opt.workdir.c_str(), "/")) {
+        puts("!?");
+        exit(-1);
+    }
     if (error || opt.input.empty()) {
         puts("usage: m2penc [-o /path/to/output.mp4]");
         puts("              [-s /path/to/settings.json]");
