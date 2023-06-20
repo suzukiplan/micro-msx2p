@@ -25,9 +25,9 @@
 make
 ```
 
-## Usage
+## How to Use
 
-### Using standalone (uncompressed AVI)
+### Usage
 
 ```
 m2penc [-o /path/to/output.mp4]
