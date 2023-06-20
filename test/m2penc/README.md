@@ -9,7 +9,9 @@
 
 - CLANG C++
 - GNU MAKE
-- ffmpeg command
+- ffmpeg and following codecs:
+  - libx264 (H.264)
+  - libfdk_aac (AAC)
 
 ### Build
 
