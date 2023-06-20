@@ -5,6 +5,12 @@
 
 ## How to Build
 
+### Support platform
+
+- UNIX
+- Linux
+- macOS
+
 ### Pre-requests
 
 - CLANG C++
