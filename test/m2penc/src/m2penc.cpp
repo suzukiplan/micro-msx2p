@@ -412,7 +412,7 @@ int main(int argc, char* argv[])
     printf(" ... done\n");
     fclose(wav);
 
-    std::string ffmpeg = ("ffmpeg -y -r 60 -start_number 0 -i " + opt.workdir + "/%08d.png -i " + wavPath + " -acodec libfdk_aac -profile:a aac_he -afterburner 1 -vcodec libx264 -pix_fmt yuv420p -r 60 " + opt.output);
+    std::string ffmpeg = ("ffmpeg -y -r 60 -start_number 0 -i " + opt.workdir + "/%08d.png -i " + wavPath + " -acodec libfdk_aac -profile:a aac_he -afterburner 1 -vcodec libx264 -pix_fmt yuv420p -r 60 -vf scale=-1:480 " + opt.output);
     puts(ffmpeg.c_str());
     return system(ffmpeg.c_str());
 }
