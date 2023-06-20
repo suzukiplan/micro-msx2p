@@ -852,7 +852,7 @@ void pngwriter::pngwriter_rename(long unsigned int index)
 	return;
      }
 
-   if( 0>  sprintf(buffer, "%9.9lu.png",index))
+   if( 0>  snprintf(buffer, sizeof(buffer), "%9.9lu.png",index))
      {
 	std::cerr << " PNGwriter::pngwriter_rename - ERROR **: Error creating numerical filename." << std::endl;
 	return;
