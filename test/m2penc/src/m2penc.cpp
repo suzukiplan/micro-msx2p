@@ -1,3 +1,5 @@
+// Playlog to MP4 movie encoder
+// License: Public Domain
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +11,7 @@
 #include <map>
 #include <sys/stat.h>
 #include "json/json.hpp"
+#include "pngwriter/pngwriter.h"
 #include "../../../msx2-osx/core/msx2.hpp"
 
 static std::map<std::string, unsigned char*> biosTable;
@@ -179,8 +182,8 @@ int main(int argc, char* argv[])
             }
         }
     }
-    if (error || !opt.input.empty()) {
-        puts("usage: m2penc [-o /path/to/output.avi]");
+    if (error || opt.input.empty()) {
+        puts("usage: m2penc [-o /path/to/output.mp4]");
         puts("              [-s /path/to/settings.json]");
         puts("              [-w /path/to/workdir]");
         puts("              /path/to/playlog.m2p");
@@ -190,7 +193,7 @@ int main(int argc, char* argv[])
         strcpy(opt.output, opt.input.c_str());
         char* cp = strrchr(opt.output, '.');
         if (cp) *cp = 0;
-        strcat(opt.output, ".avi");
+        strcat(opt.output, ".mp4");
     }
 
     // cleanup workdir
@@ -347,6 +350,69 @@ int main(int argc, char* argv[])
         msx2.reset();
     }
 
+    std::string wavPath = opt.workdir + "/sound.wav";
+    struct WavHeader {
+        char riff[4];
+        unsigned int fsize;
+        char wave[4];
+        char fmt[4];
+        unsigned int bnum;
+        unsigned short fid;
+        unsigned short ch;
+        unsigned int sample;
+        unsigned int bps;
+        unsigned short bsize;
+        unsigned short bits;
+        char data[4];
+        unsigned int dsize;
+    } wh;
+    memset(&wh, 0, sizeof(wh));
+    strncpy(wh.riff, "RIFF", 4);
+    strncpy(wh.wave, "WAVE", 4);
+    strncpy(wh.fmt, "fmt ", 4);
+    strncpy(wh.data, "data", 4);
+    wh.bnum = 16;
+    wh.fid = 1;
+    wh.ch = 2;
+    wh.sample = 44100;
+    wh.bsize = 2;
+    wh.bits = 16;
+    wh.bps = wh.sample * wh.ch * wh.bsize;
+    wh.dsize = wh.bps / 60 * pd.tickCount;
+    FILE* wav = fopen(wavPath.c_str(), "wb");
+    fwrite(&wh, 1, sizeof(wh), wav);
 
-    return 0;
+    printf("Writing 0 of %d", pd.tickCount);
+    for (int tick = 0; tick < pd.tickCount; tick++) {
+        msx2.tick(pd.t1[tick], pd.t2[tick], pd.tk[tick]);
+        // output screen as png
+        unsigned short* display = msx2.getDisplay();
+        char pngName[256];
+        snprintf(pngName, sizeof(pngName), "/%08d.png", tick);
+        pngwriter png(284, 240, 0, (opt.workdir + pngName).c_str());
+        for (int y = 0; y < 240; y++) {
+            for (int x = 0; x < 284; x++) {
+                unsigned short rgb555 = display[y * 568 + x * 2];
+                double r = ((rgb555 & 0b0111110000000000) >> 10) / 31.0;
+                double g = ((rgb555 & 0b0000001111100000) >> 5) / 31.0;
+                double b = (rgb555 & 0b0000000000011111) / 31.0;
+                png.plot(x, 239 - y, r, g, b);
+            }
+        }
+        png.close();
+
+        // TODO: output sound as wav
+        size_t pcmSize;
+        void* pcm = msx2.getSound(&pcmSize);
+        fwrite(pcm, 1, pcmSize, wav);
+
+        printf("\rWriting frame: %d of %d (%d%%)", 1 + tick, pd.tickCount, (1 + tick) * 100 / pd.tickCount);
+        fflush(stdout);
+    }
+    printf(" ... done\n");
+    fclose(wav);
+
+    std::string ffmpeg = ("ffmpeg -y -r 60 -start_number 0 -i " + opt.workdir + "/%08d.png -i " + wavPath + " -acodec libfdk_aac -profile:a aac_he -afterburner 1 -vcodec libx264 -pix_fmt yuv420p -r 60 " + opt.output);
+    puts(ffmpeg.c_str());
+    return system(ffmpeg.c_str());
 }
