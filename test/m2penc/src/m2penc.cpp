@@ -185,10 +185,16 @@ int main(int argc, char* argv[])
         char output[2048];
         std::string workdir;
         std::string input;
+        int captureWidth;
+        int captureHeight;
+        int vidoeWidth;
+        int videoHeight;
     } opt;
     memset(&opt, 0, sizeof(opt));
     opt.settings = "settings.json";
     opt.workdir = ".m2penc";
+    opt.captureHeight = 480;
+    opt.videoHeight = 480;
     bool error = false;
     for (int i = 1; !error && i < argc; i++) {
         if ('-' == argv[i][0]) {
@@ -200,6 +206,8 @@ int main(int argc, char* argv[])
                 case 's': opt.settings = argv[i + 1]; break;
                 case 'o': strcpy(opt.output, argv[i + 1]); break;
                 case 'w': opt.workdir = argv[i + 1]; break;
+                case 'c': opt.captureHeight = atoi(argv[i + 1]); break;
+                case 'x': opt.videoHeight = atoi(argv[i + 1]); break;
                 default: error = true;
             }
             i++;
@@ -215,13 +223,20 @@ int main(int argc, char* argv[])
         puts("!?");
         exit(-1);
     }
-    if (error || opt.input.empty()) {
+    if (!error) error = opt.captureHeight != 240 && opt.captureHeight != 480;
+    if (!error) error = opt.videoHeight != 240 && opt.videoHeight != 480 && opt.videoHeight != 720 && opt.videoHeight != 960;
+    if (!error) error = opt.input.empty();
+    if (error) {
         puts("usage: m2penc [-o /path/to/output.mp4]");
         puts("              [-s /path/to/settings.json]");
         puts("              [-w /path/to/workdir]");
+        puts("              [-c { 240 | 480 }] ............... capture height");
+        puts("              [-x { 240 | 480 | 720 | 960 }] ... video height");
         puts("              /path/to/playlog.m2p");
         return -1;
     }
+    opt.captureWidth = 284 * opt.captureHeight / 240;
+    opt.vidoeWidth = 284 * opt.videoHeight / 240;
     if (0 == opt.output[0]) {
         strcpy(opt.output, opt.input.c_str());
         char* cp = strrchr(opt.output, '.');
@@ -422,15 +437,20 @@ int main(int argc, char* argv[])
         unsigned short* display = msx2.getDisplay();
         char pngName[256];
         snprintf(pngName, sizeof(pngName), "/%08d.png", tick);
-        pngwriter png(568, 480, 0, (opt.workdir + pngName).c_str());
+        pngwriter png(opt.captureWidth, opt.captureHeight, 0, (opt.workdir + pngName).c_str());
         for (int y = 0; y < 240; y++) {
             for (int x = 0; x < 568; x++) {
                 unsigned short rgb555 = display[y * 568 + x];
                 double r = ((rgb555 & 0b0111110000000000) >> 10) / 31.0;
                 double g = ((rgb555 & 0b0000001111100000) >> 5) / 31.0;
                 double b = (rgb555 & 0b0000000000011111) / 31.0;
-                png.plot(x, 480 - y * 2, r, g, b);
-                png.plot(x, 480 - y * 2 + 1, r, g, b);
+                if (240 == opt.captureHeight) {
+                    png.plot(x / 2, 240 - y, r, g, b);
+                    x++;
+                } else {
+                    png.plot(x, 480 - y * 2, r, g, b);
+                    png.plot(x, 480 - y * 2 + 1, r, g, b);
+                }
             }
         }
         png.close();
@@ -446,7 +466,13 @@ int main(int argc, char* argv[])
     printf(" ... done\n");
     fclose(wav);
 
-    std::string ffmpeg = "ffmpeg -y -r 60 -start_number 0 -i \"" + opt.workdir + "/%08d.png\" -i \"" + wavPath + "\" -acodec libfdk_aac -profile:a aac_he -afterburner 1 -vcodec libx264 -pix_fmt yuv420p -r 60 \"" + opt.output + "\"";
+    char vf[80];
+    if (opt.captureHeight == opt.videoHeight) {
+        vf[0] = 0;
+    } else {
+        snprintf(vf, sizeof(vf), " -vf scale=%d:%d", opt.vidoeWidth, opt.videoHeight);
+    }
+    std::string ffmpeg = "ffmpeg -y -r 60 -start_number 0 -i \"" + opt.workdir + "/%08d.png\" -i \"" + wavPath + "\" -acodec libfdk_aac -profile:a aac_he -afterburner 1 -vcodec libx264 -pix_fmt yuv420p -r 60" + vf + " \"" + opt.output + "\"";
     puts(ffmpeg.c_str());
     return system(ffmpeg.c_str());
 }
