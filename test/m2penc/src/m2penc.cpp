@@ -422,14 +422,15 @@ int main(int argc, char* argv[])
         unsigned short* display = msx2.getDisplay();
         char pngName[256];
         snprintf(pngName, sizeof(pngName), "/%08d.png", tick);
-        pngwriter png(284, 240, 0, (opt.workdir + pngName).c_str());
+        pngwriter png(568, 480, 0, (opt.workdir + pngName).c_str());
         for (int y = 0; y < 240; y++) {
-            for (int x = 0; x < 284; x++) {
-                unsigned short rgb555 = display[y * 568 + x * 2];
+            for (int x = 0; x < 568; x++) {
+                unsigned short rgb555 = display[y * 568 + x];
                 double r = ((rgb555 & 0b0111110000000000) >> 10) / 31.0;
                 double g = ((rgb555 & 0b0000001111100000) >> 5) / 31.0;
                 double b = (rgb555 & 0b0000000000011111) / 31.0;
-                png.plot(x, 239 - y, r, g, b);
+                png.plot(x, 480 - y * 2, r, g, b);
+                png.plot(x, 480 - y * 2 + 1, r, g, b);
             }
         }
         png.close();
@@ -445,7 +446,7 @@ int main(int argc, char* argv[])
     printf(" ... done\n");
     fclose(wav);
 
-    std::string ffmpeg = "ffmpeg -y -r 60 -start_number 0 -i \"" + opt.workdir + "/%08d.png\" -i \"" + wavPath + "\" -acodec libfdk_aac -profile:a aac_he -afterburner 1 -vcodec libx264 -pix_fmt yuv420p -r 60 -vf scale=-1:480 \"" + opt.output + "\"";
+    std::string ffmpeg = "ffmpeg -y -r 60 -start_number 0 -i \"" + opt.workdir + "/%08d.png\" -i \"" + wavPath + "\" -acodec libfdk_aac -profile:a aac_he -afterburner 1 -vcodec libx264 -pix_fmt yuv420p -r 60 \"" + opt.output + "\"";
     puts(ffmpeg.c_str());
     return system(ffmpeg.c_str());
 }
