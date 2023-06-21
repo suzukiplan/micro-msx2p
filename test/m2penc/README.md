@@ -157,9 +157,9 @@ video:600kB audio:554kB subtitle:0kB other streams:0kB global headers:0kB muxing
 
 ## License
 
-本プログラム（[src/m2penc.cpp](src/m2penc.cpp)）のライセンスは Public Domain とします。
+本プログラム（[src/m2penc.cpp](src/m2penc.cpp)）のライセンスは [MIT](LICENSE.txt) とします。
 
-ただし、以下のソフトウェアに依存しているため、再配布時にはそれぞれのライセンス条項の遵守をお願いいたします。
+また、本プログラムには以下のソフトウェアに依存しているため、再配布時にはそれぞれのライセンス条項の遵守をお願いいたします。
 
 - JSON for Modern C++
   - Web Site: [https://github.com/nlohmann/json](https://github.com/nlohmann/json)
