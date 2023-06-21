@@ -118,9 +118,9 @@ Writing result.bmp...
 
 ## License
 
-本プログラム（[runbas.cpp](runbas.cpp)）のライセンスは Public Domain とします。
+本プログラム（[runbas.cpp](runbas.cpp)）のライセンスは [MIT](LICENSE.txt) とします。
 
-ただし、以下のソフトウェアに依存しているため、再配布時にはそれぞれのライセンス条項の遵守をお願いいたします。
+また、本プログラムには以下のソフトウェアに依存しているため、再配布時にはそれぞれのライセンス条項の遵守をお願いいたします。
 
 - LZ4 Library
   - Web Site: [https://github.com/lz4/lz4](https://github.com/lz4/lz4) - [lib](https://github.com/lz4/lz4/tree/dev/lib)
