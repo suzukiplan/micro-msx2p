@@ -13,8 +13,6 @@
 
 Android Studio でビルドすれば [asset](app/src/main/assets) に組み込まれた game.rom が起動します
 
-## Configuration
-
 ### game.rom
 
 - デフォルトでは Hello, World! を表示するシンプルな ROM ファイルが組み込まれています
