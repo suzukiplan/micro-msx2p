@@ -1,5 +1,7 @@
 # micro MSX2+ - example implementation for Android
 
+![image](screen.png)
+
 ## About
 
 - Android 版の micro MSX2+ 実装例です
