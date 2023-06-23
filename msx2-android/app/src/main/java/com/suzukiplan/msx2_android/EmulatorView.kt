@@ -80,6 +80,7 @@ class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(cont
         JNI.loadRom(assets.open("game.rom").readBytes())
         var currentInterval = 0
         val intervals = intArrayOf(17, 17, 16)
+        val minInterval = 16
         while (aliveSubThread) {
             val start = System.currentTimeMillis()
             JNI.tick(delegate?.emulatorViewRequirePadCode() ?: 0, vram)
@@ -91,7 +92,7 @@ class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(cont
             val procTime = System.currentTimeMillis() - start
             currentInterval++
             currentInterval %= intervals.size
-            if (procTime < intervals[currentInterval]) {
+            if (procTime < minInterval) {
                 Thread.sleep(intervals[currentInterval] - procTime)
             }
         }
