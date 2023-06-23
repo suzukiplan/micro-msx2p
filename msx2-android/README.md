@@ -11,7 +11,7 @@
 
 ## How to Use
 
-Android Studio でビルドすれば [asset](app/src/main/assets) に組み込まれた game.rom が起動します
+Android Studio でビルドすれば [assets](app/src/main/assets) に組み込まれた game.rom が起動します
 
 ### game.rom
 
