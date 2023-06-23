@@ -19,8 +19,8 @@ data class InputStatus(
             if (right) value = value.or(0b00001000)
             if (a) value = value.or(0b00010000)
             if (b) value = value.or(0b00100000)
-            if (select) value = value.or(0b01000000)
-            if (start) value = value.or(0b10000000)
+            if (start) value = value.or(0b01000000)
+            if (select) value = value.or(0b10000000)
             return value
         }
 }

@@ -1,7 +1,6 @@
 package com.suzukiplan.msx2_android
 
 import android.annotation.SuppressLint
-import android.util.Log
 import android.util.SparseArray
 import android.view.MotionEvent
 import android.view.View
@@ -66,14 +65,12 @@ class VirtualJoyPad(padContainer: View) : View.OnTouchListener {
             MotionEvent.ACTION_DOWN,
             MotionEvent.ACTION_POINTER_DOWN,
             MotionEvent.ACTION_BUTTON_PRESS -> {
-                Log.d("MSX2P", "DOWN")
                 val id = event.getPointerId(event.actionIndex)
                 try {
                     val x = event.getX(id).toInt()
                     val y = event.getY(id).toInt()
                     val area = checkArea(x, y)
                     if (null != area) {
-                        Log.d("MSX2P", "TOUCH X=$x Y=$y AREA=$area")
                         touches.append(id, TouchInfo(x, y, area))
                     }
                 } catch (e: IllegalArgumentException) {

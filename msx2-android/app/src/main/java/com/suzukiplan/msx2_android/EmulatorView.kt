@@ -1,6 +1,7 @@
 package com.suzukiplan.msx2_android
 
 import android.content.Context
+import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.graphics.Paint
 import android.graphics.Rect
@@ -19,7 +20,6 @@ class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(cont
     private val vramRect = Rect(0, 0, vramWidth, vramHeight / 2)
     private val viewRect = Rect(0, 0, 0, 0)
     private val drawRect = Rect(0, 0, 0, 0)
-    private lateinit var vram: Bitmap
     private val paint = Paint()
     private var aliveSubThread = false
     private var subThread: Thread? = null
@@ -27,7 +27,8 @@ class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(cont
     var delegate: Delegate? = null
 
     interface Delegate {
-        fun getJoyPadCode(): Int
+        fun emulatorViewRequirePadCode(): Int
+        fun emulatorViewRequireAssets(): AssetManager
     }
 
     init {
@@ -38,15 +39,11 @@ class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(cont
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             holder.surface.setFrameRate(60.0f, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)
         }
-        vram = Bitmap.createBitmap(vramWidth, vramHeight / 2, Bitmap.Config.RGB_565)
-        // TODO: initialize emulator
         startSubThread()
     }
 
     override fun surfaceDestroyed(p0: SurfaceHolder) {
         stopSubThread()
-        // TODO: terminate emulator
-        vram.recycle()
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
@@ -64,32 +61,43 @@ class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(cont
     }
 
     private fun startSubThread() {
-        if (aliveSubThread) return
         aliveSubThread = true
         subThread = Thread(this)
         subThread?.start()
     }
 
     private fun stopSubThread() {
-        if (!aliveSubThread) return
         aliveSubThread = false
         subThread?.join()
     }
 
     override fun run() {
+        val vram = Bitmap.createBitmap(vramWidth, vramHeight / 2, Bitmap.Config.RGB_565)
+        val assets = delegate?.emulatorViewRequireAssets() ?: return
+        JNI.init(
+            assets.open("cbios_main_msx2+_jp.rom").readBytes(),
+            assets.open("cbios_logo_msx2+.rom").readBytes(),
+            assets.open("cbios_sub.rom").readBytes()
+        )
+        JNI.loadRom(assets.open("game.rom").readBytes())
+        var currentInterval = 0
+        val intervals = intArrayOf(17, 17, 16)
         while (aliveSubThread) {
+            val start = System.currentTimeMillis()
+            JNI.tick(delegate?.emulatorViewRequirePadCode() ?: 0, vram)
             val canvas = holder.lockHardwareCanvas()
-            // TODO: call tick and native-rendering procedure
-            for (n in 0 until 256) {
-                vram.setPixel(
-                    rand.nextInt(0, vramWidth),
-                    rand.nextInt(0, vramHeight / 2),
-                    rand.nextInt()
-                )
+            if (null != canvas) {
+                canvas.drawBitmap(vram, vramRect, drawRect, paint)
+                holder.unlockCanvasAndPost(canvas)
             }
-            canvas.drawBitmap(vram, vramRect, drawRect, paint)
-            holder.unlockCanvasAndPost(canvas)
-            Thread.sleep(100L)
+            val procTime = System.currentTimeMillis() - start
+            currentInterval++
+            currentInterval %= intervals.size
+            if (procTime < intervals[currentInterval]) {
+                Thread.sleep(intervals[currentInterval] - procTime)
+            }
         }
+        JNI.term()
+        vram.recycle()
     }
 }

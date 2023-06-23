@@ -11,6 +11,8 @@ format:
 	make execute-format FILENAME=scc.hpp
 	make execute-format FILENAME=tc8566af.hpp
 	make execute-format FILENAME=v9958.hpp
+	cp ./msx2-osx/core/* ./msx2-android/app/src/main/cpp/core
+	cp ./msx2-osx/lz4/* ./msx2-android/app/src/main/cpp/lz4
 
 execute-format:
 	clang-format -style=file < ./msx2-osx/core/${FILENAME} > ./msx2-osx/core/${FILENAME}.bak
