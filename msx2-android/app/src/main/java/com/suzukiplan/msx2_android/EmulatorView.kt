@@ -11,7 +11,6 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import kotlin.math.abs
-import kotlin.random.Random
 
 class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(context, attribute),
     SurfaceHolder.Callback, Runnable {
@@ -23,7 +22,6 @@ class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(cont
     private val paint = Paint()
     private var aliveSubThread = false
     private var subThread: Thread? = null
-    private val rand = Random(0)
     var delegate: Delegate? = null
 
     interface Delegate {
