@@ -26,11 +26,16 @@
   - `MSX2_ROM_TYPE_ASC16_SRAM2` ASCII16 + SRAM メガロム
   - `MSX2_ROM_TYPE_KONAMI_SCC` KONAMI SCC メガロム
   - `MSX2_ROM_TYPE_KONAMI` KONAMI 標準メガロム
-- 本リポジトリでは、micro MSX2+ の実装例として Cocoa (macOS) 用のアプリケーション実装用のベースプログラムも提供しています
-  - Windows 用のベースプログラム実装は今のところ提供してません（将来的には作るかも）
-  - Linux 用のベースプログラム実装は今のところ提供してません（将来的には作るかも）
-  - iOS 用のベースプログラム実装は今のところ提供してません（将来的には作るかも）
-  - Android 用のベースプログラム実装は今のところ提供してません（将来的には作るかも）
+- 各プラットフォーム向けの実装例:
+  - [msx2-osx](./msx2-osx) macOS (Cocoa)
+  - [msx2-android](./msx2-android) Android
+  - 以下のプラットフォームはまだ提供していません:
+    - Windows（将来的には作るかも）
+    - Linux（将来的には作るかも）
+    - iOS（将来的には作るかも）
+    - Nintendo Switch（ライセンス的な事情で公開はできないかも）
+    - PlayStation（ライセンス的な事情で公開はできないかも）
+    - XBOX（ライセンス的な事情で公開はできないかも）
 
 ## Unimplemented Features
 
