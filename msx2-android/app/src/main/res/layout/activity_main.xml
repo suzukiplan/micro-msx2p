@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <com.suzukiplan.msx2_android.EmulatorView
+    <com.suzukiplan.msx2.MSX2View
         android:id="@+id/emulator"
         android:layout_width="0dp"
         android:layout_height="0dp"

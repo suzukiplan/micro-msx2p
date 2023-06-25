@@ -54,86 +54,49 @@ class MSX2View(context: Context, attribute: AttributeSet) : SurfaceView(context,
     private val paint = Paint()
     private var aliveSubThread = false
     private var subThread: Thread? = null
-    private var paused = true
-    private var emulatorContext = 0L
+    private var paused = false
     private var onPause: OnPauseListener? = null
+    private var bootInfo: BootInfo? = null
 
     @Suppress("MemberVisibilityCanBePrivate")
-    var delegatePad1: DelegatePad1? = null
+    var delegate: Delegate? = null
 
-    interface DelegatePad1 {
+    interface Delegate {
         fun msx2ViewDidRequirePad1Code(): Int
+        fun msx2ViewDidStart()
+        fun msx2ViewDidStop()
     }
 
     interface OnPauseListener {
         fun onPause()
     }
 
+    private class BootInfo(
+        var context: Long,
+        var keySelect: Int,
+        var keyStart: Int,
+        var main: ByteArray?,
+        var logo: ByteArray?,
+        var sub: ByteArray?,
+        var rom: ByteArray?,
+        var romType: RomType
+    )
+
     init {
         holder.addCallback(this)
     }
 
     @Suppress("unused")
-    fun setupCBios(main: ByteArray, logo: ByteArray, sub: ByteArray) {
-        pause(object : OnPauseListener {
-            override fun onPause() {
-                setupSecondaryExist(page0 = false, page1 = false, page2 = false, page3 = true)
-                setup(0, 0, 0, main, "MAIN")
-                setup(0, 0, 4, logo, "LOGO")
-                setup(3, 0, 0, sub, "SUB")
-                setupRAM(3, 3)
-            }
-        })
-    }
-
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun setupSecondaryExist(page0: Boolean, page1: Boolean, page2: Boolean, page3: Boolean) {
-        pause(object : OnPauseListener {
-            override fun onPause() {
-                Core.setupSecondaryExist(emulatorContext, page0, page1, page2, page3)
-            }
-        })
-    }
-
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun setupRAM(pri: Int, sec: Int) {
-        pause(object : OnPauseListener {
-            override fun onPause() {
-                Core.setupRAM(emulatorContext, pri, sec)
-            }
-        })
-    }
-
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun setup(pri: Int, sec: Int, idx: Int, data: ByteArray, label: String) {
-        pause(object : OnPauseListener {
-            override fun onPause() {
-                Core.setup(emulatorContext, pri, sec, idx, data, label)
-            }
-        })
-    }
-
-    @Suppress("unused")
-    fun loadFont(font: ByteArray) {
-        pause(object : OnPauseListener {
-            override fun onPause() {
-                Core.loadFont(emulatorContext, font)
-            }
-        })
-    }
-
-    @Suppress("unused")
-    fun setupSpecialKeyCode(select: Int, start: Int) {
-        pause(object : OnPauseListener {
-            override fun onPause() {
-                Core.setupSpecialKeyCode(emulatorContext, select, start)
-            }
-        })
-    }
-
-    @Suppress("unused")
-    fun loadRom(rom: ByteArray, type: RomType) {
-        Core.loadRom(emulatorContext, rom, type.value)
+    fun initialize(
+        keySelect: Int,
+        keyStart: Int,
+        main: ByteArray,
+        logo: ByteArray,
+        sub: ByteArray,
+        rom: ByteArray,
+        romType: RomType
+    ) {
+        bootInfo = BootInfo(0L, keySelect, keyStart, main, logo, sub, rom, romType)
     }
 
     private fun makeSHA256(bytes: ByteArray): String {
@@ -144,37 +107,38 @@ class MSX2View(context: Context, attribute: AttributeSet) : SurfaceView(context,
 
     @Suppress("unused")
     fun insertDisk(driveId: Int, disk: ByteArray, readOnly: Boolean) {
-        Core.insertDisk(emulatorContext, driveId, disk, makeSHA256(disk), readOnly)
+        val context = bootInfo?.context ?: return
+        Core.insertDisk(context, driveId, disk, makeSHA256(disk), readOnly)
     }
 
     @Suppress("unused")
     fun ejectDisk(driveId: Int) {
-        Core.ejectDisk(emulatorContext, driveId)
+        val context = bootInfo?.context ?: return
+        Core.ejectDisk(context, driveId)
     }
 
-    @Suppress("unused")
     fun quickSave(): ByteArray? {
-        return Core.quickSave(emulatorContext)
+        val context = bootInfo?.context ?: return null
+        return Core.quickSave(context)
     }
 
-    @Suppress("unused")
     fun quickLoad(save: ByteArray) {
-        Core.quickLoad(emulatorContext, save)
+        val context = bootInfo?.context ?: return
+        Core.quickLoad(context, save)
     }
 
     fun reset() {
-        Core.reset(emulatorContext)
-        resume()
+        val context = bootInfo?.context ?: return
+        Core.reset(context)
     }
 
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun pause(listener: OnPauseListener) {
+    fun pause(listener: OnPauseListener?) {
         if (paused) {
-            listener.onPause()
-            return
+            listener?.onPause()
+        } else {
+            paused = true
+            onPause = listener
         }
-        paused = true
-        onPause = listener
     }
 
     fun resume() {
@@ -215,20 +179,33 @@ class MSX2View(context: Context, attribute: AttributeSet) : SurfaceView(context,
     private fun stopSubThread() {
         aliveSubThread = false
         subThread?.join()
-        paused = true
     }
 
     override fun run() {
+        while (null == bootInfo && aliveSubThread) {
+            Thread.sleep(100)
+        }
+        bootInfo?.context = Core.init()
+        val context = bootInfo?.context ?: 0L
+        Core.setupSecondaryExist(context, false, false, false, true)
+        Core.setup(context, 0, 0, 0, bootInfo?.main, "MAIN")
+        Core.setup(context, 0, 0, 4, bootInfo?.logo, "LOGO")
+        Core.setup(context, 3, 0, 0, bootInfo?.sub, "SUB")
+        Core.setupRAM(context, 3, 3)
+        Core.setupSpecialKeyCode(context, bootInfo?.keySelect ?: 0, bootInfo?.keyStart ?: 0)
+        Core.loadRom(context, bootInfo?.rom, bootInfo?.romType?.value ?: 0)
+        Core.reset(context)
         val vram = Bitmap.createBitmap(vramWidth, vramHeight / 2, Bitmap.Config.RGB_565)
         var currentInterval = 0
         val intervals = intArrayOf(17, 17, 16)
         val minInterval = 16
+        delegate?.msx2ViewDidStart()
         while (aliveSubThread) {
             val start = System.currentTimeMillis()
             if (!paused) {
                 Core.tick(
-                    emulatorContext,
-                    delegatePad1?.msx2ViewDidRequirePad1Code() ?: 0,
+                    context,
+                    delegate?.msx2ViewDidRequirePad1Code() ?: 0,
                     0,
                     0,
                     vram
@@ -249,16 +226,8 @@ class MSX2View(context: Context, attribute: AttributeSet) : SurfaceView(context,
                 Thread.sleep(intervals[currentInterval] - procTime)
             }
         }
+        delegate?.msx2ViewDidStop()
         vram.recycle()
-    }
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        emulatorContext = Core.init()
-    }
-
-    override fun onDetachedFromWindow() {
-        Core.term(emulatorContext)
-        super.onDetachedFromWindow()
+        Core.term(context)
     }
 }

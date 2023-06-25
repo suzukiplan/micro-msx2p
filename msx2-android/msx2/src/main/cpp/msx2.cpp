@@ -42,6 +42,7 @@ public:
     MSX2 *msx2;
     std::map<std::string, Binary *> bios;
     Binary *rom;
+    pthread_mutex_t mutex{};
     pthread_mutex_t audioMutex{};
     unsigned char audioBuffer[65536]{};
     size_t audioBufferSize;
@@ -50,6 +51,7 @@ public:
     Context() {
         this->msx2 = new MSX2(MSX2_COLOR_MODE_RGB565);
         this->rom = nullptr;
+        pthread_mutex_init(&this->mutex, nullptr);
         pthread_mutex_init(&this->audioMutex, nullptr);
         memset(this->audioBuffer, 0, sizeof(this->audioBuffer));
         this->audioBufferSize = 0;
@@ -77,6 +79,7 @@ public:
             delete bin.second;
         }
         pthread_mutex_destroy(&this->audioMutex);
+        pthread_mutex_destroy(&this->mutex);
     }
 
     void addBios(std::string &label, void *data, size_t size) {
@@ -86,12 +89,21 @@ public:
             this->bios[label]->replace(data, size);
         }
     }
+
+    void lock() {
+        pthread_mutex_lock(&this->mutex);
+    }
+
+    void unlock() {
+        pthread_mutex_unlock(&this->mutex);
+    }
 };
 
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_com_suzukiplan_msx2_Core_init(JNIEnv *, jclass) {
-    return (jlong) (new Context);
+    auto context = new Context();
+    return (jlong) context;
 }
 
 extern "C"
@@ -99,6 +111,7 @@ JNIEXPORT void JNICALL
 Java_com_suzukiplan_msx2_Core_term(JNIEnv *, jclass, jlong context) {
     delete (Context *) context;
 }
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_suzukiplan_msx2_Core_setupSecondaryExist(JNIEnv *,
@@ -108,7 +121,9 @@ Java_com_suzukiplan_msx2_Core_setupSecondaryExist(JNIEnv *,
                                                   jboolean page1,
                                                   jboolean page2,
                                                   jboolean page3) {
+    ((Context *) context)->lock();
     ((Context *) context)->msx2->setupSecondaryExist(page0, page1, page2, page3);
+    ((Context *) context)->unlock();
 }
 
 extern "C"
@@ -118,7 +133,9 @@ Java_com_suzukiplan_msx2_Core_setupRAM(JNIEnv *,
                                        jlong context,
                                        jint pri,
                                        jint sec) {
+    ((Context *) context)->lock();
     ((Context *) context)->msx2->setupRAM(pri, sec);
+    ((Context *) context)->unlock();
 }
 extern "C"
 JNIEXPORT void JNICALL
@@ -130,6 +147,7 @@ Java_com_suzukiplan_msx2_Core_setup(JNIEnv *env,
                                     jint idx,
                                     jbyteArray data,
                                     jstring label) {
+    ((Context *) context)->lock();
     jbyte *dataRaw = env->GetByteArrayElements(data, nullptr);
     size_t dataSize = env->GetArrayLength(data);
     const char *labelRaw = env->GetStringUTFChars(label, nullptr);
@@ -142,6 +160,7 @@ Java_com_suzukiplan_msx2_Core_setup(JNIEnv *env,
                      labelRaw);
     env->ReleaseStringUTFChars(label, labelRaw);
     env->ReleaseByteArrayElements(data, dataRaw, 0);
+    ((Context *) context)->unlock();
 }
 
 extern "C"
@@ -150,6 +169,7 @@ Java_com_suzukiplan_msx2_Core_loadFont(JNIEnv *env,
                                        jclass,
                                        jlong context,
                                        jbyteArray font) {
+    ((Context *) context)->lock();
     jbyte *fontRaw = env->GetByteArrayElements(font, nullptr);
     size_t fontSize = env->GetArrayLength(font);
     std::string label = "KNJFNT16";
@@ -157,6 +177,7 @@ Java_com_suzukiplan_msx2_Core_loadFont(JNIEnv *env,
     ctx->addBios(label, fontRaw, fontSize);
     ctx->msx2->loadFont(ctx->bios[label]->data, ctx->bios[label]->size);
     env->ReleaseByteArrayElements(font, fontRaw, 0);
+    ((Context *) context)->unlock();
 }
 
 extern "C"
@@ -166,8 +187,10 @@ Java_com_suzukiplan_msx2_Core_setupSpecialKeyCode(JNIEnv *,
                                                   jlong context,
                                                   jint select,
                                                   jint start) {
+    ((Context *) context)->lock();
     ((Context *) context)->msx2->setupKeyAssign(0, MSX2_JOY_S2, select);
     ((Context *) context)->msx2->setupKeyAssign(0, MSX2_JOY_S1, start);
+    ((Context *) context)->unlock();
 }
 
 extern "C"
@@ -179,6 +202,7 @@ Java_com_suzukiplan_msx2_Core_tick(JNIEnv *env,
                                    jint pad2,
                                    jint key,
                                    jobject vram) {
+    ((Context *) context)->lock();
     auto ctx = (Context *) context;
     ctx->msx2->tick(pad1, pad2, key);
     unsigned short *pixels;
@@ -194,6 +218,8 @@ Java_com_suzukiplan_msx2_Core_tick(JNIEnv *env,
     AndroidBitmap_unlockPixels(env, vram);
     size_t soundSize;
     void *soundBuf = ctx->msx2->getSound(&soundSize);
+    ((Context *) context)->unlock();
+
     pthread_mutex_lock(&ctx->audioMutex);
     if (ctx->audioBufferSize + soundSize < sizeof(ctx->audioBuffer)) {
         memcpy(&ctx->audioBuffer[ctx->audioBufferSize], soundBuf, soundSize);
@@ -209,6 +235,7 @@ Java_com_suzukiplan_msx2_Core_loadRom(JNIEnv *env,
                                       jlong context,
                                       jbyteArray rom,
                                       jint rom_type) {
+    ((Context *) context)->lock();
     jbyte *romRaw = env->GetByteArrayElements(rom, nullptr);
     size_t romSize = env->GetArrayLength(rom);
     auto ctx = (Context *) context;
@@ -216,6 +243,7 @@ Java_com_suzukiplan_msx2_Core_loadRom(JNIEnv *env,
     ctx->addBios(label, romRaw, romSize);
     ((Context *) context)->msx2->loadRom(ctx->bios[label]->data, (int) romSize, rom_type);
     env->ReleaseByteArrayElements(rom, romRaw, 0);
+    ((Context *) context)->unlock();
 }
 
 extern "C"
@@ -227,6 +255,7 @@ Java_com_suzukiplan_msx2_Core_insertDisk(JNIEnv *env,
                                          jbyteArray disk,
                                          jstring sha256,
                                          jboolean read_only) {
+    ((Context *) context)->lock();
     jbyte *diskRaw = env->GetByteArrayElements(disk, nullptr);
     size_t diskSize = env->GetArrayLength(disk);
     auto ctx = (Context *) context;
@@ -239,36 +268,45 @@ Java_com_suzukiplan_msx2_Core_insertDisk(JNIEnv *env,
                                             read_only);
     env->ReleaseByteArrayElements(disk, diskRaw, 0);
     env->ReleaseStringUTFChars(sha256, sha256Raw);
+    ((Context *) context)->unlock();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_suzukiplan_msx2_Core_ejectDisk(JNIEnv *, jclass, jlong context, jint drive_id) {
+    ((Context *) context)->lock();
     ((Context *) context)->msx2->ejectDisk(drive_id);
+    ((Context *) context)->unlock();
 }
 
 extern "C"
 JNIEXPORT jbyteArray JNICALL
 Java_com_suzukiplan_msx2_Core_quickSave(JNIEnv *env, jclass, jlong context) {
+    ((Context *) context)->lock();
     size_t size;
     auto save = ((Context *) context)->msx2->quickSave(&size);
     jbyteArray result = env->NewByteArray((int) size);
     jbyte *ptr = env->GetByteArrayElements(result, nullptr);
     memcpy(ptr, save, size);
+    ((Context *) context)->unlock();
     return result;
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_suzukiplan_msx2_Core_quickLoad(JNIEnv *env, jclass, jlong context, jbyteArray save) {
+    ((Context *) context)->lock();
     auto saveRaw = env->GetByteArrayElements(save, nullptr);
     size_t saveSize = env->GetArrayLength(save);
     ((Context *) context)->msx2->quickLoad(saveRaw, saveSize);
     env->ReleaseByteArrayElements(save, saveRaw, 0);
+    ((Context *) context)->unlock();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_suzukiplan_msx2_Core_reset(JNIEnv *, jclass, jlong context) {
+    ((Context *) context)->lock();
     ((Context *) context)->msx2->reset();
+    ((Context *) context)->unlock();
 }

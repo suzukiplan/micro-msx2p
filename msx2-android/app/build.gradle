@@ -12,23 +12,6 @@ android {
         targetSdk 33
         versionCode 1
         versionName "1.0"
-        ndk {
-            moduleName "native-lib"
-            abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
-        }
-        externalNativeBuild {
-            cmake {
-                arguments "-DANDROID_STL=c++_static"
-                cFlags "-fPIC " +
-                        "-ffast-math " +
-                        "-fsigned-char " +
-                        "-Ofast " +
-                        "-D__ANDROID__ " +
-                        "-DFIXED_POINT " +
-                        "-DNDEBUG "
-                cppFlags ''
-            }
-        }
     }
 
     buildTypes {
@@ -44,12 +27,6 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-    externalNativeBuild {
-        cmake {
-            path file('CMakeLists.txt')
-            version '3.18.1'
-        }
-    }
 }
 
 dependencies {
@@ -57,4 +34,5 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation(project(':msx2'))
 }
