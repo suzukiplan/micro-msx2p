@@ -288,6 +288,7 @@ Java_com_suzukiplan_msx2_Core_quickSave(JNIEnv *env, jclass, jlong context) {
     jbyteArray result = env->NewByteArray((int) size);
     jbyte *ptr = env->GetByteArrayElements(result, nullptr);
     memcpy(ptr, save, size);
+    env->ReleaseByteArrayElements(result, ptr, 0);
     ((Context *) context)->unlock();
     return result;
 }
