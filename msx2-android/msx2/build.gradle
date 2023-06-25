@@ -19,16 +19,17 @@ android {
         externalNativeBuild {
             cmake {
                 arguments "-DANDROID_STL=c++_static"
-                cFlags "-Os " +
-                        "-fPIC " +
+                cFlags "-fPIC " +
                         "-ffast-math " +
                         "-fsigned-char " +
                         "-Ofast " +
                         "-D__ANDROID__ " +
                         "-DFIXED_POINT " +
                         "-DNDEBUG "
-                cppFlags "-Os " +
+                cppFlags "-Ofast " +
                         "-fPIC " +
+                        "-ffast-math " +
+                        "-fsigned-char " +
                         "-DNDEBUG "
             }
         }
