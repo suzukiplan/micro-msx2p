@@ -8,11 +8,12 @@
 
 ## Basic Usage
 
-### Build.gradle
+### build.gradle
+
+アプリの build.gradle の `dependencies` に以下を追加してください。
 
 ```
-TODO: MavenCentral へ公開
-上記が完了すれば implementation をすれば組み込めます
+implementation 'com.suzukiplan:msx2:0.1'
 ```
 
 ### [MSX2View](msx2/src/main/java/com/suzukiplan/msx2/MSX2View.kt)
