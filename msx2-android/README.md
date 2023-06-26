@@ -88,10 +88,6 @@ class MainActivity : AppCompatActivity(), MSX2View.Delegate {
 }
 ```
 
-- `msx2ViewDidRequirePad1Code` 毎フレームコールバックされる（入力キーコードを返す）
-- `msx2ViewDidStart` エミュレータ起動時（動作直前）に呼び出される
-- `msx2ViewDidStop` エミュレータ停止時（破棄直前）に呼び出される
-
 `MSX2View` は `SurfaceView` の派生クラスで、micro-msx2p のインスタンスはサーフェースのライフサイクルに従います。そして、サーフェースはアプリを終了する時やホーム画面に戻った時に破棄されます。そこで、基本的には上記で例に示しているように、クイックセーブ・ロードで状態の保持を復元を行うことを想定しています。これにより、ゲームプレイ中に突然電話が鳴ってきても、電話応対後にアプリを起動すれば状態を維持することができます。
 
 なお `MSX2View.Delegate` の全てのコールバックは、サブスレッドから呼び出されます。
@@ -102,77 +98,8 @@ class MainActivity : AppCompatActivity(), MSX2View.Delegate {
 
 ![image](screen.png)
 
-[MainActivity.kt](app/src/main/java/com/suzukiplan/msx2_android/MainActivity.kt) の実装を見れば `MSX2View` の使い方を簡単に把握できるようになっています。
-
-```kotlin
-import android.os.Bundle
-import android.view.*
-import androidx.appcompat.app.AppCompatActivity
-import com.suzukiplan.msx2.MSX2View
-import com.suzukiplan.msx2.RomType
-import java.io.File
-import java.util.concurrent.Executors
-
-class MainActivity : AppCompatActivity(), MSX2View.Delegate {
-    private lateinit var msx2View: MSX2View
-    private lateinit var virtualJoyPad: VirtualJoyPad
-    private val executor = Executors.newSingleThreadExecutor()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        val padContainer = findViewById<View>(R.id.pad_container)
-        virtualJoyPad = VirtualJoyPad(padContainer)
-        padContainer.setOnTouchListener(virtualJoyPad)
-        msx2View = findViewById(R.id.emulator)
-        msx2View.delegate = this
-        executor.execute {
-            msx2View.initialize(
-                0x1B,
-                0x20,
-                assets.open("cbios_main_msx2+_jp.rom").readBytes(),
-                assets.open("cbios_logo_msx2+.rom").readBytes(),
-                assets.open("cbios_sub.rom").readBytes(),
-                assets.open("game.rom").readBytes(),
-                RomType.NORMAL
-            )
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.reset_button -> msx2View.reset()
-        }
-        return true
-    }
-
-    override fun dispatchTouchEvent(ev: MotionEvent?) = super.dispatchTouchEvent(ev)
-
-    override fun msx2ViewDidRequirePad1Code() = virtualJoyPad.code
-
-    override fun msx2ViewDidStart() {
-        val save = File(applicationContext.cacheDir, "save.dat")
-        if (save.exists()) {
-            val data = save.readBytes()
-            msx2View.quickLoad(data)
-        }
-    }
-
-    override fun msx2ViewDidStop() {
-        val save = msx2View.quickSave() ?: return
-        File(applicationContext.cacheDir, "save.dat").writeBytes(save)
-    }
-}
-```
-
-Android Studio でビルドすれば [assets](app/src/main/assets) に組み込まれた game.rom が起動します
-
+- [MainActivity.kt](app/src/main/java/com/suzukiplan/msx2_android/MainActivity.kt) の実装を見れば `MSX2View` の使い方を簡単に把握できるようになっています
+- Android Studio でビルドすれば [assets](app/src/main/assets) に組み込まれた game.rom が起動します
 - デフォルトの game.rom は `Hello, World!` を表示するシンプルな ROM ファイルです
 - game.rom を置き換えることで任意のゲームを起動できます
 - メガロムを起動する時は `MSX2View.initialize` に指定している `RomType` を適切に変更してください
