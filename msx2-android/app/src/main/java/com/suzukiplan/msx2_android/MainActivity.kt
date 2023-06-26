@@ -34,7 +34,6 @@ import com.suzukiplan.msx2.RomType
 import java.io.File
 import java.util.concurrent.Executors
 
-
 class MainActivity : AppCompatActivity(), MSX2View.Delegate {
     private lateinit var msx2View: MSX2View
     private lateinit var virtualJoyPad: VirtualJoyPad

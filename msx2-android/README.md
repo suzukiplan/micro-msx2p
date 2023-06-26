@@ -37,7 +37,7 @@ __（基本的な使い方）__
 Activity や Fragment 上で `MSX2View.initialize` を呼び出し、初期化処理を行うことで動き始めます。
 
 ```kotlin
-Thread {
+executor.execute {
     msx2View.initialize(
         0x1B, // SELECT ボタンのキー割当 (0x1B = ESC)
         0x20, // START ボタンのキー割当 (0x20 = SPACE)
@@ -47,7 +47,7 @@ Thread {
         assets.open("game.rom").readBytes(),
         RomType.NORMAL
     )
-}.start()
+}
 ```
 
 #### 3. Set Delegate
@@ -105,19 +105,18 @@ class MainActivity : AppCompatActivity(), MSX2View.Delegate {
 [MainActivity.kt](app/src/main/java/com/suzukiplan/msx2_android/MainActivity.kt) の実装を見れば `MSX2View` の使い方を簡単に把握できるようになっています。
 
 ```kotlin
-package com.suzukiplan.msx2_android
-
 import android.os.Bundle
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import com.suzukiplan.msx2.MSX2View
 import com.suzukiplan.msx2.RomType
 import java.io.File
-
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity(), MSX2View.Delegate {
     private lateinit var msx2View: MSX2View
     private lateinit var virtualJoyPad: VirtualJoyPad
+    private val executor = Executors.newSingleThreadExecutor()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -128,7 +127,7 @@ class MainActivity : AppCompatActivity(), MSX2View.Delegate {
         padContainer.setOnTouchListener(virtualJoyPad)
         msx2View = findViewById(R.id.emulator)
         msx2View.delegate = this
-        Thread {
+        executor.execute {
             msx2View.initialize(
                 0x1B,
                 0x20,
@@ -138,7 +137,7 @@ class MainActivity : AppCompatActivity(), MSX2View.Delegate {
                 assets.open("game.rom").readBytes(),
                 RomType.NORMAL
             )
-        }.start()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
