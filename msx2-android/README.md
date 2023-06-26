@@ -30,6 +30,8 @@ __（基本的な使い方）__
     android:layout_height="match_parent" />
 ```
 
+> MSX2+ の画面領域（568x480）は `MSX2View` 内で aspect-fit で配置されます。View の画角が 568:480 と異なる場合、上下または左右に黒色の帯が表示されます。
+
 #### 2. Initialize
 
 `MSX2View` はレイアウトで配置した状態だと初期化待ち状態（ブラックスクリーン）になります。
