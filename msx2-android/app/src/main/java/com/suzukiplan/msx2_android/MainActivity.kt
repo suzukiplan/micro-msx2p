@@ -32,11 +32,13 @@ import androidx.appcompat.app.AppCompatActivity
 import com.suzukiplan.msx2.MSX2View
 import com.suzukiplan.msx2.RomType
 import java.io.File
+import java.util.concurrent.Executors
 
 
 class MainActivity : AppCompatActivity(), MSX2View.Delegate {
     private lateinit var msx2View: MSX2View
     private lateinit var virtualJoyPad: VirtualJoyPad
+    private val executor = Executors.newSingleThreadExecutor()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +49,7 @@ class MainActivity : AppCompatActivity(), MSX2View.Delegate {
         padContainer.setOnTouchListener(virtualJoyPad)
         msx2View = findViewById(R.id.emulator)
         msx2View.delegate = this
-        Thread {
+        executor.execute {
             msx2View.initialize(
                 0x1B,
                 0x20,
@@ -57,7 +59,7 @@ class MainActivity : AppCompatActivity(), MSX2View.Delegate {
                 assets.open("game.rom").readBytes(),
                 RomType.NORMAL
             )
-        }.start()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
