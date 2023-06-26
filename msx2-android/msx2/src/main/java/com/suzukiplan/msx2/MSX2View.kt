@@ -35,7 +35,6 @@ import android.util.AttributeSet
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import java.security.MessageDigest
 import kotlin.math.abs
 
 class MSX2View(context: Context, attribute: AttributeSet) : SurfaceView(context, attribute),
@@ -86,7 +85,16 @@ class MSX2View(context: Context, attribute: AttributeSet) : SurfaceView(context,
         holder.addCallback(this)
     }
 
-    @Suppress("unused")
+    /**
+     * initialize emulator
+     * @param keySelect key code of SELECT button
+     * @param keyStart key code of START button
+     * @param main C-BIOS main ROM
+     * @param logo C-BIOS logo ROM
+     * @param sub C-BIOS sub ROM
+     * @param rom ROM data
+     * @param rom Mega-ROM Type of ROM data
+     */
     fun initialize(
         keySelect: Int,
         keyStart: Int,
@@ -99,39 +107,36 @@ class MSX2View(context: Context, attribute: AttributeSet) : SurfaceView(context,
         bootInfo = BootInfo(0L, keySelect, keyStart, main, logo, sub, rom, romType)
     }
 
-    private fun makeSHA256(bytes: ByteArray): String {
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(bytes)
-        return digest.fold("") { str, it -> str + "%02x".format(it) }
-    }
-
-    @Suppress("unused")
-    fun insertDisk(driveId: Int, disk: ByteArray, readOnly: Boolean) {
-        val context = bootInfo?.context ?: return
-        Core.insertDisk(context, driveId, disk, makeSHA256(disk), readOnly)
-    }
-
-    @Suppress("unused")
-    fun ejectDisk(driveId: Int) {
-        val context = bootInfo?.context ?: return
-        Core.ejectDisk(context, driveId)
-    }
-
+    /**
+     * Quick save all state of the emulator
+     * @return Save data
+     */
     fun quickSave(): ByteArray? {
         val context = bootInfo?.context ?: return null
         return Core.quickSave(context)
     }
 
+    /**
+     * Quick load all state of the emulator
+     * @param save Save data
+     */
     fun quickLoad(save: ByteArray) {
         val context = bootInfo?.context ?: return
         Core.quickLoad(context, save)
     }
 
+    /**
+     * Reset emulator
+     */
     fun reset() {
         val context = bootInfo?.context ?: return
         Core.reset(context)
     }
 
+    /**
+     * Pause the emulation
+     * @param listener Callback after paused
+     */
     fun pause(listener: OnPauseListener?) {
         if (paused) {
             listener?.onPause()
@@ -141,6 +146,9 @@ class MSX2View(context: Context, attribute: AttributeSet) : SurfaceView(context,
         }
     }
 
+    /**
+     * Resume the emulation
+     */
     fun resume() {
         paused = false
     }

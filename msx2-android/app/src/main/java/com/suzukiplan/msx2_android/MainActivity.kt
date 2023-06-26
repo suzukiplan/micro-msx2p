@@ -1,5 +1,5 @@
 /**
- * micro MSX2+ - Android
+ * micro MSX2+ - Android Example
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
