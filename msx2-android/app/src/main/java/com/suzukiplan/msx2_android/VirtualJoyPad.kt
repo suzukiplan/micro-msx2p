@@ -32,6 +32,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
 import androidx.core.util.forEach
+import com.suzukiplan.msx2.JoyPad
 
 class VirtualJoyPad(padContainer: View) : View.OnTouchListener {
     private enum class TouchArea {
@@ -59,7 +60,7 @@ class VirtualJoyPad(padContainer: View) : View.OnTouchListener {
     private val b = padContainer.findViewById<ImageView>(R.id.pad_btn_b)
     private val select = padContainer.findViewById<ImageView>(R.id.pad_ctrl_select)
     private val start = padContainer.findViewById<ImageView>(R.id.pad_ctrl_start)
-    private val inputStatus = InputStatus(
+    private val inputStatus = JoyPad(
         up = false,
         down = false,
         left = false,

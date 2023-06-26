@@ -1,5 +1,5 @@
-/**
- * micro MSX2+ - Android
+/*
+ * micro MSX2+ - MSX2View for Android
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
@@ -24,10 +24,9 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-package com.suzukiplan.msx2_android
+package com.suzukiplan.msx2
 
 import android.content.Context
-import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.graphics.Paint
 import android.graphics.Rect
@@ -36,10 +35,17 @@ import android.util.AttributeSet
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import java.security.MessageDigest
 import kotlin.math.abs
 
-class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(context, attribute),
+class MSX2View(context: Context, attribute: AttributeSet) : SurfaceView(context, attribute),
     SurfaceHolder.Callback, Runnable {
+    companion object {
+        init {
+            System.loadLibrary("msx2")
+        }
+    }
+
     private val vramWidth = 568
     private val vramHeight = 480
     private val vramRect = Rect(0, 0, vramWidth, vramHeight / 2)
@@ -48,15 +54,95 @@ class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(cont
     private val paint = Paint()
     private var aliveSubThread = false
     private var subThread: Thread? = null
+    private var paused = false
+    private var onPause: OnPauseListener? = null
+    private var bootInfo: BootInfo? = null
+
+    @Suppress("MemberVisibilityCanBePrivate")
     var delegate: Delegate? = null
 
     interface Delegate {
-        fun emulatorViewRequirePadCode(): Int
-        fun emulatorViewRequireAssets(): AssetManager
+        fun msx2ViewDidRequirePad1Code(): Int
+        fun msx2ViewDidStart()
+        fun msx2ViewDidStop()
     }
+
+    interface OnPauseListener {
+        fun onPause()
+    }
+
+    private class BootInfo(
+        var context: Long,
+        var keySelect: Int,
+        var keyStart: Int,
+        var main: ByteArray?,
+        var logo: ByteArray?,
+        var sub: ByteArray?,
+        var rom: ByteArray?,
+        var romType: RomType
+    )
 
     init {
         holder.addCallback(this)
+    }
+
+    @Suppress("unused")
+    fun initialize(
+        keySelect: Int,
+        keyStart: Int,
+        main: ByteArray,
+        logo: ByteArray,
+        sub: ByteArray,
+        rom: ByteArray,
+        romType: RomType
+    ) {
+        bootInfo = BootInfo(0L, keySelect, keyStart, main, logo, sub, rom, romType)
+    }
+
+    private fun makeSHA256(bytes: ByteArray): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(bytes)
+        return digest.fold("") { str, it -> str + "%02x".format(it) }
+    }
+
+    @Suppress("unused")
+    fun insertDisk(driveId: Int, disk: ByteArray, readOnly: Boolean) {
+        val context = bootInfo?.context ?: return
+        Core.insertDisk(context, driveId, disk, makeSHA256(disk), readOnly)
+    }
+
+    @Suppress("unused")
+    fun ejectDisk(driveId: Int) {
+        val context = bootInfo?.context ?: return
+        Core.ejectDisk(context, driveId)
+    }
+
+    fun quickSave(): ByteArray? {
+        val context = bootInfo?.context ?: return null
+        return Core.quickSave(context)
+    }
+
+    fun quickLoad(save: ByteArray) {
+        val context = bootInfo?.context ?: return
+        Core.quickLoad(context, save)
+    }
+
+    fun reset() {
+        val context = bootInfo?.context ?: return
+        Core.reset(context)
+    }
+
+    fun pause(listener: OnPauseListener?) {
+        if (paused) {
+            listener?.onPause()
+        } else {
+            paused = true
+            onPause = listener
+        }
+    }
+
+    fun resume() {
+        paused = false
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
@@ -96,24 +182,42 @@ class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(cont
     }
 
     override fun run() {
+        while (null == bootInfo && aliveSubThread) {
+            Thread.sleep(100)
+        }
+        bootInfo?.context = Core.init()
+        val context = bootInfo?.context ?: 0L
+        Core.setupSecondaryExist(context, false, false, false, true)
+        Core.setup(context, 0, 0, 0, bootInfo?.main, "MAIN")
+        Core.setup(context, 0, 0, 4, bootInfo?.logo, "LOGO")
+        Core.setup(context, 3, 0, 0, bootInfo?.sub, "SUB")
+        Core.setupRAM(context, 3, 3)
+        Core.setupSpecialKeyCode(context, bootInfo?.keySelect ?: 0, bootInfo?.keyStart ?: 0)
+        Core.loadRom(context, bootInfo?.rom, bootInfo?.romType?.value ?: 0)
+        Core.reset(context)
         val vram = Bitmap.createBitmap(vramWidth, vramHeight / 2, Bitmap.Config.RGB_565)
-        val assets = delegate?.emulatorViewRequireAssets() ?: return
-        JNI.init(
-            assets.open("cbios_main_msx2+_jp.rom").readBytes(),
-            assets.open("cbios_logo_msx2+.rom").readBytes(),
-            assets.open("cbios_sub.rom").readBytes()
-        )
-        JNI.loadRom(assets.open("game.rom").readBytes())
         var currentInterval = 0
         val intervals = intArrayOf(17, 17, 16)
         val minInterval = 16
+        delegate?.msx2ViewDidStart()
         while (aliveSubThread) {
             val start = System.currentTimeMillis()
-            JNI.tick(delegate?.emulatorViewRequirePadCode() ?: 0, vram)
-            val canvas = holder.lockHardwareCanvas()
-            if (null != canvas) {
-                canvas.drawBitmap(vram, vramRect, drawRect, paint)
-                holder.unlockCanvasAndPost(canvas)
+            if (!paused) {
+                Core.tick(
+                    context,
+                    delegate?.msx2ViewDidRequirePad1Code() ?: 0,
+                    0,
+                    0,
+                    vram
+                )
+                val canvas = holder.lockHardwareCanvas()
+                if (null != canvas) {
+                    canvas.drawBitmap(vram, vramRect, drawRect, paint)
+                    holder.unlockCanvasAndPost(canvas)
+                }
+            } else {
+                onPause?.onPause()
+                onPause = null
             }
             val procTime = System.currentTimeMillis() - start
             currentInterval++
@@ -122,7 +226,8 @@ class EmulatorView(context: Context, attribute: AttributeSet) : SurfaceView(cont
                 Thread.sleep(intervals[currentInterval] - procTime)
             }
         }
-        JNI.term()
+        delegate?.msx2ViewDidStop()
         vram.recycle()
+        Core.term(context)
     }
 }

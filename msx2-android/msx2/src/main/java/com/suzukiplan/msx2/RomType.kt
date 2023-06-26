@@ -1,5 +1,5 @@
-/**
- * micro MSX2+ - Android
+/*
+ * micro MSX2+ - Supported Mega-ROM types for Android
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
@@ -24,16 +24,15 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-package com.suzukiplan.msx2_android;
+package com.suzukiplan.msx2
 
-import android.graphics.Bitmap;
-
-public class JNI {
-    public static native void init(byte[] main, byte[] logo, byte[] sub);
-
-    public static native void term();
-
-    public static native void tick(int pad, Bitmap vram);
-
-    public static native void loadRom(byte[] rom);
+@Suppress("unused")
+enum class RomType(val value: Int) {
+    NORMAL(0),
+    ASC8(1),
+    ASC8_SRAM2(2),
+    ASC16(3),
+    ASC16_SRAM2(4),
+    KONAMI_SCC(5),
+    KONAMI(6)
 }

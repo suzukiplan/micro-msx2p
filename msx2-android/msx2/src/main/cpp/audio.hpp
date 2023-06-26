@@ -30,12 +30,16 @@ private:
     int bufferSize;
     char buffer[2][AUDIO_BUFFER_SIZE];
     int bufferLatch;
+    void *context;
 
-    void (*buffering)(char *, size_t);
+    void (*buffering)(void *, char *, size_t);
 
 public:
-    AudioSystem(int sampling, int bit, int channel,
-                void (*buffering)(char *, size_t)) {
+    AudioSystem(void *context,
+                int sampling,
+                int bit,
+                int channel,
+                void (*buffering)(void *, char *, size_t)) {
         pthread_mutex_init(&mutex, nullptr);
         this->sampling = sampling;
         this->bit = bit;
@@ -43,6 +47,7 @@ public:
         this->bufferSize = AUDIO_BUFFER_SIZE;
         memset(&this->buffer, 0, sizeof(this->buffer));
         this->buffering = buffering;
+        this->context = context;
         init_sl();
     }
 
@@ -88,7 +93,9 @@ public:
         if (!context->isEnded()) {
             (*bq)->Enqueue(bq, context->buffer[context->bufferLatch], context->bufferSize);
             context->bufferLatch = 1 - context->bufferLatch;
-            context->buffering(context->buffer[context->bufferLatch], context->bufferSize);
+            context->buffering(context->context,
+                               context->buffer[context->bufferLatch],
+                               context->bufferSize);
         }
         context->unlock();
     }
@@ -261,8 +268,8 @@ private:
             return -1;
         }
         bufferLatch = 1;
-        buffering(buffer[0], bufferSize);
-        buffering(buffer[1], bufferSize);
+        buffering(context, buffer[0], bufferSize);
+        buffering(context, buffer[1], bufferSize);
         (*sl.slBufQ)->Enqueue(sl.slBufQ, buffer[0], bufferSize);
         return 0;
     }
