@@ -3,7 +3,7 @@
 ## About
 
 - micro-msx2p の機能を利用できる [ライブラリ](msx2) を提供しています
-- [ライブラリ](msx2) を利用した　[サンプルアプリ](app) を提供しています
+- [ライブラリ](msx2) を利用した [サンプルアプリ](app) を提供しています
 
 
 ## Basic Usage
@@ -69,9 +69,7 @@ class MainActivity : AppCompatActivity(), MSX2View.Delegate {
     }
 
     // 毎フレームコールバックされる（入力キーコードを返す）
-    override fun msx2ViewDidRequirePad1Code() {
-        reurn joyPad.code
-    }
+    override fun msx2ViewDidRequirePad1Code() = joyPad.code
 
     // エミュレータ起動時（動作直前）に呼び出される（quickLoadで状態復元を行う）
     override fun msx2ViewDidStart() {
