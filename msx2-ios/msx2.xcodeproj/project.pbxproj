@@ -33,6 +33,8 @@
 		74D439D22A4B01F900DC289B /* lz4hc.h in Headers */ = {isa = PBXBuildFile; fileRef = 74D439C92A4B01F900DC289B /* lz4hc.h */; };
 		74D439D32A4B01F900DC289B /* lz4frame.h in Headers */ = {isa = PBXBuildFile; fileRef = 74D439CA2A4B01F900DC289B /* lz4frame.h */; };
 		74D439D42A4B01F900DC289B /* lz4frame_static.h in Headers */ = {isa = PBXBuildFile; fileRef = 74D439CB2A4B01F900DC289B /* lz4frame_static.h */; };
+		74D439D72A4B02F800DC289B /* msx2gw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 74D439D52A4B02F800DC289B /* msx2gw.cpp */; };
+		74D439D82A4B02F800DC289B /* msx2gw.h in Headers */ = {isa = PBXBuildFile; fileRef = 74D439D62A4B02F800DC289B /* msx2gw.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,6 +66,9 @@
 		74D439C92A4B01F900DC289B /* lz4hc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4hc.h; path = "../../../msx2-osx/lz4/lz4hc.h"; sourceTree = "<group>"; };
 		74D439CA2A4B01F900DC289B /* lz4frame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4frame.h; path = "../../../msx2-osx/lz4/lz4frame.h"; sourceTree = "<group>"; };
 		74D439CB2A4B01F900DC289B /* lz4frame_static.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4frame_static.h; path = "../../../msx2-osx/lz4/lz4frame_static.h"; sourceTree = "<group>"; };
+		74D439D52A4B02F800DC289B /* msx2gw.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = msx2gw.cpp; sourceTree = "<group>"; };
+		74D439D62A4B02F800DC289B /* msx2gw.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msx2gw.h; sourceTree = "<group>"; };
+		74D439D92A4B0D3C00DC289B /* sha1.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = sha1.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,6 +113,9 @@
 				74D439AA2A4B01C900DC289B /* lz4 */,
 				74D439A92A4B01A200DC289B /* core */,
 				741F13522A4AD0F0001B057E /* msx2.h */,
+				74D439D52A4B02F800DC289B /* msx2gw.cpp */,
+				74D439D62A4B02F800DC289B /* msx2gw.h */,
+				74D439D92A4B0D3C00DC289B /* sha1.hpp */,
 			);
 			path = msx2;
 			sourceTree = "<group>";
@@ -181,6 +189,7 @@
 				74D439BA2A4B01E300DC289B /* v9958.hpp in Headers */,
 				74D439D32A4B01F900DC289B /* lz4frame.h in Headers */,
 				74D439B82A4B01E300DC289B /* scc.hpp in Headers */,
+				74D439D82A4B02F800DC289B /* msx2gw.h in Headers */,
 				74D439BC2A4B01E300DC289B /* emu2413.h in Headers */,
 				74D439BF2A4B01E300DC289B /* msx2clock.hpp in Headers */,
 				74D439BE2A4B01E300DC289B /* ay8910.hpp in Headers */,
@@ -293,6 +302,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				74D439CD2A4B01F900DC289B /* lz4.c in Sources */,
+				74D439D72A4B02F800DC289B /* msx2gw.cpp in Sources */,
 				74D439D12A4B01F900DC289B /* lz4frame.c in Sources */,
 				74D439CF2A4B01F900DC289B /* lz4hc.c in Sources */,
 				74D439CE2A4B01F900DC289B /* xxhash.c in Sources */,
