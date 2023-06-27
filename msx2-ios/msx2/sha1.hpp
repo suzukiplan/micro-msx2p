@@ -195,7 +195,7 @@ public:
 
     sha1& add(const char *text){
         if (!text) return *this;
-        return add(text, strlen(text));
+        return add(text, (int)strlen(text));
     }
 
     sha1& finalize(){
