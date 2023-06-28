@@ -9,6 +9,11 @@
 /* Begin PBXBuildFile section */
 		7407A1D529834DB500D59AA5 /* cbios_logo_msx2.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7407A1D329834DB500D59AA5 /* cbios_logo_msx2.rom */; };
 		741A1E3A299DA885001AE497 /* vgsspu_al.c in Sources */ = {isa = PBXBuildFile; fileRef = 741A1E39299DA885001AE497 /* vgsspu_al.c */; };
+		743A71D32A4C6D1C00102D27 /* lz4hc.c in Sources */ = {isa = PBXBuildFile; fileRef = 743A71CB2A4C6D1C00102D27 /* lz4hc.c */; };
+		743A71D42A4C6D1C00102D27 /* lz4.c in Sources */ = {isa = PBXBuildFile; fileRef = 743A71CE2A4C6D1C00102D27 /* lz4.c */; };
+		743A71D52A4C6D1C00102D27 /* lz4frame.c in Sources */ = {isa = PBXBuildFile; fileRef = 743A71D02A4C6D1C00102D27 /* lz4frame.c */; };
+		743A71D62A4C6D1C00102D27 /* xxhash.c in Sources */ = {isa = PBXBuildFile; fileRef = 743A71D22A4C6D1C00102D27 /* xxhash.c */; };
+		743A71E32A4C6D2900102D27 /* emu2413.c in Sources */ = {isa = PBXBuildFile; fileRef = 743A71D72A4C6D2900102D27 /* emu2413.c */; };
 		7444CCA529E000FB001CBA91 /* cbios_main_msx2+_jp.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7444CC9F29E000FB001CBA91 /* cbios_main_msx2+_jp.rom */; };
 		7444CCA729E000FB001CBA91 /* cbios_music.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7444CCA129E000FB001CBA91 /* cbios_music.rom */; };
 		7444CCA829E000FB001CBA91 /* cbios_basic.rom in Resources */ = {isa = PBXBuildFile; fileRef = 7444CCA229E000FB001CBA91 /* cbios_basic.rom */; };
@@ -33,22 +38,33 @@
 		748D22DF297E7E2E00B504AF /* MSX2.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 748D22D5297E7E2E00B504AF /* MSX2.ROM */; };
 		748D22E0297E7E2E00B504AF /* MSX2EXT.ROM in Resources */ = {isa = PBXBuildFile; fileRef = 748D22D6297E7E2E00B504AF /* MSX2EXT.ROM */; };
 		748D22E5297FB69800B504AF /* cbios_main_msx2_jp.rom in Resources */ = {isa = PBXBuildFile; fileRef = 748D22E4297FB69800B504AF /* cbios_main_msx2_jp.rom */; };
-		749112BA29AB4A6E004140F5 /* emu2413.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112B829AB4A6E004140F5 /* emu2413.c */; };
-		749112C729AC6F66004140F5 /* lz4frame.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112BF29AC6F66004140F5 /* lz4frame.c */; };
-		749112C829AC6F66004140F5 /* lz4.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112C029AC6F66004140F5 /* lz4.c */; };
-		749112C929AC6F66004140F5 /* xxhash.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112C329AC6F66004140F5 /* xxhash.c */; };
-		749112CA29AC6F66004140F5 /* lz4hc.c in Sources */ = {isa = PBXBuildFile; fileRef = 749112C629AC6F66004140F5 /* lz4hc.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		7407A1D329834DB500D59AA5 /* cbios_logo_msx2.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_logo_msx2.rom; sourceTree = "<group>"; };
-		740B459A29A89A2900289C9D /* tc8566af.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = tc8566af.hpp; sourceTree = "<group>"; };
-		741A1E052988DB8C001AE497 /* msx2def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msx2def.h; sourceTree = "<group>"; };
-		741A1E0C298B77E5001AE497 /* msx2clock.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = msx2clock.hpp; sourceTree = "<group>"; };
-		741A1E0D298D2CA5001AE497 /* msx2kanji.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = msx2kanji.hpp; sourceTree = "<group>"; };
-		741A1E37299B3026001AE497 /* scc.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = scc.hpp; sourceTree = "<group>"; };
 		741A1E38299DA885001AE497 /* vgsspu_al.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vgsspu_al.h; sourceTree = "<group>"; };
 		741A1E39299DA885001AE497 /* vgsspu_al.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vgsspu_al.c; sourceTree = "<group>"; };
+		743A71CA2A4C6D1C00102D27 /* lz4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4.h; path = src/lz4/lz4.h; sourceTree = SOURCE_ROOT; };
+		743A71CB2A4C6D1C00102D27 /* lz4hc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = lz4hc.c; path = src/lz4/lz4hc.c; sourceTree = SOURCE_ROOT; };
+		743A71CC2A4C6D1C00102D27 /* lz4frame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4frame.h; path = src/lz4/lz4frame.h; sourceTree = SOURCE_ROOT; };
+		743A71CD2A4C6D1C00102D27 /* lz4frame_static.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4frame_static.h; path = src/lz4/lz4frame_static.h; sourceTree = SOURCE_ROOT; };
+		743A71CE2A4C6D1C00102D27 /* lz4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = lz4.c; path = src/lz4/lz4.c; sourceTree = SOURCE_ROOT; };
+		743A71CF2A4C6D1C00102D27 /* xxhash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = xxhash.h; path = src/lz4/xxhash.h; sourceTree = SOURCE_ROOT; };
+		743A71D02A4C6D1C00102D27 /* lz4frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = lz4frame.c; path = src/lz4/lz4frame.c; sourceTree = SOURCE_ROOT; };
+		743A71D12A4C6D1C00102D27 /* lz4hc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4hc.h; path = src/lz4/lz4hc.h; sourceTree = SOURCE_ROOT; };
+		743A71D22A4C6D1C00102D27 /* xxhash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = xxhash.c; path = src/lz4/xxhash.c; sourceTree = SOURCE_ROOT; };
+		743A71D72A4C6D2900102D27 /* emu2413.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = emu2413.c; path = src/core/emu2413.c; sourceTree = SOURCE_ROOT; };
+		743A71D82A4C6D2900102D27 /* z80.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = z80.hpp; path = src/core/z80.hpp; sourceTree = SOURCE_ROOT; };
+		743A71D92A4C6D2900102D27 /* msx2mmu.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2mmu.hpp; path = src/core/msx2mmu.hpp; sourceTree = SOURCE_ROOT; };
+		743A71DA2A4C6D2900102D27 /* msx2def.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msx2def.h; path = src/core/msx2def.h; sourceTree = SOURCE_ROOT; };
+		743A71DB2A4C6D2900102D27 /* msx2.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2.hpp; path = src/core/msx2.hpp; sourceTree = SOURCE_ROOT; };
+		743A71DC2A4C6D2900102D27 /* msx2clock.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2clock.hpp; path = src/core/msx2clock.hpp; sourceTree = SOURCE_ROOT; };
+		743A71DD2A4C6D2900102D27 /* msx2kanji.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2kanji.hpp; path = src/core/msx2kanji.hpp; sourceTree = SOURCE_ROOT; };
+		743A71DE2A4C6D2900102D27 /* scc.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = scc.hpp; path = src/core/scc.hpp; sourceTree = SOURCE_ROOT; };
+		743A71DF2A4C6D2900102D27 /* ay8910.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ay8910.hpp; path = src/core/ay8910.hpp; sourceTree = SOURCE_ROOT; };
+		743A71E02A4C6D2900102D27 /* tc8566af.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tc8566af.hpp; path = src/core/tc8566af.hpp; sourceTree = SOURCE_ROOT; };
+		743A71E12A4C6D2900102D27 /* v9958.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = v9958.hpp; path = src/core/v9958.hpp; sourceTree = SOURCE_ROOT; };
+		743A71E22A4C6D2900102D27 /* emu2413.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = emu2413.h; path = src/core/emu2413.h; sourceTree = SOURCE_ROOT; };
 		7444CC9F29E000FB001CBA91 /* cbios_main_msx2+_jp.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = "cbios_main_msx2+_jp.rom"; sourceTree = "<group>"; };
 		7444CCA129E000FB001CBA91 /* cbios_music.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_music.rom; sourceTree = "<group>"; };
 		7444CCA229E000FB001CBA91 /* cbios_basic.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_basic.rom; sourceTree = "<group>"; };
@@ -64,11 +80,6 @@
 		748D22B3297E652800B504AF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		748D22B5297E652800B504AF /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		748D22B7297E652800B504AF /* msx2_osx.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = msx2_osx.entitlements; sourceTree = "<group>"; };
-		748D22BE297E670500B504AF /* ay8910.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ay8910.hpp; sourceTree = "<group>"; };
-		748D22BF297E670500B504AF /* v9958.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = v9958.hpp; sourceTree = "<group>"; };
-		748D22C0297E672F00B504AF /* msx2.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = msx2.hpp; sourceTree = "<group>"; };
-		748D22C1297E675000B504AF /* z80.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = z80.hpp; sourceTree = "<group>"; };
-		748D22C2297E691A00B504AF /* msx2mmu.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = msx2mmu.hpp; sourceTree = "<group>"; };
 		748D22C3297E758C00B504AF /* VideoView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VideoView.h; sourceTree = "<group>"; };
 		748D22C4297E758C00B504AF /* VideoView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VideoView.m; sourceTree = "<group>"; };
 		748D22C6297E75C800B504AF /* VideoLayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VideoLayer.h; sourceTree = "<group>"; };
@@ -86,17 +97,6 @@
 		748D22D5297E7E2E00B504AF /* MSX2.ROM */ = {isa = PBXFileReference; lastKnownFileType = file; path = MSX2.ROM; sourceTree = "<group>"; };
 		748D22D6297E7E2E00B504AF /* MSX2EXT.ROM */ = {isa = PBXFileReference; lastKnownFileType = text; path = MSX2EXT.ROM; sourceTree = "<group>"; };
 		748D22E4297FB69800B504AF /* cbios_main_msx2_jp.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_main_msx2_jp.rom; sourceTree = "<group>"; };
-		749112B829AB4A6E004140F5 /* emu2413.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = emu2413.c; sourceTree = "<group>"; };
-		749112B929AB4A6E004140F5 /* emu2413.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = emu2413.h; sourceTree = "<group>"; };
-		749112BE29AC6F66004140F5 /* xxhash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xxhash.h; sourceTree = "<group>"; };
-		749112BF29AC6F66004140F5 /* lz4frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lz4frame.c; sourceTree = "<group>"; };
-		749112C029AC6F66004140F5 /* lz4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lz4.c; sourceTree = "<group>"; };
-		749112C129AC6F66004140F5 /* lz4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lz4.h; sourceTree = "<group>"; };
-		749112C229AC6F66004140F5 /* lz4frame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lz4frame.h; sourceTree = "<group>"; };
-		749112C329AC6F66004140F5 /* xxhash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = xxhash.c; sourceTree = "<group>"; };
-		749112C429AC6F66004140F5 /* lz4frame_static.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lz4frame_static.h; sourceTree = "<group>"; };
-		749112C529AC6F66004140F5 /* lz4hc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lz4hc.h; sourceTree = "<group>"; };
-		749112C629AC6F66004140F5 /* lz4hc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lz4hc.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +110,41 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		743A71C82A4C6D0200102D27 /* lz4 */ = {
+			isa = PBXGroup;
+			children = (
+				743A71CE2A4C6D1C00102D27 /* lz4.c */,
+				743A71CA2A4C6D1C00102D27 /* lz4.h */,
+				743A71CD2A4C6D1C00102D27 /* lz4frame_static.h */,
+				743A71D02A4C6D1C00102D27 /* lz4frame.c */,
+				743A71CC2A4C6D1C00102D27 /* lz4frame.h */,
+				743A71CB2A4C6D1C00102D27 /* lz4hc.c */,
+				743A71D12A4C6D1C00102D27 /* lz4hc.h */,
+				743A71D22A4C6D1C00102D27 /* xxhash.c */,
+				743A71CF2A4C6D1C00102D27 /* xxhash.h */,
+			);
+			path = lz4;
+			sourceTree = "<group>";
+		};
+		743A71C92A4C6D0900102D27 /* core */ = {
+			isa = PBXGroup;
+			children = (
+				743A71DF2A4C6D2900102D27 /* ay8910.hpp */,
+				743A71D72A4C6D2900102D27 /* emu2413.c */,
+				743A71E22A4C6D2900102D27 /* emu2413.h */,
+				743A71DB2A4C6D2900102D27 /* msx2.hpp */,
+				743A71DC2A4C6D2900102D27 /* msx2clock.hpp */,
+				743A71DA2A4C6D2900102D27 /* msx2def.h */,
+				743A71DD2A4C6D2900102D27 /* msx2kanji.hpp */,
+				743A71D92A4C6D2900102D27 /* msx2mmu.hpp */,
+				743A71DE2A4C6D2900102D27 /* scc.hpp */,
+				743A71E02A4C6D2900102D27 /* tc8566af.hpp */,
+				743A71E12A4C6D2900102D27 /* v9958.hpp */,
+				743A71D82A4C6D2900102D27 /* z80.hpp */,
+			);
+			path = core;
+			sourceTree = "<group>";
+		};
 		748D229E297E652600B504AF = {
 			isa = PBXGroup;
 			children = (
@@ -129,9 +164,9 @@
 		748D22A9297E652600B504AF /* msx2-osx */ = {
 			isa = PBXGroup;
 			children = (
-				749112BD29AC6F0D004140F5 /* lz4 */,
+				743A71C92A4C6D0900102D27 /* core */,
+				743A71C82A4C6D0200102D27 /* lz4 */,
 				748D22CD297E7E0000B504AF /* bios */,
-				748D22BD297E66C600B504AF /* core */,
 				748D22AA297E652600B504AF /* AppDelegate.h */,
 				748D22AB297E652600B504AF /* AppDelegate.m */,
 				748D22AD297E652600B504AF /* ViewController.h */,
@@ -151,25 +186,6 @@
 				748D22B7297E652800B504AF /* msx2_osx.entitlements */,
 			);
 			path = "msx2-osx";
-			sourceTree = "<group>";
-		};
-		748D22BD297E66C600B504AF /* core */ = {
-			isa = PBXGroup;
-			children = (
-				748D22BE297E670500B504AF /* ay8910.hpp */,
-				749112B829AB4A6E004140F5 /* emu2413.c */,
-				749112B929AB4A6E004140F5 /* emu2413.h */,
-				748D22C0297E672F00B504AF /* msx2.hpp */,
-				741A1E0C298B77E5001AE497 /* msx2clock.hpp */,
-				741A1E052988DB8C001AE497 /* msx2def.h */,
-				741A1E0D298D2CA5001AE497 /* msx2kanji.hpp */,
-				748D22C2297E691A00B504AF /* msx2mmu.hpp */,
-				741A1E37299B3026001AE497 /* scc.hpp */,
-				740B459A29A89A2900289C9D /* tc8566af.hpp */,
-				748D22BF297E670500B504AF /* v9958.hpp */,
-				748D22C1297E675000B504AF /* z80.hpp */,
-			);
-			path = core;
 			sourceTree = "<group>";
 		};
 		748D22CD297E7E0000B504AF /* bios */ = {
@@ -194,22 +210,6 @@
 				748D22D1297E7E2D00B504AF /* MSXDOS2.ROM */,
 			);
 			path = bios;
-			sourceTree = "<group>";
-		};
-		749112BD29AC6F0D004140F5 /* lz4 */ = {
-			isa = PBXGroup;
-			children = (
-				749112C029AC6F66004140F5 /* lz4.c */,
-				749112C129AC6F66004140F5 /* lz4.h */,
-				749112C429AC6F66004140F5 /* lz4frame_static.h */,
-				749112BF29AC6F66004140F5 /* lz4frame.c */,
-				749112C229AC6F66004140F5 /* lz4frame.h */,
-				749112C629AC6F66004140F5 /* lz4hc.c */,
-				749112C529AC6F66004140F5 /* lz4hc.h */,
-				749112C329AC6F66004140F5 /* xxhash.c */,
-				749112BE29AC6F66004140F5 /* xxhash.h */,
-			);
-			path = lz4;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -301,15 +301,15 @@
 				748D22C5297E758C00B504AF /* VideoView.m in Sources */,
 				748D22AF297E652600B504AF /* ViewController.m in Sources */,
 				748D22B6297E652800B504AF /* main.m in Sources */,
-				749112BA29AB4A6E004140F5 /* emu2413.c in Sources */,
-				749112C829AC6F66004140F5 /* lz4.c in Sources */,
 				741A1E3A299DA885001AE497 /* vgsspu_al.c in Sources */,
 				748D22CC297E768D00B504AF /* emu.cpp in Sources */,
-				749112C729AC6F66004140F5 /* lz4frame.c in Sources */,
+				743A71D32A4C6D1C00102D27 /* lz4hc.c in Sources */,
+				743A71D52A4C6D1C00102D27 /* lz4frame.c in Sources */,
+				743A71D42A4C6D1C00102D27 /* lz4.c in Sources */,
 				748D22AC297E652600B504AF /* AppDelegate.m in Sources */,
-				749112CA29AC6F66004140F5 /* lz4hc.c in Sources */,
 				748D22C8297E75C800B504AF /* VideoLayer.m in Sources */,
-				749112C929AC6F66004140F5 /* xxhash.c in Sources */,
+				743A71D62A4C6D1C00102D27 /* xxhash.c in Sources */,
+				743A71E32A4C6D2900102D27 /* emu2413.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
