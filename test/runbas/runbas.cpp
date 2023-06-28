@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-#include "../../msx2-osx/core/msx2.hpp"
+#include "../../src/core/msx2.hpp"
 
 typedef struct BitmapHeader_ {
     int isize;             /* 情報ヘッダサイズ */

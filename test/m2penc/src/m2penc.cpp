@@ -36,7 +36,7 @@
 #include <sys/stat.h>
 #include "json/json.hpp"
 #include "pngwriter/pngwriter.h"
-#include "../../../msx2-osx/core/msx2.hpp"
+#include "../../../src/core/msx2.hpp"
 
 static std::map<std::string, unsigned char*> biosTable;
 
