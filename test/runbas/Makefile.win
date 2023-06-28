@@ -1,2 +1,2 @@
 all:
-	CL /std:c++17 /I../../msx2-osx/core /I../../msx2-osx/lz4 /source-charset:utf-8 /EHsc runbas.cpp ../../msx2-osx/core/emu2413.c ../../msx2-osx/lz4/lz4.c
+	CL /std:c++17 /I../../src/core /I../../src/lz4 /source-charset:utf-8 /EHsc runbas.cpp ../../src/core/emu2413.c ../../src/lz4/lz4.c
