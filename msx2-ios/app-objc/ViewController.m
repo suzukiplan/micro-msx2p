@@ -58,9 +58,6 @@
     __weak ViewController* weakSelf = self;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSData* main = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_main_msx2+_jp" ofType:@"rom"]];
-        if (!main || main.length < 1) {
-            NSLog(@"main not found!");
-        }
         NSData* logo = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_logo_msx2+" ofType:@"rom"]];
         NSData* sub = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"cbios_sub" ofType:@"rom"]];
         NSData* rom = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"game" ofType:@"rom"]];
