@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name                 = "MSX2"
-  spec.version              = "0.2.0"
+  spec.version              = "0.2.1"
   spec.summary              = "MSX2+ emulator specialized for embedded use"
   spec.homepage             = "https://github.com/suzukiplan/micro-msx2p/tree/master/msx2-ios"
   spec.license              = "MIT"
