@@ -117,7 +117,7 @@
     [_core setupSpecialKeyCodeWithSelect:select start:start];
     [_core loadRom:rom romType:romType];
     [_core reset];
-    [_delegate didStopWithView:self];
+    [_delegate didStartWithView:self];
     _started = YES;
     _paused = NO;
 }

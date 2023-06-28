@@ -44,20 +44,19 @@
     return nil;
 }
 
-- (instancetype)initWithCore:(MSX2Core*)core
+- (instancetype)init
 {
     if (self = [super init]) {
         _destroyed = NO;
-        _core = core;
         pthread_mutex_init(&_mutex, NULL);
         _imgbuf = (unsigned short*)malloc(VRAM_WIDTH * VRAM_HEIGHT * 2);
         memset(_imgbuf, 0, VRAM_WIDTH * VRAM_HEIGHT * 2);
         CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-        _img = CGBitmapContextCreate(core.display,
-                                     core.displayWidth,
-                                     core.displayHeight,
+        _img = CGBitmapContextCreate(_imgbuf,
+                                     VRAM_WIDTH,
+                                     VRAM_HEIGHT,
                                      5,
-                                     core.displayWidth * 2,
+                                     VRAM_WIDTH * 2,
                                      colorSpace,
                                      kCGImageAlphaNoneSkipFirst |
                                      kCGBitmapByteOrder16Little);

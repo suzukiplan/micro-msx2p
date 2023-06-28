@@ -1,5 +1,5 @@
 /**
- * micro MSX2+ - Example for iOS Swift-UI
+ * micro MSX2+ - Example for iOS Objective-c
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
@@ -24,13 +24,12 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-import SwiftUI
+#import <UIKit/UIKit.h>
 
-@main
-struct appApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
-}
+NS_ASSUME_NONNULL_BEGIN
+
+@interface VirtualPadView : UIView
+@property (nonatomic, readonly) NSInteger code;
+@end
+
+NS_ASSUME_NONNULL_END

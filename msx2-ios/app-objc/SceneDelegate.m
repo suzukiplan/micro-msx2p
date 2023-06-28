@@ -1,5 +1,5 @@
 /**
- * micro MSX2+ - Example for iOS Swift-UI
+ * micro MSX2+ - Example for iOS Objective-c
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
@@ -24,23 +24,30 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-import SwiftUI
-import MSX2
+#import "SceneDelegate.h"
 
-struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundColor(.accentColor)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
+@interface SceneDelegate ()
+
+@end
+
+@implementation SceneDelegate
+
+- (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions {
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
-    }
+- (void)sceneDidDisconnect:(UIScene *)scene {
 }
+
+- (void)sceneDidBecomeActive:(UIScene *)scene {
+}
+
+- (void)sceneWillResignActive:(UIScene *)scene {
+}
+
+- (void)sceneWillEnterForeground:(UIScene *)scene {
+}
+
+- (void)sceneDidEnterBackground:(UIScene *)scene {
+}
+
+@end

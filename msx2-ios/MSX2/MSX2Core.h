@@ -25,18 +25,17 @@
  * -----------------------------------------------------------------------------
  */
 #import <Foundation/Foundation.h>
-#import <MSX2/msx2def.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 typedef NS_ENUM(NSInteger, MSX2RomType) {
-    MSX2RomTypeNormal = MSX2_ROM_TYPE_NORMAL,
-    MSX2RomTypeAsc8 = MSX2_ROM_TYPE_ASC8,
-    MSX2RomTypeAsc8WSram = MSX2_ROM_TYPE_ASC8_SRAM2,
-    MSX2RomTypeAsc16 = MSX2_ROM_TYPE_ASC16,
-    MSX2RomTypeAsc16Sram = MSX2_ROM_TYPE_ASC16_SRAM2,
-    MSX2RomTypeKonami = MSX2_ROM_TYPE_KONAMI,
-    MSX2RomTypeKonamiSCC = MSX2_ROM_TYPE_KONAMI_SCC,
+    MSX2RomTypeNormal = 0,
+    MSX2RomTypeAsc8 = 1,
+    MSX2RomTypeAsc8WSram = 2,
+    MSX2RomTypeAsc16 = 3,
+    MSX2RomTypeAsc16Sram = 4,
+    MSX2RomTypeKonamiSCC = 5,
+    MSX2RomTypeKonami = 6,
 };
 
 @interface MSX2Core : NSObject
