@@ -25,8 +25,8 @@
  * -----------------------------------------------------------------------------
  */
 #import <Foundation/Foundation.h>
-FOUNDATION_EXPORT double msx2VersionNumber;
-FOUNDATION_EXPORT const unsigned char msx2VersionString[];
+FOUNDATION_EXPORT double MSX2VersionNumber;
+FOUNDATION_EXPORT const unsigned char MSX2VersionString[];
 #import <MSX2/MSX2JoyPad.h>
 #import <MSX2/MSX2Core.h>
 #import <MSX2/MSX2View.h>
