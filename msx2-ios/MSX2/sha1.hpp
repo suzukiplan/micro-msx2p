@@ -1,3 +1,4 @@
+// Copied from https://github.com/983/SHA1
 #include <cstdint>
 #include <cstring>
 
