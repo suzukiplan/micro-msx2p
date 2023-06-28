@@ -11,7 +11,7 @@
 		7405F0B92A4BAA2500D238FC /* MSX2View.m in Sources */ = {isa = PBXBuildFile; fileRef = 7405F0B72A4BAA2500D238FC /* MSX2View.m */; };
 		7405F0BC2A4BB83100D238FC /* MSX2JoyPad.h in Headers */ = {isa = PBXBuildFile; fileRef = 7405F0BA2A4BB83100D238FC /* MSX2JoyPad.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7405F0BD2A4BB83100D238FC /* MSX2JoyPad.m in Sources */ = {isa = PBXBuildFile; fileRef = 7405F0BB2A4BB83100D238FC /* MSX2JoyPad.m */; };
-		741F13532A4AD0F0001B057E /* msx2.h in Headers */ = {isa = PBXBuildFile; fileRef = 741F13522A4AD0F0001B057E /* msx2.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		741F13532A4AD0F0001B057E /* MSX2.h in Headers */ = {isa = PBXBuildFile; fileRef = 741F13522A4AD0F0001B057E /* MSX2.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		743803162A4BBF7C00B2C3C5 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 743803152A4BBF7B00B2C3C5 /* AudioToolbox.framework */; };
 		743803182A4BBF9A00B2C3C5 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 743803172A4BBF9A00B2C3C5 /* CoreAudio.framework */; };
 		747420EB2A4BBDF90002D193 /* sound-ios.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 747420E92A4BBDF90002D193 /* sound-ios.cpp */; };
@@ -56,8 +56,8 @@
 		7405F0B72A4BAA2500D238FC /* MSX2View.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MSX2View.m; sourceTree = "<group>"; };
 		7405F0BA2A4BB83100D238FC /* MSX2JoyPad.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MSX2JoyPad.h; sourceTree = "<group>"; };
 		7405F0BB2A4BB83100D238FC /* MSX2JoyPad.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MSX2JoyPad.m; sourceTree = "<group>"; };
-		741F134F2A4AD0F0001B057E /* msx2.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = msx2.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		741F13522A4AD0F0001B057E /* msx2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msx2.h; sourceTree = "<group>"; };
+		741F134F2A4AD0F0001B057E /* MSX2.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MSX2.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		741F13522A4AD0F0001B057E /* MSX2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MSX2.h; sourceTree = "<group>"; };
 		743803152A4BBF7B00B2C3C5 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.3.sdk/System/Library/Frameworks/AudioToolbox.framework; sourceTree = DEVELOPER_DIR; };
 		743803172A4BBF9A00B2C3C5 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.3.sdk/System/Library/Frameworks/CoreAudio.framework; sourceTree = DEVELOPER_DIR; };
 		747420E92A4BBDF90002D193 /* sound-ios.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "sound-ios.cpp"; sourceTree = "<group>"; };
@@ -122,7 +122,7 @@
 		741F13452A4AD0EF001B057E = {
 			isa = PBXGroup;
 			children = (
-				741F13512A4AD0F0001B057E /* msx2 */,
+				741F13512A4AD0F0001B057E /* MSX2 */,
 				74D4399C2A4B00AD00DC289B /* app */,
 				741F13502A4AD0F0001B057E /* Products */,
 				743803142A4BBF7B00B2C3C5 /* Frameworks */,
@@ -132,18 +132,18 @@
 		741F13502A4AD0F0001B057E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				741F134F2A4AD0F0001B057E /* msx2.framework */,
+				741F134F2A4AD0F0001B057E /* MSX2.framework */,
 				74D4399B2A4B00AD00DC289B /* app.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		741F13512A4AD0F0001B057E /* msx2 */ = {
+		741F13512A4AD0F0001B057E /* MSX2 */ = {
 			isa = PBXGroup;
 			children = (
 				74D439AA2A4B01C900DC289B /* lz4 */,
 				74D439A92A4B01A200DC289B /* core */,
-				741F13522A4AD0F0001B057E /* msx2.h */,
+				741F13522A4AD0F0001B057E /* MSX2.h */,
 				74D439DC2A4B11DC00DC289B /* MSX2Core.h */,
 				74D439DD2A4B11DC00DC289B /* MSX2Core.m */,
 				7496B7322A4BA79000A37A12 /* MSX2CALayer.h */,
@@ -160,7 +160,7 @@
 				74D439D62A4B02F800DC289B /* msx2gw.h */,
 				74D439D92A4B0D3C00DC289B /* sha1.hpp */,
 			);
-			path = msx2;
+			path = MSX2;
 			sourceTree = "<group>";
 		};
 		743803142A4BBF7B00B2C3C5 /* Frameworks */ = {
@@ -252,7 +252,7 @@
 				74D439BE2A4B01E300DC289B /* ay8910.hpp in Headers */,
 				74D439BB2A4B01E300DC289B /* z80.hpp in Headers */,
 				74D439DE2A4B11DC00DC289B /* MSX2Core.h in Headers */,
-				741F13532A4AD0F0001B057E /* msx2.h in Headers */,
+				741F13532A4AD0F0001B057E /* MSX2.h in Headers */,
 				74D439C02A4B01E300DC289B /* msx2.hpp in Headers */,
 				74D439D02A4B01F900DC289B /* lz4.h in Headers */,
 				74D439C22A4B01E300DC289B /* msx2kanji.hpp in Headers */,
@@ -263,9 +263,9 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		741F134E2A4AD0EF001B057E /* msx2 */ = {
+		741F134E2A4AD0EF001B057E /* MSX2 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 741F13562A4AD0F0001B057E /* Build configuration list for PBXNativeTarget "msx2" */;
+			buildConfigurationList = 741F13562A4AD0F0001B057E /* Build configuration list for PBXNativeTarget "MSX2" */;
 			buildPhases = (
 				741F134A2A4AD0EF001B057E /* Headers */,
 				741F134B2A4AD0EF001B057E /* Sources */,
@@ -276,9 +276,9 @@
 			);
 			dependencies = (
 			);
-			name = msx2;
+			name = MSX2;
 			productName = msx2;
-			productReference = 741F134F2A4AD0F0001B057E /* msx2.framework */;
+			productReference = 741F134F2A4AD0F0001B057E /* MSX2.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		74D4399A2A4B00AD00DC289B /* app */ = {
@@ -317,7 +317,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 741F13492A4AD0EF001B057E /* Build configuration list for PBXProject "msx2" */;
+			buildConfigurationList = 741F13492A4AD0EF001B057E /* Build configuration list for PBXProject "MSX2" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -330,7 +330,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				741F134E2A4AD0EF001B057E /* msx2 */,
+				741F134E2A4AD0EF001B057E /* MSX2 */,
 				74D4399A2A4B00AD00DC289B /* app */,
 			);
 		};
@@ -629,7 +629,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		741F13492A4AD0EF001B057E /* Build configuration list for PBXProject "msx2" */ = {
+		741F13492A4AD0EF001B057E /* Build configuration list for PBXProject "MSX2" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				741F13542A4AD0F0001B057E /* Debug */,
@@ -638,7 +638,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		741F13562A4AD0F0001B057E /* Build configuration list for PBXNativeTarget "msx2" */ = {
+		741F13562A4AD0F0001B057E /* Build configuration list for PBXNativeTarget "MSX2" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				741F13572A4AD0F0001B057E /* Debug */,
