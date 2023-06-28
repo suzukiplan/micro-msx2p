@@ -1,5 +1,5 @@
-/**
- * micro MSX2+ - Framework for iOS
+/*
+ * micro MSX2+ - Sound Hardware Abstraction Layer for AudioQueue
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
@@ -24,9 +24,19 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-#import <Foundation/Foundation.h>
-FOUNDATION_EXPORT double msx2VersionNumber;
-FOUNDATION_EXPORT const unsigned char msx2VersionString[];
-#import <msx2/MSX2JoyPad.h>
-#import <msx2/MSX2Core.h>
-#import <msx2/MSX2View.h>
+#ifndef INCLUDE_SOUND_IOS_H
+#define INCLUDE_SOUND_IOS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void* sound_create(void);
+void sound_destroy(void* context);
+void sound_enqueue(void* context, const void* buffer, size_t size);
+
+#ifdef __cplusplus
+};
+#endif
+
+#endif /* INCLUDE_SOUND_IOS_H */

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import msx2
 
 struct ContentView: View {
     var body: some View {

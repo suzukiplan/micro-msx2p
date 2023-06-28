@@ -25,7 +25,7 @@
  * -----------------------------------------------------------------------------
  */
 #import <Foundation/Foundation.h>
-#import "msx2def.h"
+#import <msx2/msx2def.h>
 
 NS_ASSUME_NONNULL_BEGIN
 

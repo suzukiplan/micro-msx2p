@@ -1,5 +1,5 @@
-/**
- * micro MSX2+ - Framework for iOS
+/*
+ * micro MSX2+ - MSX2View for iOS
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
@@ -24,9 +24,33 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-#import <Foundation/Foundation.h>
-FOUNDATION_EXPORT double msx2VersionNumber;
-FOUNDATION_EXPORT const unsigned char msx2VersionString[];
-#import <msx2/MSX2JoyPad.h>
+#import <UIKit/UIKit.h>
 #import <msx2/MSX2Core.h>
-#import <msx2/MSX2View.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@class MSX2View;
+
+@protocol MSX2ViewDelegate <NSObject>
+- (NSInteger)didRequirePad1CodeWithView:(MSX2View*)view;
+- (void)didStartWithView:(MSX2View*)view;
+- (void)didStopWithView:(MSX2View*)view;
+@end
+
+@interface MSX2View : UIView
+@property (nonatomic, weak) id<MSX2ViewDelegate> delegate;
+- (void)setupWithCBiosMain:(NSData*)main
+                      logo:(NSData*)logo
+                       sub:(NSData*)sub
+                       rom:(NSData*)rom
+                   romType:(MSX2RomType)romType
+                    select:(NSInteger)select
+                     start:(NSInteger)start;
+- (nullable NSData*)quickSave;
+- (void)quickLoadWithSaveData:(NSData*)saveData;
+- (void)reset;
+- (void)pause;
+- (void)resume;
+@end
+
+NS_ASSUME_NONNULL_END

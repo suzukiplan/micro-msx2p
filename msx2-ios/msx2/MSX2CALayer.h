@@ -1,5 +1,5 @@
 /**
- * micro MSX2+ - Framework for iOS
+ * micro MSX2+ - Core Animation Layer
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
@@ -24,9 +24,16 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-#import <Foundation/Foundation.h>
-FOUNDATION_EXPORT double msx2VersionNumber;
-FOUNDATION_EXPORT const unsigned char msx2VersionString[];
-#import <msx2/MSX2JoyPad.h>
-#import <msx2/MSX2Core.h>
-#import <msx2/MSX2View.h>
+#import <QuartzCore/QuartzCore.h>
+#import <UIKit/UIKit.h>
+#import "MSX2Core.h"
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface MSX2CALayer : CALayer
+@property (nonatomic, weak) MSX2Core* core;
+@property (nonatomic, nullable, readonly) UIImage* capture;
+- (void)drawFrameWithCore:(MSX2Core*)core;
+@end
+
+NS_ASSUME_NONNULL_END

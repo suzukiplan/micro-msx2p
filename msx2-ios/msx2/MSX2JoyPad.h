@@ -1,5 +1,5 @@
-/**
- * micro MSX2+ - Framework for iOS
+/*
+ * micro MSX2+ - JoyPad Data Class for Objective-c
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
@@ -25,8 +25,19 @@
  * -----------------------------------------------------------------------------
  */
 #import <Foundation/Foundation.h>
-FOUNDATION_EXPORT double msx2VersionNumber;
-FOUNDATION_EXPORT const unsigned char msx2VersionString[];
-#import <msx2/MSX2JoyPad.h>
-#import <msx2/MSX2Core.h>
-#import <msx2/MSX2View.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface MSX2JoyPad : NSObject
+@property (nonatomic) BOOL up;
+@property (nonatomic) BOOL down;
+@property (nonatomic) BOOL left;
+@property (nonatomic) BOOL right;
+@property (nonatomic) BOOL a;
+@property (nonatomic) BOOL b;
+@property (nonatomic) BOOL start;
+@property (nonatomic) BOOL select;
+@property (nonatomic, readonly) NSInteger code;
+@end
+
+NS_ASSUME_NONNULL_END
