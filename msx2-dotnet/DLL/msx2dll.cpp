@@ -133,18 +133,18 @@ EXPORT void msx2_setup(void* context,
                        int sec,
                        int idx,
                        const void* data,
-                       size_t size,
+                       int size,
                        const char* label)
 {
     Context* c = (Context*)context;
     c->lock();
     std::string labelStr = label;
     c->addBinary(labelStr, data, size);
-    c->msx2->setup(pri, sec, idx, c->bintray[labelStr]->data, (int)size, label);
+    c->msx2->setup(pri, sec, idx, c->bintray[labelStr]->data, size, label);
     c->unlock();
 }
 
-EXPORT void msx2_loadFont(void* context, const void* font, size_t size)
+EXPORT void msx2_loadFont(void* context, const void* font, int size)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -171,9 +171,10 @@ EXPORT void msx2_tick(void* context, int pad1, int pad2, int key)
     c->unlock();
 }
 
-EXPORT unsigned short* msx2_getDisplay(void* context)
+EXPORT void msx2_getDisplay16(void* context, void* display)
 {
-    return ((Context*)context)->msx2->getDisplay();
+    Context* c = (Context*)context;
+    memcpy(display, c->msx2->getDisplay(), c->msx2->getDisplayWidth() * c->msx2->getDisplayHeight() * 2);
 }
 
 EXPORT int msx2_getDisplayWidth(void* context)
@@ -186,18 +187,26 @@ EXPORT int msx2_getDisplayHeight(void* context)
     return ((Context*)context)->msx2->getDisplayHeight();
 }
 
-EXPORT const void* msx2_getSound(void* context, size_t* size)
+EXPORT int msx2_getMaxSoundSize(void* context)
 {
-    return ((Context*)context)->msx2->getSound(size);
+    return (int)((Context*)context)->msx2->getMaxSoundSize();
 }
 
-EXPORT void msx2_loadRom(void* context, const void* rom, size_t size, int romType)
+EXPORT void msx2_getSound(void* context, void* sound, int* size)
+{
+    size_t sz;
+    const void* result = ((Context*)context)->msx2->getSound(&sz);
+    memcpy(sound, result, sz);
+    *size = (int)sz;
+}
+
+EXPORT void msx2_loadRom(void* context, const void* rom, int size, int romType)
 {
     Context* c = (Context*)context;
     c->lock();
     std::string label = "CART";
     c->addBinary(label, rom, size);
-    c->msx2->loadRom(c->bintray[label]->data, (int)size, romType);
+    c->msx2->loadRom(c->bintray[label]->data, size, romType);
     c->unlock();
 }
 
@@ -212,12 +221,12 @@ EXPORT void msx2_ejectRom(void* context)
 EXPORT void msx2_insertDisk(void* context,
                             int driveId,
                             const void* disk,
-                            size_t size,
+                            int size,
                             bool readOnly)
 {
     char base64[SHA1_BASE64_SIZE];
     sha1("DiskImage:")
-        .add(disk, (int)size)
+        .add(disk, size)
         .finalize()
         .print_base64(base64);
     std::string label = base64;
@@ -236,16 +245,27 @@ EXPORT void msx2_ejectDisk(void* context, int driveId)
     c->unlock();
 }
 
-EXPORT const void* msx2_quickSave(void* context, size_t* size)
+EXPORT int msx2_getQuickSaveSize(void* context)
 {
     Context* c = (Context*)context;
     c->lock();
-    const void* result = c->msx2->quickSave(size);
+    size_t sz;
+    c->msx2->quickSave(&sz);
+    c->unlock();
+    return (int)sz;
+}
+
+EXPORT const void* msx2_quickSave(void* context)
+{
+    Context* c = (Context*)context;
+    c->lock();
+    size_t sz;
+    const void* result = c->msx2->quickSave(&sz);
     c->unlock();
     return result;
 }
 
-EXPORT void msx2_quickLoad(void* context, const void* save, size_t size)
+EXPORT void msx2_quickLoad(void* context, const void* save, int size)
 {
     Context* c = (Context*)context;
     c->lock();
