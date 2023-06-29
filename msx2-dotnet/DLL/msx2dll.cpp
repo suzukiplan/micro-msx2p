@@ -1,5 +1,5 @@
 /**
- * micro MSX2+ - API for Shared Library
+ * micro MSX2+ - Shared Library
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
@@ -32,6 +32,8 @@
 #include "msx2.hpp"
 #include "sha1.hpp"
 #include "msx2dll.h"
+
+#define EXPORT extern "C" DLL_EXPORT
 
 class Binary {
 public:
@@ -96,21 +98,21 @@ public:
     }
 };
 
-extern "C" void* msx2_createContext(int colorCode)
+EXPORT void* msx2_createContext(int colorCode)
 {
     return new Context(colorCode);
 }
 
-extern "C" void msx2_releaseContext(void* context)
+EXPORT void msx2_releaseContext(void* context)
 {
     delete (Context*)context;
 }
 
-extern "C" void msx2_setupSecondaryExist(void* context,
-                                         bool page0,
-                                         bool page1,
-                                         bool page2,
-                                         bool page3)
+EXPORT void msx2_setupSecondaryExist(void* context,
+                                     bool page0,
+                                     bool page1,
+                                     bool page2,
+                                     bool page3)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -118,7 +120,7 @@ extern "C" void msx2_setupSecondaryExist(void* context,
     c->unlock();
 }
 
-extern "C" void msx2_setupRAM(void* context, int pri, int sec)
+EXPORT void msx2_setupRAM(void* context, int pri, int sec)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -126,13 +128,13 @@ extern "C" void msx2_setupRAM(void* context, int pri, int sec)
     c->unlock();
 }
 
-extern "C" void msx2_setup(void* context,
-                           int pri,
-                           int sec,
-                           int idx,
-                           const void* data,
-                           size_t size,
-                           const char* label)
+EXPORT void msx2_setup(void* context,
+                       int pri,
+                       int sec,
+                       int idx,
+                       const void* data,
+                       size_t size,
+                       const char* label)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -142,7 +144,7 @@ extern "C" void msx2_setup(void* context,
     c->unlock();
 }
 
-extern "C" void msx2_loadFont(void* context, const void* font, size_t size)
+EXPORT void msx2_loadFont(void* context, const void* font, size_t size)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -152,7 +154,7 @@ extern "C" void msx2_loadFont(void* context, const void* font, size_t size)
     c->unlock();
 }
 
-extern "C" void msx2_setupSpecialKeyCode(void* context, int select, int start)
+EXPORT void msx2_setupSpecialKeyCode(void* context, int select, int start)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -161,7 +163,7 @@ extern "C" void msx2_setupSpecialKeyCode(void* context, int select, int start)
     c->unlock();
 }
 
-extern "C" void msx2_tick(void* context, int pad1, int pad2, int key)
+EXPORT void msx2_tick(void* context, int pad1, int pad2, int key)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -169,27 +171,27 @@ extern "C" void msx2_tick(void* context, int pad1, int pad2, int key)
     c->unlock();
 }
 
-extern "C" unsigned short* msx2_getDisplay(void* context)
+EXPORT unsigned short* msx2_getDisplay(void* context)
 {
     return ((Context*)context)->msx2->getDisplay();
 }
 
-extern "C" int msx2_getDisplayWidth(void* context)
+EXPORT int msx2_getDisplayWidth(void* context)
 {
     return ((Context*)context)->msx2->getDisplayWidth();
 }
 
-extern "C" int msx2_getDisplayHeight(void* context)
+EXPORT int msx2_getDisplayHeight(void* context)
 {
     return ((Context*)context)->msx2->getDisplayHeight();
 }
 
-extern "C" const void* msx2_getSound(void* context, size_t* size)
+EXPORT const void* msx2_getSound(void* context, size_t* size)
 {
     return ((Context*)context)->msx2->getSound(size);
 }
 
-extern "C" void msx2_loadRom(void* context, const void* rom, size_t size, int romType)
+EXPORT void msx2_loadRom(void* context, const void* rom, size_t size, int romType)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -199,7 +201,7 @@ extern "C" void msx2_loadRom(void* context, const void* rom, size_t size, int ro
     c->unlock();
 }
 
-extern "C" void msx2_ejectRom(void* context)
+EXPORT void msx2_ejectRom(void* context)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -207,11 +209,11 @@ extern "C" void msx2_ejectRom(void* context)
     c->unlock();
 }
 
-extern "C" void msx2_insertDisk(void* context,
-                                int driveId,
-                                const void* disk,
-                                size_t size,
-                                bool readOnly)
+EXPORT void msx2_insertDisk(void* context,
+                            int driveId,
+                            const void* disk,
+                            size_t size,
+                            bool readOnly)
 {
     char base64[SHA1_BASE64_SIZE];
     sha1("DiskImage:")
@@ -226,7 +228,7 @@ extern "C" void msx2_insertDisk(void* context,
     c->unlock();
 }
 
-extern "C" void msx2_ejectDisk(void* context, int driveId)
+EXPORT void msx2_ejectDisk(void* context, int driveId)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -234,7 +236,7 @@ extern "C" void msx2_ejectDisk(void* context, int driveId)
     c->unlock();
 }
 
-extern "C" const void* msx2_quickSave(void* context, size_t* size)
+EXPORT const void* msx2_quickSave(void* context, size_t* size)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -243,7 +245,7 @@ extern "C" const void* msx2_quickSave(void* context, size_t* size)
     return result;
 }
 
-extern "C" void msx2_quickLoad(void* context, const void* save, size_t size)
+EXPORT void msx2_quickLoad(void* context, const void* save, size_t size)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -251,7 +253,7 @@ extern "C" void msx2_quickLoad(void* context, const void* save, size_t size)
     c->unlock();
 }
 
-extern "C" void msx2_reset(void* context)
+EXPORT void msx2_reset(void* context)
 {
     Context* c = (Context*)context;
     c->lock();
