@@ -25,7 +25,7 @@ namespace MSX2 {
         public static extern void SetupSecondaryExist(IntPtr context, bool page0, bool page1, bool page2, bool page3);
 
         [DllImport("libMSX2.so", EntryPoint="msx2_setupRAM")]
-        public static extern void SetupRAM(IntPtr context, int pri, int sec);
+        public static extern void SetupRam(IntPtr context, int pri, int sec);
 
         [DllImport("libMSX2.so", EntryPoint="msx2_setup")]
         private static extern void ISetup(IntPtr context, int pri, int sec, int idx, byte[] data, int size, string label);
