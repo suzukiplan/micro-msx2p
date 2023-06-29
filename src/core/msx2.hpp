@@ -469,6 +469,11 @@ class MSX2
         this->cpu->execute(0x7FFFFFFF);
     }
 
+    size_t getMaxSoundSize()
+    {
+        return sizeof(this->ib->soundBuffer);
+    }
+
     void* getSound(size_t* soundSize)
     {
         *soundSize = this->ib->soundBufferCursor * 2;
