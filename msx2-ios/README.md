@@ -11,7 +11,20 @@
 
 ### Pods
 
-TODO: CocoaPods での使い方を後で書く
+Podfile に 次の行を追加してください。
+
+```Podfile
+pod 'MSX2', :podspec => 'https://raw.githubusercontent.com/suzukiplan/micro-msx2p/master/msx2-ios/MSX2.podspec'
+```
+
+_例: `MyApp` というアプリの場合_
+
+```Podfile
+target 'MyApp' do
+  use_frameworks!
+  pod 'MSX2', :podspec => 'https://raw.githubusercontent.com/suzukiplan/micro-msx2p/master/msx2-ios/MSX2.podspec'
+end
+```
 
 ### 基本的な使い方 (Objective-c)
 
