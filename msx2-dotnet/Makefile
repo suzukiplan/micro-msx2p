@@ -1,5 +1,8 @@
 all: build run
 
+clean:
+	cd DLL && make clean
+
 build:
 	cd DLL && make
 	cd MSX2Core && dotnet build
