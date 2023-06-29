@@ -47,10 +47,6 @@
 		749632BF2A4C104400B7559B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 749632BD2A4C104400B7559B /* LaunchScreen.storyboard */; };
 		749632C22A4C104400B7559B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 749632C12A4C104400B7559B /* main.m */; };
 		749632C62A4C104E00B7559B /* MSX2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 741F134F2A4AD0F0001B057E /* MSX2.framework */; };
-		749632CE2A4C185300B7559B /* cbios_main_msx2+_jp.rom in Resources */ = {isa = PBXBuildFile; fileRef = 749632CA2A4C185300B7559B /* cbios_main_msx2+_jp.rom */; };
-		749632CF2A4C185300B7559B /* cbios_sub.rom in Resources */ = {isa = PBXBuildFile; fileRef = 749632CB2A4C185300B7559B /* cbios_sub.rom */; };
-		749632D02A4C185300B7559B /* game.rom in Resources */ = {isa = PBXBuildFile; fileRef = 749632CC2A4C185300B7559B /* game.rom */; };
-		749632D12A4C185300B7559B /* cbios_logo_msx2+.rom in Resources */ = {isa = PBXBuildFile; fileRef = 749632CD2A4C185300B7559B /* cbios_logo_msx2+.rom */; };
 		749632D42A4C1B2600B7559B /* MenuView.m in Sources */ = {isa = PBXBuildFile; fileRef = 749632D32A4C1B2600B7559B /* MenuView.m */; };
 		749632D72A4C1EE800B7559B /* VirtualPadView.m in Sources */ = {isa = PBXBuildFile; fileRef = 749632D62A4C1EE800B7559B /* VirtualPadView.m */; };
 		7496B7342A4BA79000A37A12 /* MSX2CALayer.h in Headers */ = {isa = PBXBuildFile; fileRef = 7496B7322A4BA79000A37A12 /* MSX2CALayer.h */; };
@@ -59,6 +55,10 @@
 		74D439D82A4B02F800DC289B /* msx2gw.h in Headers */ = {isa = PBXBuildFile; fileRef = 74D439D62A4B02F800DC289B /* msx2gw.h */; };
 		74D439DE2A4B11DC00DC289B /* MSX2Core.h in Headers */ = {isa = PBXBuildFile; fileRef = 74D439DC2A4B11DC00DC289B /* MSX2Core.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		74D439DF2A4B11DC00DC289B /* MSX2Core.m in Sources */ = {isa = PBXBuildFile; fileRef = 74D439DD2A4B11DC00DC289B /* MSX2Core.m */; };
+		74FCC6B32A4D06770079C4BD /* game.rom in Resources */ = {isa = PBXBuildFile; fileRef = 74FCC6B22A4D05D90079C4BD /* game.rom */; };
+		74FCC6B42A4D06770079C4BD /* cbios_logo_msx2+.rom in Resources */ = {isa = PBXBuildFile; fileRef = 74FCC6AF2A4D05D90079C4BD /* cbios_logo_msx2+.rom */; };
+		74FCC6B52A4D06770079C4BD /* cbios_main_msx2+_jp.rom in Resources */ = {isa = PBXBuildFile; fileRef = 74FCC6B12A4D05D90079C4BD /* cbios_main_msx2+_jp.rom */; };
+		74FCC6B62A4D06770079C4BD /* cbios_sub.rom in Resources */ = {isa = PBXBuildFile; fileRef = 74FCC6B02A4D05D90079C4BD /* cbios_sub.rom */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -107,10 +107,6 @@
 		749632BE2A4C104400B7559B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		749632C02A4C104400B7559B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		749632C12A4C104400B7559B /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		749632CA2A4C185300B7559B /* cbios_main_msx2+_jp.rom */ = {isa = PBXFileReference; lastKnownFileType = file; name = "cbios_main_msx2+_jp.rom"; path = "../../../msx2-android/app/src/main/assets/cbios_main_msx2+_jp.rom"; sourceTree = "<group>"; };
-		749632CB2A4C185300B7559B /* cbios_sub.rom */ = {isa = PBXFileReference; lastKnownFileType = file; name = cbios_sub.rom; path = "../../../msx2-android/app/src/main/assets/cbios_sub.rom"; sourceTree = "<group>"; };
-		749632CC2A4C185300B7559B /* game.rom */ = {isa = PBXFileReference; lastKnownFileType = file; name = game.rom; path = "../../../msx2-android/app/src/main/assets/game.rom"; sourceTree = "<group>"; };
-		749632CD2A4C185300B7559B /* cbios_logo_msx2+.rom */ = {isa = PBXFileReference; lastKnownFileType = file; name = "cbios_logo_msx2+.rom"; path = "../../../msx2-android/app/src/main/assets/cbios_logo_msx2+.rom"; sourceTree = "<group>"; };
 		749632D22A4C1B2600B7559B /* MenuView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MenuView.h; sourceTree = "<group>"; };
 		749632D32A4C1B2600B7559B /* MenuView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MenuView.m; sourceTree = "<group>"; };
 		749632D52A4C1EE800B7559B /* VirtualPadView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VirtualPadView.h; sourceTree = "<group>"; };
@@ -122,6 +118,10 @@
 		74D439D92A4B0D3C00DC289B /* sha1.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = sha1.hpp; sourceTree = "<group>"; };
 		74D439DC2A4B11DC00DC289B /* MSX2Core.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MSX2Core.h; sourceTree = "<group>"; };
 		74D439DD2A4B11DC00DC289B /* MSX2Core.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MSX2Core.m; sourceTree = "<group>"; };
+		74FCC6AF2A4D05D90079C4BD /* cbios_logo_msx2+.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = "cbios_logo_msx2+.rom"; sourceTree = "<group>"; };
+		74FCC6B02A4D05D90079C4BD /* cbios_sub.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_sub.rom; sourceTree = "<group>"; };
+		74FCC6B12A4D05D90079C4BD /* cbios_main_msx2+_jp.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = "cbios_main_msx2+_jp.rom"; sourceTree = "<group>"; };
+		74FCC6B22A4D05D90079C4BD /* game.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = game.rom; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -224,10 +224,10 @@
 		749632C92A4C180400B7559B /* roms */ = {
 			isa = PBXGroup;
 			children = (
-				749632CD2A4C185300B7559B /* cbios_logo_msx2+.rom */,
-				749632CA2A4C185300B7559B /* cbios_main_msx2+_jp.rom */,
-				749632CB2A4C185300B7559B /* cbios_sub.rom */,
-				749632CC2A4C185300B7559B /* game.rom */,
+				74FCC6AF2A4D05D90079C4BD /* cbios_logo_msx2+.rom */,
+				74FCC6B12A4D05D90079C4BD /* cbios_main_msx2+_jp.rom */,
+				74FCC6B02A4D05D90079C4BD /* cbios_sub.rom */,
+				74FCC6B22A4D05D90079C4BD /* game.rom */,
 			);
 			path = roms;
 			sourceTree = "<group>";
@@ -389,12 +389,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				749632CE2A4C185300B7559B /* cbios_main_msx2+_jp.rom in Resources */,
-				749632D12A4C185300B7559B /* cbios_logo_msx2+.rom in Resources */,
-				749632CF2A4C185300B7559B /* cbios_sub.rom in Resources */,
+				74FCC6B62A4D06770079C4BD /* cbios_sub.rom in Resources */,
+				74FCC6B42A4D06770079C4BD /* cbios_logo_msx2+.rom in Resources */,
 				749632BF2A4C104400B7559B /* LaunchScreen.storyboard in Resources */,
+				74FCC6B52A4D06770079C4BD /* cbios_main_msx2+_jp.rom in Resources */,
 				749632BC2A4C104400B7559B /* Assets.xcassets in Resources */,
-				749632D02A4C185300B7559B /* game.rom in Resources */,
+				74FCC6B32A4D06770079C4BD /* game.rom in Resources */,
 				749632BA2A4C104200B7559B /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
