@@ -7,7 +7,7 @@ micro MSX2+ を .NET Core で利用できるクラス形式にしたものです
 
 （.NETなのに）まだ Windows には対応できてません。
 
-また、最終的に **.NET Framework (Windows Desktop) や Unity** で micro-msx2p を扱いやすい形にする（ex: NuGetで配信したりインタフェースを整えたりする）ことが設計目標としていますが、いかんせん .NET Framework も Unity も使ったことがなく、とりあえず .NET Core でビルドして動かせたぞ...という状態です。
+また、最終的に **.NET Framework (Windows Desktop) や Unity** で micro-msx2p を扱いやすい形にする（ex: NuGetで配信したりインタフェースを整えたりする）ことを設計目標としていますが、いかんせん .NET Framework も Unity も使ったことがなく、とりあえず .NET Core でビルドして動かせたぞ...という状態です。
 
 つまり、破壊的変更を含む修正がまだガリガリ入る可能性があります。
 
