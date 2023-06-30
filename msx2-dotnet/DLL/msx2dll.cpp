@@ -123,21 +123,21 @@ public:
     }
 };
 
-EXPORT void* msx2_createContext(int colorCode)
+EXPORT void* __stdcall msx2_createContext(int colorCode)
 {
     return new Context(colorCode);
 }
 
-EXPORT void msx2_releaseContext(void* context)
+EXPORT void __stdcall msx2_releaseContext(void* context)
 {
     delete (Context*)context;
 }
 
-EXPORT void msx2_setupSecondaryExist(void* context,
-                                     bool page0,
-                                     bool page1,
-                                     bool page2,
-                                     bool page3)
+EXPORT void __stdcall msx2_setupSecondaryExist(void* context,
+                                               bool page0,
+                                               bool page1,
+                                               bool page2,
+                                               bool page3)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -145,7 +145,7 @@ EXPORT void msx2_setupSecondaryExist(void* context,
     c->unlock();
 }
 
-EXPORT void msx2_setupRAM(void* context, int pri, int sec)
+EXPORT void __stdcall msx2_setupRAM(void* context, int pri, int sec)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -153,13 +153,13 @@ EXPORT void msx2_setupRAM(void* context, int pri, int sec)
     c->unlock();
 }
 
-EXPORT void msx2_setup(void* context,
-                       int pri,
-                       int sec,
-                       int idx,
-                       const void* data,
-                       int size,
-                       const char* label)
+EXPORT void __stdcall msx2_setup(void* context,
+                                 int pri,
+                                 int sec,
+                                 int idx,
+                                 const void* data,
+                                 int size,
+                                 const char* label)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -169,7 +169,7 @@ EXPORT void msx2_setup(void* context,
     c->unlock();
 }
 
-EXPORT void msx2_loadFont(void* context, const void* font, int size)
+EXPORT void __stdcall msx2_loadFont(void* context, const void* font, int size)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -179,7 +179,7 @@ EXPORT void msx2_loadFont(void* context, const void* font, int size)
     c->unlock();
 }
 
-EXPORT void msx2_setupSpecialKeyCode(void* context, int select, int start)
+EXPORT void __stdcall msx2_setupSpecialKeyCode(void* context, int select, int start)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -188,7 +188,7 @@ EXPORT void msx2_setupSpecialKeyCode(void* context, int select, int start)
     c->unlock();
 }
 
-EXPORT void msx2_tick(void* context, int pad1, int pad2, int key)
+EXPORT void __stdcall msx2_tick(void* context, int pad1, int pad2, int key)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -196,28 +196,28 @@ EXPORT void msx2_tick(void* context, int pad1, int pad2, int key)
     c->unlock();
 }
 
-EXPORT void msx2_getDisplay(void* context, void* display)
+EXPORT void __stdcall msx2_getDisplay(void* context, void* display)
 {
     Context* c = (Context*)context;
     memcpy(display, c->msx2->getDisplay(), c->msx2->getDisplayWidth() * c->msx2->getDisplayHeight() * 2);
 }
 
-EXPORT int msx2_getDisplayWidth(void* context)
+EXPORT int __stdcall msx2_getDisplayWidth(void* context)
 {
     return ((Context*)context)->msx2->getDisplayWidth();
 }
 
-EXPORT int msx2_getDisplayHeight(void* context)
+EXPORT int __stdcall msx2_getDisplayHeight(void* context)
 {
     return ((Context*)context)->msx2->getDisplayHeight();
 }
 
-EXPORT int msx2_getMaxSoundSize(void* context)
+EXPORT int __stdcall msx2_getMaxSoundSize(void* context)
 {
     return (int)((Context*)context)->msx2->getMaxSoundSize();
 }
 
-EXPORT void msx2_getSound(void* context, void* sound, int* size)
+EXPORT void __stdcall msx2_getSound(void* context, void* sound, int* size)
 {
     size_t sz;
     const void* result = ((Context*)context)->msx2->getSound(&sz);
@@ -225,7 +225,7 @@ EXPORT void msx2_getSound(void* context, void* sound, int* size)
     *size = (int)sz;
 }
 
-EXPORT void msx2_loadRom(void* context, const void* rom, int size, int romType)
+EXPORT void __stdcall msx2_loadRom(void* context, const void* rom, int size, int romType)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -235,7 +235,7 @@ EXPORT void msx2_loadRom(void* context, const void* rom, int size, int romType)
     c->unlock();
 }
 
-EXPORT void msx2_ejectRom(void* context)
+EXPORT void __stdcall msx2_ejectRom(void* context)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -243,11 +243,11 @@ EXPORT void msx2_ejectRom(void* context)
     c->unlock();
 }
 
-EXPORT void msx2_insertDisk(void* context,
-                            int driveId,
-                            const void* disk,
-                            int size,
-                            bool readOnly)
+EXPORT void __stdcall msx2_insertDisk(void* context,
+                                      int driveId,
+                                      const void* disk,
+                                      int size,
+                                      bool readOnly)
 {
     char base64[SHA1_BASE64_SIZE];
     sha1("DiskImage:")
@@ -262,7 +262,7 @@ EXPORT void msx2_insertDisk(void* context,
     c->unlock();
 }
 
-EXPORT void msx2_ejectDisk(void* context, int driveId)
+EXPORT void __stdcall msx2_ejectDisk(void* context, int driveId)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -270,7 +270,7 @@ EXPORT void msx2_ejectDisk(void* context, int driveId)
     c->unlock();
 }
 
-EXPORT int msx2_getQuickSaveSize(void* context)
+EXPORT int __stdcall msx2_getQuickSaveSize(void* context)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -280,7 +280,7 @@ EXPORT int msx2_getQuickSaveSize(void* context)
     return (int)sz;
 }
 
-EXPORT const void* msx2_quickSave(void* context)
+EXPORT const void* __stdcall msx2_quickSave(void* context)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -290,7 +290,7 @@ EXPORT const void* msx2_quickSave(void* context)
     return result;
 }
 
-EXPORT void msx2_quickLoad(void* context, const void* save, int size)
+EXPORT void __stdcall msx2_quickLoad(void* context, const void* save, int size)
 {
     Context* c = (Context*)context;
     c->lock();
@@ -298,7 +298,7 @@ EXPORT void msx2_quickLoad(void* context, const void* save, int size)
     c->unlock();
 }
 
-EXPORT void msx2_reset(void* context)
+EXPORT void __stdcall msx2_reset(void* context)
 {
     Context* c = (Context*)context;
     c->lock();

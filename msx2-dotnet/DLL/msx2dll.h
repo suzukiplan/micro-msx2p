@@ -33,33 +33,34 @@
 #define DLL_EXPORT __declspec(dllexport)
 #else
 #define DLL_EXPORT
+#define __stdcall
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-DLL_EXPORT void* msx2_createContext(int colorCode);
-DLL_EXPORT void msx2_releaseContext(void* context);
-DLL_EXPORT void msx2_setupSecondaryExist(void* context, bool page0, bool page1, bool page2, bool page3);
-DLL_EXPORT void msx2_setupRAM(void* context, int pri, int sec);
-DLL_EXPORT void msx2_setup(void* context, int pri, int sec, int idx, const void* data, int size, const char* label);
-DLL_EXPORT void msx2_loadFont(void* context, const void* font, int size);
-DLL_EXPORT void msx2_setupSpecialKeyCode(void* context, int select, int start);
-DLL_EXPORT void msx2_tick(void* context, int pad1, int pad2, int key);
-DLL_EXPORT void msx2_getDisplay(void* context, void* display);
-DLL_EXPORT int msx2_getDisplayWidth(void* context);
-DLL_EXPORT int msx2_getDisplayHeight(void* context);
-DLL_EXPORT int msx2_getMaxSoundSize(void* context);
-DLL_EXPORT void msx2_getSound(void* context, void* sound, int* size);
-DLL_EXPORT void msx2_loadRom(void* context, const void* rom, int size, int romType);
-DLL_EXPORT void msx2_ejectRom(void* context);
-DLL_EXPORT void msx2_insertDisk(void* context, int driveId, const void* disk, int size, bool readOnly);
-DLL_EXPORT void msx2_ejectDisk(void* context, int driveId);
-DLL_EXPORT int msx2_getQuickSaveSize(void* context);
-DLL_EXPORT const void* msx2_quickSave(void* context);
-DLL_EXPORT void msx2_quickLoad(void* context, const void* save, int size);
-DLL_EXPORT void msx2_reset(void* context);
+DLL_EXPORT void* __stdcall msx2_createContext(int colorCode);
+DLL_EXPORT void __stdcall msx2_releaseContext(void* context);
+DLL_EXPORT void __stdcall msx2_setupSecondaryExist(void* context, bool page0, bool page1, bool page2, bool page3);
+DLL_EXPORT void __stdcall msx2_setupRAM(void* context, int pri, int sec);
+DLL_EXPORT void __stdcall msx2_setup(void* context, int pri, int sec, int idx, const void* data, int size, const char* label);
+DLL_EXPORT void __stdcall msx2_loadFont(void* context, const void* font, int size);
+DLL_EXPORT void __stdcall msx2_setupSpecialKeyCode(void* context, int select, int start);
+DLL_EXPORT void __stdcall msx2_tick(void* context, int pad1, int pad2, int key);
+DLL_EXPORT void __stdcall msx2_getDisplay(void* context, void* display);
+DLL_EXPORT int __stdcall msx2_getDisplayWidth(void* context);
+DLL_EXPORT int __stdcall msx2_getDisplayHeight(void* context);
+DLL_EXPORT int __stdcall msx2_getMaxSoundSize(void* context);
+DLL_EXPORT void __stdcall msx2_getSound(void* context, void* sound, int* size);
+DLL_EXPORT void __stdcall msx2_loadRom(void* context, const void* rom, int size, int romType);
+DLL_EXPORT void __stdcall msx2_ejectRom(void* context);
+DLL_EXPORT void __stdcall msx2_insertDisk(void* context, int driveId, const void* disk, int size, bool readOnly);
+DLL_EXPORT void __stdcall msx2_ejectDisk(void* context, int driveId);
+DLL_EXPORT int __stdcall msx2_getQuickSaveSize(void* context);
+DLL_EXPORT const void* __stdcall msx2_quickSave(void* context);
+DLL_EXPORT void __stdcall msx2_quickLoad(void* context, const void* save, int size);
+DLL_EXPORT void __stdcall msx2_reset(void* context);
 
 #ifdef __cplusplus
 };
