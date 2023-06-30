@@ -9,7 +9,7 @@ build:
 	cd DLL && make
 	cd MSX2Core && dotnet build
 	cd Test && dotnet build
-	cp DLL/libMSX2.so Test/bin/Debug/net7.0
+	cp DLL/libMSX2.* Test/bin/Debug/net7.0
 
 run:
 	cd Test && dotnet run

@@ -1,5 +1,6 @@
 *.o
 *.obj
 *.so
+*.dylib
 *.dll
 

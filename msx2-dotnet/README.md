@@ -13,7 +13,7 @@ micro MSX2+ を .NET Core で利用できるクラス形式にしたものです
 
 ## Pre-requests
 
-### UNIX, Linux, macOS
+### Linux, macOS
 
 - .NET Core 7.0
 - GNU Make
@@ -25,7 +25,7 @@ _TODO: まだ対応していない_
 
 ## How to Build
 
-### UNIX, Linux, macOS
+### Linux, macOS
 
 ```
 git clone https://github.com/suzukiplan/micro-msx2p.git

@@ -47,7 +47,7 @@ namespace MSX2 {
 
     public class Core
     {
-        [DllImport("libMSX2.so", EntryPoint="msx2_createContext")]
+        [DllImport("MSX2", EntryPoint="msx2_createContext")]
         private static extern IntPtr ICreateContext(int colorMode);
     
         public static IntPtr CreateContext(ColorMode colorMode)
@@ -55,16 +55,16 @@ namespace MSX2 {
             return ICreateContext((int)colorMode);
         }
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_releaseContext")]
+        [DllImport("MSX2", EntryPoint="msx2_releaseContext")]
         public static extern void ReleaseContext(IntPtr context);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_setupSecondaryExist")]
+        [DllImport("MSX2", EntryPoint="msx2_setupSecondaryExist")]
         public static extern void SetupSecondaryExist(IntPtr context, bool page0, bool page1, bool page2, bool page3);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_setupRAM")]
+        [DllImport("MSX2", EntryPoint="msx2_setupRAM")]
         public static extern void SetupRam(IntPtr context, int pri, int sec);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_setup")]
+        [DllImport("MSX2", EntryPoint="msx2_setup")]
         private static extern void ISetup(IntPtr context, int pri, int sec, int idx, byte[] data, int size, string label);
 
         public static void Setup(IntPtr context, int pri, int sec, int idx, byte[] data, string label)
@@ -72,7 +72,7 @@ namespace MSX2 {
             ISetup(context, pri, sec, idx, data, data.Length, label);
         }
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_loadFont")]
+        [DllImport("MSX2", EntryPoint="msx2_loadFont")]
         private static extern void ILoadFont(IntPtr context, byte[] font, int size);
 
         public static void LoadFont(IntPtr context, byte[] font)
@@ -80,13 +80,13 @@ namespace MSX2 {
             ILoadFont(context, font, font.Length);
         }
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_setupSpecialKeyCode")]
+        [DllImport("MSX2", EntryPoint="msx2_setupSpecialKeyCode")]
         public static extern void SetupSpecialKeyCode(IntPtr context, int select, int start);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_tick")]
+        [DllImport("MSX2", EntryPoint="msx2_tick")]
         public static extern void Tick(IntPtr context, int pad1, int pad2, int key);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_getDisplay")]
+        [DllImport("MSX2", EntryPoint="msx2_getDisplay")]
         private static extern void IGetDisplay(IntPtr context, ushort[] display);
 
         public static ushort[] GetDisplay(IntPtr context)
@@ -96,16 +96,16 @@ namespace MSX2 {
             return result;
         }
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_getDisplayWidth")]
+        [DllImport("MSX2", EntryPoint="msx2_getDisplayWidth")]
         public static extern int GetDisplayWidth(IntPtr context);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_getDisplayHeight")]
+        [DllImport("MSX2", EntryPoint="msx2_getDisplayHeight")]
         public static extern int GetDisplayHeight(IntPtr context);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_getMaxSoundSize")]
+        [DllImport("MSX2", EntryPoint="msx2_getMaxSoundSize")]
         private static extern int IGetMaxSoundSize(IntPtr context);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_getMaxSoundSize")]
+        [DllImport("MSX2", EntryPoint="msx2_getMaxSoundSize")]
         private static extern void IGetSound(IntPtr context, byte[] sound, IntPtr size);
 
         public static byte[] GetSound(IntPtr context)
@@ -118,7 +118,7 @@ namespace MSX2 {
             return result;
         }
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_loadRom")]
+        [DllImport("MSX2", EntryPoint="msx2_loadRom")]
         private static extern void ILoadRom(IntPtr context, byte[] rom, int size, int romType);
 
         public static void LoadRom(IntPtr context, byte[] rom, RomType romType)
@@ -126,10 +126,10 @@ namespace MSX2 {
             ILoadRom(context, rom, rom.Length, (int)romType);
         }
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_ejectRom")]
+        [DllImport("MSX2", EntryPoint="msx2_ejectRom")]
         public static extern void EjectRom(IntPtr context);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_insertDisk")]
+        [DllImport("MSX2", EntryPoint="msx2_insertDisk")]
         private static extern void IInsertDisk(IntPtr context, int driveId, byte[] disk, int size, bool readOnly);
 
         public static void InsertDisk(IntPtr context, int driveId, byte[] disk, bool readOnly)
@@ -137,13 +137,13 @@ namespace MSX2 {
             IInsertDisk(context, driveId, disk, disk.Length, readOnly);
         }
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_ejectDisk")]
+        [DllImport("MSX2", EntryPoint="msx2_ejectDisk")]
         public static extern void EjectDisk(IntPtr context, int driveId);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_getQuickSaveSize")]
+        [DllImport("MSX2", EntryPoint="msx2_getQuickSaveSize")]
         private static extern int IGetQuickSaveSize(IntPtr context);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_quickSave")]
+        [DllImport("MSX2", EntryPoint="msx2_quickSave")]
         private static extern IntPtr IQuickSave(IntPtr context);
 
         public static byte[] QuickSave(IntPtr context)
@@ -155,7 +155,7 @@ namespace MSX2 {
             return bytes;
         }
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_quickLoad")]
+        [DllImport("MSX2", EntryPoint="msx2_quickLoad")]
         private static extern void IQuickLoad(IntPtr context, byte[] save, int size);
 
         public static void QuickLoad(IntPtr context, byte[] save) 
@@ -163,7 +163,7 @@ namespace MSX2 {
             IQuickLoad(context, save, save.Length);
         }
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_reset")]
+        [DllImport("MSX2", EntryPoint="msx2_reset")]
         public static extern void Reset(IntPtr context);
     }
 }
