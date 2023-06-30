@@ -8,7 +8,12 @@ jobs:
       - checkout
       - run:
           name: "Install Prerequests"
-          command: "sudo apt-get install -y clang dotnet-sdk-6.0"
+          command: "sudo apt-get install -y clang wget"
+      - run:
+          name: "Install dotnet-sdk-7.0"
+          command: "wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh"
+          command: "chmod +x ./dotnet-install.sh"
+          command: "./dotnet-install.sh --channel 7.0"
       - run:
           name: "Build and Test micro MSX2+"
           command: "make"
