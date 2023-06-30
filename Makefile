@@ -1,5 +1,6 @@
 all:
 	cd test/performance && make
+	cd msx2-dotnet && make clean all
 
 format:
 	make execute-format FILENAME=ay8910.hpp
