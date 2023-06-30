@@ -102,19 +102,17 @@ namespace MSX2 {
         [DllImport("MSX2", EntryPoint="msx2_getDisplayHeight")]
         public static extern int GetDisplayHeight(IntPtr context);
 
-        [DllImport("MSX2", EntryPoint="msx2_getMaxSoundSize")]
-        private static extern int IGetMaxSoundSize(IntPtr context);
+        [DllImport("MSX2", EntryPoint="msx2_getCurrentSoundSize")]
+        private static extern int IGetCurrentSoundSize(IntPtr context);
 
-        [DllImport("MSX2", EntryPoint="msx2_getMaxSoundSize")]
-        private static extern void IGetSound(IntPtr context, byte[] sound, IntPtr size);
+        [DllImport("MSX2", EntryPoint="msx2_getSound")]
+        private static extern void IGetSound(IntPtr context, byte[] sound);
 
         public static byte[] GetSound(IntPtr context)
         {
-            int maxSize = IGetMaxSoundSize(context);
-            byte[] result = new byte[maxSize];
-            IntPtr getSize = new IntPtr();
-            IGetSound(context, result, getSize);
-            Array.Resize(ref result, getSize.ToInt32());
+            int size = IGetCurrentSoundSize(context);
+            byte[] result = new byte[size];
+            IGetSound(context, result);
             return result;
         }
 

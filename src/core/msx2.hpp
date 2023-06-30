@@ -474,6 +474,11 @@ class MSX2
         return sizeof(this->ib->soundBuffer);
     }
 
+    size_t getCurrentSoundSize()
+    {
+        return this->ib->soundBufferCursor * 2;
+    }
+
     void* getSound(size_t* soundSize)
     {
         *soundSize = this->ib->soundBufferCursor * 2;

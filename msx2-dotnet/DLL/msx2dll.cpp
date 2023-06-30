@@ -215,17 +215,16 @@ EXPORT int __stdcall msx2_getDisplayHeight(void* context)
     return ((Context*)context)->msx2->getDisplayHeight();
 }
 
-EXPORT int __stdcall msx2_getMaxSoundSize(void* context)
+DLL_EXPORT int __stdcall msx2_getCurrentSoundSize(void* context)
 {
-    return (int)((Context*)context)->msx2->getMaxSoundSize();
+    return (int)((Context*)context)->msx2->getCurrentSoundSize();
 }
 
-EXPORT void __stdcall msx2_getSound(void* context, void* sound, int* size)
+EXPORT void __stdcall msx2_getSound(void* context, void* sound)
 {
     size_t sz;
     const void* result = ((Context*)context)->msx2->getSound(&sz);
     memcpy(sound, result, sz);
-    *size = (int)sz;
 }
 
 EXPORT void __stdcall msx2_loadRom(void* context, const void* rom, int size, int romType)
