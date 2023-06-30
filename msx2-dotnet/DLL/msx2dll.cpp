@@ -24,7 +24,11 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
+#ifdef _WIN32
+#include <Windows.h>
+#else
 #include <pthread.h>
+#endif
 #include <chrono>
 #include <thread>
 #include <map>
@@ -67,11 +71,19 @@ class Context {
 public:
     MSX2* msx2;
     std::map<std::string, Binary *> bintray;
+#ifdef _WIN32
+    CRITICAL_SECTION cs;
+#else
     pthread_mutex_t mutex{};
+#endif
 
     Context(int colorCode) {
         msx2 = new MSX2(colorCode);
+#ifdef _WIN32
+        InitializeCriticalSection(&this->cs);
+#else
         pthread_mutex_init(&this->mutex, nullptr);
+#endif
     }
     
     ~Context() {
@@ -79,6 +91,11 @@ public:
         for (std::pair<std::string, Binary *> bin: this->bintray) {
             delete bin.second;
         }
+#ifdef _WIN32
+        DeleteCriticalSection(&this->cs);
+#else
+        pthread_mutex_destroy(&this->mutex);
+#endif
     }
     
     void addBinary(std::string &label, const void *data, size_t size) {
@@ -90,11 +107,19 @@ public:
     }
 
     void lock() {
+#ifdef _WIN32
+        EnterCriticalSection(&this->cs);
+#else
         pthread_mutex_lock(&this->mutex);
+#endif
     }
 
     void unlock() {
+#ifdef _WIN32
+        LeaveCriticalSection(&this->cs);
+#else
         pthread_mutex_unlock(&this->mutex);
+#endif
     }
 };
 
