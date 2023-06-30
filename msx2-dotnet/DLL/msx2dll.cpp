@@ -215,7 +215,7 @@ EXPORT int __stdcall msx2_getDisplayHeight(void* context)
     return ((Context*)context)->msx2->getDisplayHeight();
 }
 
-DLL_EXPORT int __stdcall msx2_getCurrentSoundSize(void* context)
+EXPORT int __stdcall msx2_getCurrentSoundSize(void* context)
 {
     return (int)((Context*)context)->msx2->getCurrentSoundSize();
 }
