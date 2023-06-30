@@ -20,7 +20,7 @@ jobs:
           command: "./dotnet-install.sh --channel 7.0"
       - run:
           name: "Build and Test micro MSX2+"
-          command: "make"
+          command: "export PATH=/home/circleci/.dotnet:$PATH && make"
 
 workflows:
   test-workflow:
