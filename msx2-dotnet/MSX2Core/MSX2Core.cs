@@ -60,8 +60,15 @@ namespace MSX2 {
         [DllImport("libMSX2.so", EntryPoint="msx2_tick")]
         public static extern void Tick(IntPtr context, int pad1, int pad2, int key);
 
-        [DllImport("libMSX2.so", EntryPoint="msx2_getDisplay16")]
-        public static extern void GetDisplay16(IntPtr context, byte[] display);
+        [DllImport("libMSX2.so", EntryPoint="msx2_getDisplay")]
+        private static extern void IGetDisplay(IntPtr context, byte[] display);
+
+        public static byte[] GetDisplay(IntPtr context)
+        {
+            byte[] result = new byte[GetDisplayWidth(context) * GetDisplayHeight(context) * 2];
+            IGetDisplay(context, result);
+            return result;
+        }
 
         [DllImport("libMSX2.so", EntryPoint="msx2_getDisplayWidth")]
         public static extern int GetDisplayWidth(IntPtr context);

@@ -47,7 +47,7 @@ DLL_EXPORT void msx2_setup(void* context, int pri, int sec, int idx, const void*
 DLL_EXPORT void msx2_loadFont(void* context, const void* font, int size);
 DLL_EXPORT void msx2_setupSpecialKeyCode(void* context, int select, int start);
 DLL_EXPORT void msx2_tick(void* context, int pad1, int pad2, int key);
-DLL_EXPORT void msx2_getDisplay16(void* context, void* display);
+DLL_EXPORT void msx2_getDisplay(void* context, void* display);
 DLL_EXPORT int msx2_getDisplayWidth(void* context);
 DLL_EXPORT int msx2_getDisplayHeight(void* context);
 DLL_EXPORT int msx2_getMaxSoundSize(void* context);

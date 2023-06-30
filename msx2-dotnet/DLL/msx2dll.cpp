@@ -171,7 +171,7 @@ EXPORT void msx2_tick(void* context, int pad1, int pad2, int key)
     c->unlock();
 }
 
-EXPORT void msx2_getDisplay16(void* context, void* display)
+EXPORT void msx2_getDisplay(void* context, void* display)
 {
     Context* c = (Context*)context;
     memcpy(display, c->msx2->getDisplay(), c->msx2->getDisplayWidth() * c->msx2->getDisplayHeight() * 2);
