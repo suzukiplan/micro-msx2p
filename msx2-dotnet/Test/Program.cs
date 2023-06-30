@@ -9,7 +9,7 @@ namespace Test
         static void Main(string[] args)
         {
             Console.WriteLine("Create micro-msx2p context");
-            IntPtr context = MSX2.Core.CreateContext(0);
+            IntPtr context = MSX2.Core.CreateContext(MSX2.ColorMode.RGB555);
 
             Console.WriteLine("SetupSecondaryExist: 0 0 0 1");
             MSX2.Core.SetupSecondaryExist(context, false, false, false, true);

@@ -2,6 +2,12 @@
 using System.Runtime.InteropServices;
 
 namespace MSX2 {
+    public enum ColorMode : int
+    {
+        RGB555 = 0,
+        RGB565 = 1,
+    }
+
     public enum RomType : int
     {
         Normal = 0,
@@ -16,7 +22,12 @@ namespace MSX2 {
     public class Core
     {
         [DllImport("libMSX2.so", EntryPoint="msx2_createContext")]
-        public static extern IntPtr CreateContext(int colorMode);
+        private static extern IntPtr ICreateContext(int colorMode);
+    
+        public static IntPtr CreateContext(ColorMode colorMode)
+        {
+            return ICreateContext((int)colorMode);
+        }
 
         [DllImport("libMSX2.so", EntryPoint="msx2_releaseContext")]
         public static extern void ReleaseContext(IntPtr context);
