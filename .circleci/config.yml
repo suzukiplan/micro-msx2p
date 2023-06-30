@@ -10,9 +10,13 @@ jobs:
           name: "Install Prerequests"
           command: "sudo apt-get install -y clang wget"
       - run:
-          name: "Install dotnet-sdk-7.0"
+          name: "Download .NET Core install script"
           command: "wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh"
+      - run:
+          name: "chmod .NET Core install script"
           command: "chmod +x ./dotnet-install.sh"
+      - run:
+          name: "Install .NET Core SDK 7.0"
           command: "./dotnet-install.sh --channel 7.0"
       - run:
           name: "Build and Test micro MSX2+"
