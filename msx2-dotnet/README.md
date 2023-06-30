@@ -41,6 +41,25 @@ make を実行すると以下の順番でビルドが実行されます。
 
 [Test](Test) プロジェクトでは `MSX2.Core` で単純に Hello World を表示するシンプルな ROM を動かし、起動から 600 フレーム後のスクリーンショットを .bmp 形式で出力します。
 
+```
+% cd Test && dotnet run
+Create micro-msx2p context
+SetupSecondaryExist: 0 0 0 1
+Setup: MAIN 0-0 $0000~$7FFF (32768 bytes)
+Setup: LOGO 0-0 $8000~$BFFF (16384 bytes)
+Setup: SUB  3-0 $0000~$3FFF (16384 bytes)
+Setup: RAM  3-3 $0000~$FFFF
+Setup: Special Key Code (Select=ESC, Start=SPACE)
+Load ROM (32768 bytes, type=Normal)
+Reset
+Tick 600 times
+Get Display (568x240)
+Convert display to Bitmap
+Writing result.bmp
+Release micro-msx2p context
+%
+```
+
 ![Test/result.bmp](Test/result.png)
 
 ### Windows
