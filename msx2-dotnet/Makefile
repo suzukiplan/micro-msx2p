@@ -8,6 +8,7 @@ clean:
 build:
 	cd DLL && make
 	cd MSX2Core && dotnet build
+	cp MSX2Core/bin/Debug/net7.0/MSX2Core.dll Test
 	cd Test && dotnet build
 	cp DLL/libMSX2.* Test/bin/Debug/net7.0
 
