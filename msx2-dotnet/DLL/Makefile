@@ -4,7 +4,7 @@ clean:
 	rm -f libMSX2.so emu2413.o lz4.o
 
 libMSX2.so: msx2dll.cpp msx2dll.h emu2413.o lz4.o
-	clang++ -std=c++11 -Os -I../../src/core -I../../src/lz4 -shared -o libMSX2.so msx2dll.cpp emu2413.o lz4.o
+	clang++ -std=c++11 -Os -fPIC -I../../src/core -I../../src/lz4 -shared -o libMSX2.so msx2dll.cpp emu2413.o lz4.o
 
 emu2413.o: ../../src/core/emu2413.c
 	clang -Os -c ../../src/core/emu2413.c
