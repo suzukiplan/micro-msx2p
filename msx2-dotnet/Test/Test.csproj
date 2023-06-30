@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="MSX2Core">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>MSX2Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
