@@ -61,11 +61,11 @@ namespace MSX2 {
         public static extern void Tick(IntPtr context, int pad1, int pad2, int key);
 
         [DllImport("libMSX2.so", EntryPoint="msx2_getDisplay")]
-        private static extern void IGetDisplay(IntPtr context, byte[] display);
+        private static extern void IGetDisplay(IntPtr context, ushort[] display);
 
-        public static byte[] GetDisplay(IntPtr context)
+        public static ushort[] GetDisplay(IntPtr context)
         {
-            byte[] result = new byte[GetDisplayWidth(context) * GetDisplayHeight(context) * 2];
+            ushort[] result = new ushort[GetDisplayWidth(context) * GetDisplayHeight(context)];
             IGetDisplay(context, result);
             return result;
         }
