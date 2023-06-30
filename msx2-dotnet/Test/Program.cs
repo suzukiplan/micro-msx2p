@@ -82,7 +82,7 @@ namespace Test
             SimpleBitmap bitmap = new SimpleBitmap(width, height * 2);
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    ushort rgb565 = display[(height - y - 1) * width + x];
+                    ushort rgb565 = display[y * width + x];
                     bitmap.SetPixelRGB565(x, y * 2, rgb565);
                     bitmap.SetPixelRGB565(x, y * 2 + 1, rgb565);
                 }
