@@ -24,11 +24,10 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-#ifdef _WIN32
-#include <Windows.h>
-#else
+#ifndef _WIN32
 #include <pthread.h>
 #endif
+
 #include <chrono>
 #include <thread>
 #include <map>
@@ -36,6 +35,10 @@
 #include "msx2.hpp"
 #include "sha1.hpp"
 #include "msx2dll.h"
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 #define EXPORT extern "C" DLL_EXPORT
 
