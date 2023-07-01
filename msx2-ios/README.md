@@ -3,9 +3,11 @@
 ## About
 
 - micro-msx2p の機能を利用できる [Framework](MSX2) を提供しています
+- [Framework](MSX2) を利用した [Swift の Example](app-swift) を提供しています
 - [Framework](MSX2) を利用した [Objective-c の Example](app-objc) を提供しています
-- [Framework](MSX2) を利用した Swift の Example を将来的に提供予定です
-- [Framework](MSX2) を利用した Swift-UI の Example を余力があれば提供予定です（UIKitのものを作ろうとすると中々面倒くさいことが分かったところなので躊躇中）
+- [Framework](MSX2) を利用した Swift-UI の Example を提供しようと思っていた時期もありました
+
+> Swift-UI は正直な所その学習コストに見合うメリットが微妙というか、「これなら Flutter を使った方が良いよね」と思っている節があります。
 
 ## Basic Usage
 
