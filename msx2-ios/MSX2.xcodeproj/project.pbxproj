@@ -70,6 +70,7 @@
 		74FCC6D62A4FF4730079C4BD /* cbios_sub.rom in Resources */ = {isa = PBXBuildFile; fileRef = 74FCC6D22A4FF4730079C4BD /* cbios_sub.rom */; };
 		74FCC6D72A4FF4730079C4BD /* cbios_main_msx2+_jp.rom in Resources */ = {isa = PBXBuildFile; fileRef = 74FCC6D32A4FF4730079C4BD /* cbios_main_msx2+_jp.rom */; };
 		74FCC6D82A4FF4730079C4BD /* game.rom in Resources */ = {isa = PBXBuildFile; fileRef = 74FCC6D42A4FF4730079C4BD /* game.rom */; };
+		74FCC6DA2A4FFB170079C4BD /* MenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74FCC6D92A4FFB170079C4BD /* MenuView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -145,6 +146,7 @@
 		74FCC6D22A4FF4730079C4BD /* cbios_sub.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_sub.rom; sourceTree = "<group>"; };
 		74FCC6D32A4FF4730079C4BD /* cbios_main_msx2+_jp.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = "cbios_main_msx2+_jp.rom"; sourceTree = "<group>"; };
 		74FCC6D42A4FF4730079C4BD /* game.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = game.rom; sourceTree = "<group>"; };
+		74FCC6D92A4FFB170079C4BD /* MenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -307,6 +309,7 @@
 				74FCC6BD2A4FF04F0079C4BD /* AppDelegate.swift */,
 				74FCC6BF2A4FF04F0079C4BD /* SceneDelegate.swift */,
 				74FCC6C12A4FF04F0079C4BD /* ViewController.swift */,
+				74FCC6D92A4FFB170079C4BD /* MenuView.swift */,
 				74FCC6C32A4FF04F0079C4BD /* Main.storyboard */,
 				74FCC6C62A4FF0520079C4BD /* Assets.xcassets */,
 				74FCC6C82A4FF0520079C4BD /* LaunchScreen.storyboard */,
@@ -533,6 +536,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				74FCC6C22A4FF04F0079C4BD /* ViewController.swift in Sources */,
+				74FCC6DA2A4FFB170079C4BD /* MenuView.swift in Sources */,
 				74FCC6BE2A4FF04F0079C4BD /* AppDelegate.swift in Sources */,
 				74FCC6C02A4FF04F0079C4BD /* SceneDelegate.swift in Sources */,
 			);

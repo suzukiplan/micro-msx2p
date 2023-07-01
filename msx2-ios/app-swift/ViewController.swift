@@ -27,13 +27,16 @@
 import UIKit
 import MSX2
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, MenuViewDelegate {
+    private let menuView = MenuView()
     private let msx2View = MSX2View()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
+        menuView.delegate = self
         msx2View.backgroundColor = .blue
+        view.addSubview(menuView)
         view.addSubview(msx2View)
         DispatchQueue.global(qos: .default).async {
             let main = NSData(contentsOfFile: Bundle.main.path(forResource: "cbios_main_msx2+_jp", ofType: "rom")!)!
@@ -54,13 +57,18 @@ class ViewController: UIViewController {
         resize()
     }
 
+    func menuViewDidPushResetButton() {
+        msx2View.reset()
+    }
+
     func resize() {
         let x = view.safeAreaInsets.left
         var y = view.safeAreaInsets.top
         let width = view.frame.size.width - x - view.safeAreaInsets.right
         //let height = view.frame.size.height - y - view.safeAreaInsets.top
 
-        // TODO: layout MenuView
+        // layout MenuView
+        menuView.frame = CGRectMake(x, y, width, 44)
         y += 44
 
         // layout MSX2View
