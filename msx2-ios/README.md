@@ -9,7 +9,7 @@
 
 ## Basic Usage
 
-### Pods
+### Pods (WIP)
 
 Podfile に 次の行を追加してください。
 
@@ -25,6 +25,62 @@ target 'MyApp' do
   pod 'MSX2', :podspec => 'https://raw.githubusercontent.com/suzukiplan/micro-msx2p/master/msx2-ios/MSX2.podspec'
 end
 ```
+
+### 基本的な使い方 (Swift)
+
+#### 1. Import
+
+```swift
+import MSX2
+```
+
+#### 2. Initialize
+
+`MSX2View` は初期化処理が完了するまでブラックスクリーンの状態でサスペンド状態になり、`setupWithCBiosMain` メソッドでC-BIOSイメージやゲームのROMイメージの読み込みが完了することで実行状態に遷移します。
+
+初期化処理は、ファイルI/Oなどの時間が掛かる処理の実行が必要なため、`DispatchQueue.global(qos: .default).async` を用いてサブスレッドで非同期に実行することが望ましいです。
+
+以下、サブスレッドを用いた初期化処理を `ViewController` の `viewDidLoad` で実装する例を示します。
+
+```swift
+DispatchQueue.global(qos: .default).async {
+    let main = NSData(contentsOfFile: Bundle.main.path(forResource: "cbios_main_msx2+_jp", ofType: "rom")!)!
+    let logo = NSData(contentsOfFile: Bundle.main.path(forResource: "cbios_logo_msx2+", ofType: "rom")!)!
+    let sub = NSData(contentsOfFile: Bundle.main.path(forResource: "cbios_sub", ofType: "rom")!)!
+    let rom = NSData(contentsOfFile: Bundle.main.path(forResource: "game", ofType: "rom")!)!
+    self.msx2View.setup(withCBiosMain: main as Data,
+                        logo: logo as Data,
+                        sub: sub as Data,
+                        rom: rom as Data,
+                        romType: .normal,
+                        select: 0x1B,
+                        start: 0x20)
+}
+```
+
+#### 3. Set Delegate
+
+`MSX2View` を扱う `ViewController` などで `MSX2ViewDelegate` の実装を行います。
+
+```swift
+class ViewController: UIViewController, MSX2ViewDelegate {
+```
+
+```swift
+func didRequirePad1Code(with view: MSX2View) -> Int {
+    virtualPadView.joyPad.code
+}
+
+func didStart(with view: MSX2View) {
+}
+
+func didStop(with view: MSX2View) {
+}
+```
+
+- `didRequirePad1Code` ジョイパッドの入力コードを返します（毎フレームコールバックされます）
+- `didStart` エミュレータが開始する直前にコールバックされます
+- `didStop` エミュレータが停止する直前にコールバックされます
 
 ### 基本的な使い方 (Objective-c)
 
@@ -97,12 +153,12 @@ dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 
 ### Example
 
-[app-objc](app-objc) ディレクトリ以下が `MSX2View` を用いたアプリケーション実装の例です。
+[app-swift](app-swift) ディレクトリと [app-objc](app-objc) ディレクトリ以下が `MSX2View` を用いたアプリケーション実装の例です。
 
 ![image](screen_objc.png)
 
-- [ViewController.m](app-objc/ViewController.m) の実装を見れば `MSX2View` の使い方を簡単に把握できるようになっています
-- XCODE でビルドすれば [app-objc/roms](app-objc/roms) に組み込まれた game.rom が起動します
+- [ViewController.swift](app-swift/ViewController.swift) または [ViewController.m](app-objc/ViewController.m) の実装を見れば `MSX2View` の使い方を簡単に把握できるようになっています
+- XCODE でビルドすれば [roms](app-swift/roms) に組み込まれた game.rom が起動します
 - デフォルトの game.rom は `Hello, World!` を表示するシンプルな ROM ファイルです
 - game.rom を置き換えることで任意のゲームを起動できます
 - メガロムを起動する時は初期化時に指定している `romType` を適切に変更してください
