@@ -27,7 +27,7 @@
 import UIKit
 import MSX2
 
-class ViewController: UIViewController, MenuViewDelegate {
+class ViewController: UIViewController, MenuViewDelegate, MSX2ViewDelegate {
     private let menuView = MenuView()
     private let msx2View = MSX2View()
     private let virtualPadView = VirtualPadView()
@@ -35,6 +35,7 @@ class ViewController: UIViewController, MenuViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
+        msx2View.delegate = self
         menuView.delegate = self
         view.addSubview(menuView)
         view.addSubview(msx2View)
@@ -81,9 +82,19 @@ class ViewController: UIViewController, MenuViewDelegate {
         h = height - y + view.safeAreaInsets.top
         virtualPadView.frame = CGRectMake(x, y, width, h)
     }
-
+    
     override var preferredStatusBarStyle: UIStatusBarStyle {
         .lightContent
+    }
+    
+    func didRequirePad1Code(with view: MSX2View) -> Int {
+        virtualPadView.joyPad.code
+    }
+    
+    func didStart(with view: MSX2View) {
+    }
+    
+    func didStop(with view: MSX2View) {
     }
 }
 
