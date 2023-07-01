@@ -217,10 +217,10 @@ class VirtualPadView: UIView {
         joyPad.down = false
         joyPad.left = false
         joyPad.right = false
-        var cx = cursorContainer.frame.size.width / 2;
-        var cy = cursorContainer.frame.size.height / 2;
+        let cx = cursorContainer.frame.size.width / 2;
+        let cy = cursorContainer.frame.size.height / 2;
         cursorTouches.forEach { touch in
-            var ptr = touch.location(in: cursorContainer)
+            let ptr = touch.location(in: cursorContainer)
             if (abs(ptr.x - cx) >= 8 || abs(ptr.y - cy) >= 8) {
                 var r = atan2f(Float(ptr.x - cx), Float(ptr.y - cy)) + Float.pi / 2;
                 while (Float.pi * 2 <= r) {
