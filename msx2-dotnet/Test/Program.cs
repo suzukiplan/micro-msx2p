@@ -67,10 +67,12 @@ namespace Test
             MSX2.Core.Reset(context);
 
             const int tickCount = 600;
+            SimpleWave wave = new SimpleWave(44100, 16, 2);
+            wave.SetAutoHeadDetection(true);
             Console.WriteLine($"Tick {tickCount} times");
             for (int i = 0; i < tickCount; i++) {
                 MSX2.Core.Tick(context, 0, 0, 0);
-                MSX2.Core.GetSound(context); // Unnecessary, but I'll getSound it off anyway...
+                wave.Append(MSX2.Core.GetSound(context));
             }
 
             int width = MSX2.Core.GetDisplayWidth(context);
@@ -90,6 +92,13 @@ namespace Test
 
             Console.WriteLine("Writing result.bmp");
             bitmap.WriteFile("result.bmp");
+
+            Console.Write("Writing result.wav ... ");
+            if (wave.WriteFile("result.wav")) {
+                Console.WriteLine("wrote");
+            } else {
+                Console.WriteLine("did not write (no sound)");
+            }
 
             Console.WriteLine("Release micro-msx2p context");
             MSX2.Core.ReleaseContext(context);
