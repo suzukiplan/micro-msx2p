@@ -25,14 +25,50 @@
  * -----------------------------------------------------------------------------
  */
 import UIKit
+import MSX2
 
 class ViewController: UIViewController {
+    private let msx2View = MSX2View()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+        view.backgroundColor = .black
+        msx2View.backgroundColor = .blue
+        view.addSubview(msx2View)
+        DispatchQueue.global(qos: .default).async {
+            let main = NSData(contentsOfFile: Bundle.main.path(forResource: "cbios_main_msx2+_jp", ofType: "rom")!)!
+            let logo = NSData(contentsOfFile: Bundle.main.path(forResource: "cbios_logo_msx2+", ofType: "rom")!)!
+            let sub = NSData(contentsOfFile: Bundle.main.path(forResource: "cbios_sub", ofType: "rom")!)!
+            let rom = NSData(contentsOfFile: Bundle.main.path(forResource: "game", ofType: "rom")!)!
+            self.msx2View.setup(withCBiosMain: main as Data,
+                                logo: logo as Data,
+                                sub: sub as Data,
+                                rom: rom as Data,
+                                romType: .normal,
+                                select: 0x1B,
+                                start: 0x20)
+        }
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        resize()
+    }
 
+    func resize() {
+        let x = view.safeAreaInsets.left
+        var y = view.safeAreaInsets.top
+        let width = view.frame.size.width - x - view.safeAreaInsets.right
+        //let height = view.frame.size.height - y - view.safeAreaInsets.top
+
+        // TODO: layout MenuView
+        y += 44
+
+        // layout MSX2View
+        let h = width * 480.0 / 568.0
+        msx2View.frame = CGRectMake(x, y, width, h)
+        //y += h
+
+        // TODO: layout VirtualPadView
+    }
 }
 
