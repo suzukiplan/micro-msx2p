@@ -5,8 +5,6 @@ VisualStudioVersion = 17.0.31611.283
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSX2MAUI", "MSX2MAUI.csproj", "{6035D348-CE40-4E62-BE9A-3118D91D0D08}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSX2Core", "..\..\msx2-dotnet\MSX2Core\MSX2Core.csproj", "{68FA781E-C1CC-4720-884A-543AB5B08E9E}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,10 +17,6 @@ Global
 		{6035D348-CE40-4E62-BE9A-3118D91D0D08}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6035D348-CE40-4E62-BE9A-3118D91D0D08}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6035D348-CE40-4E62-BE9A-3118D91D0D08}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{68FA781E-C1CC-4720-884A-543AB5B08E9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{68FA781E-C1CC-4720-884A-543AB5B08E9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{68FA781E-C1CC-4720-884A-543AB5B08E9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{68FA781E-C1CC-4720-884A-543AB5B08E9E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
