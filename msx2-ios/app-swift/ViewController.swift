@@ -30,14 +30,15 @@ import MSX2
 class ViewController: UIViewController, MenuViewDelegate {
     private let menuView = MenuView()
     private let msx2View = MSX2View()
-
+    private let virtualPadView = VirtualPadView()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
         menuView.delegate = self
-        msx2View.backgroundColor = .blue
         view.addSubview(menuView)
         view.addSubview(msx2View)
+        view.addSubview(virtualPadView)
         DispatchQueue.global(qos: .default).async {
             let main = NSData(contentsOfFile: Bundle.main.path(forResource: "cbios_main_msx2+_jp", ofType: "rom")!)!
             let logo = NSData(contentsOfFile: Bundle.main.path(forResource: "cbios_logo_msx2+", ofType: "rom")!)!
@@ -52,31 +53,37 @@ class ViewController: UIViewController, MenuViewDelegate {
                                 start: 0x20)
         }
     }
-
+    
     override func viewDidAppear(_ animated: Bool) {
         resize()
     }
-
+    
     func menuViewDidPushResetButton() {
         msx2View.reset()
     }
-
+    
     func resize() {
         let x = view.safeAreaInsets.left
         var y = view.safeAreaInsets.top
         let width = view.frame.size.width - x - view.safeAreaInsets.right
-        //let height = view.frame.size.height - y - view.safeAreaInsets.top
-
+        let height = view.frame.size.height - y - view.safeAreaInsets.top
+        
         // layout MenuView
         menuView.frame = CGRectMake(x, y, width, 44)
         y += 44
-
+        
         // layout MSX2View
-        let h = width * 480.0 / 568.0
+        var h = width * 480.0 / 568.0
         msx2View.frame = CGRectMake(x, y, width, h)
-        //y += h
+        
+        // layout VirtualPadView
+        y += h
+        h = height - y + view.safeAreaInsets.top
+        virtualPadView.frame = CGRectMake(x, y, width, h)
+    }
 
-        // TODO: layout VirtualPadView
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        .lightContent
     }
 }
 
