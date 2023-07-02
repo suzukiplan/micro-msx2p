@@ -8,9 +8,7 @@ clean:
 build:
         cd DLL && nmake /f Makefile.win all
         cd MSX2Core && dotnet build
-        copy MSX2Core\bin\x64\Debug\net7.0\MSX2Core.dll Test
         cd Test && dotnet build
-        copy DLL\MSX2.DLL Test\bin\x64\Debug\net7.0
 
 run:
         cd Test && dotnet run
