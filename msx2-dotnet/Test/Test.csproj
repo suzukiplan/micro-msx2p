@@ -6,10 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="MSX2Core">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>MSX2Core.dll</HintPath>
-    </Reference>
+      <ProjectReference Include="..\MSX2Core\MSX2Core.csproj" />
   </ItemGroup>
-
 </Project>
