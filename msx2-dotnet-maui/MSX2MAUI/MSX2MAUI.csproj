@@ -52,4 +52,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="7.0.0" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<ProjectReference Include="../../msx2-dotnet/MSX2Core/MSX2Core.csproj" />
+	</ItemGroup>
 </Project>
