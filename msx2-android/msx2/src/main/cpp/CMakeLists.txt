@@ -6,13 +6,12 @@ add_library(
     msx2
     SHARED
     msx2.cpp
-    ../../../../../src/core/emu2413.c
-    ../../../../../src/lz4/lz4.c
+    ../../../../../src/emu2413.c
+    ../../../../../src/lz4.c
 )
 
 include_directories(
-    ../../../../../src/core
-    ../../../../../src/lz4
+    ../../../../../src
 )
 
 target_link_libraries(

@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-#include "../../src/core/msx2.hpp"
+#include "../../src/msx2.hpp"
 #include <chrono>
 
 void* loadFile(const char* path, size_t* size)
