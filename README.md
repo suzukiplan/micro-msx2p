@@ -18,7 +18,7 @@
     - 商標 `MSX` は MSX Licenses Corporation の登録商標のため、製品に商標を含める等（利用）に当たっては MSX Licensing Corporation からの許諾が必要
       - 商標許諾を得ていない（大半の）ケースでは、ゲームタイトルに「〜 for MSX」と記載したり、商品パッケージ、カセットラベル等に MSX の商標や意匠を含めることができない点を注意
     - 実機 BIOS や登録商標 `MSX` を用いる必要があるケースでは [プロジェクトEGGクリエイターズ](https://www.amusement-center.com/project/egg/creators/) を使った方が良さそうです（私が知る限りではこれ以外に実機 BIOS と MSX の商標を合法的に利用する手段は無いと思われます）
-- micro MSX2+ が対応するメガロムの種別は [msx2def.h](https://github.com/suzukiplan/micro-msx2p/blob/master/src/core/msx2def.h) を参照してください
+- micro MSX2+ が対応するメガロムの種別は [msx2def.h](https://github.com/suzukiplan/micro-msx2p/blob/master/src/msx2def.h) を参照してください
   - `MSX2_ROM_TYPE_NORMAL` 標準ROM (16KB, 32KB)
   - `MSX2_ROM_TYPE_ASC8` ASCII8 メガロム
   - `MSX2_ROM_TYPE_ASC8_SRAM2` ASCII8 + SRAM メガロム
@@ -59,11 +59,10 @@
   - Printer, RS-232C, Modem, Mouse, Light Pen 等の周辺機器対応
   - System Control, AV Control
 
-## How to use [micro MSX2+ core module](./src/core)
+## How to use [micro MSX2+ core module](./src)
 
-- **エミュレータ・コアモジュール**（[./src/core以下の全てのファイル](./src/core)）と **LZ4 Library**（[./src/lz4以下の全てのファイル](./src/lz4)）をC++プロジェクトに組み込んで使用します
+- **エミュレータ・コアモジュール** ([./src](./src)以下の全てのファイル) を C++ プロジェクトに組み込んで使用します
   - C/C++の標準ライブラリ以外は使用していないので、プラットフォーム（Nintendo Switch、PlayStation、XBOX, iOS, Android, Windows, macOS, PlayStation, NintendoSwitch など）に関係無くビルド可能な筈です
-  - ただし、64bit CPU 専用（32bit CPU は非サポートというか未確認）です
   - ESP32 だと動かないんじゃないかな（性能的な意味で）
 - セーブデータはエンディアンモデルが異なるコンピュータ間では互換性が無いため、プラットフォーム間でセーブデータのやりとりをする場合は注意してください
 

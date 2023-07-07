@@ -4,10 +4,10 @@ clean:
 	DEL /S /Q MSX2.DLL MSX2.exp MSX2.lib emu2413.obj lz4.obj
 
 MSX2.DLL: msx2dll.cpp msx2dll.h emu2413.obj lz4.obj
-	CL /LD /O2 /std:c++17 /EHsc /source-charset:utf-8 -I../../src/core -I../../src/lz4 msx2dll.cpp emu2413.obj lz4.obj /FeMSX2.DLL
+	CL /LD /O2 /std:c++17 /EHsc /source-charset:utf-8 -I../../src msx2dll.cpp emu2413.obj lz4.obj /FeMSX2.DLL
 
-emu2413.obj: ../../src/core/emu2413.c
-	CL /O2 /source-charset:utf-8 /c ../../src/core/emu2413.c
+emu2413.obj: ../../src/emu2413.c
+	CL /O2 /source-charset:utf-8 /c ../../src/emu2413.c
 
-lz4.obj: ../../src/lz4/lz4.c
-	CL /O2 /source-charset:utf-8 /c ../../src/lz4/lz4.c
+lz4.obj: ../../src/lz4.c
+	CL /O2 /source-charset:utf-8 /c ../../src/lz4.c
