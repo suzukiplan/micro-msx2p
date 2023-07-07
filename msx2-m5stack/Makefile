@@ -1,5 +1,5 @@
 all: copy-core
-	@echo todo
+	pio run -t upload
 
 copy-core:
 	cp ../src/*.h include
