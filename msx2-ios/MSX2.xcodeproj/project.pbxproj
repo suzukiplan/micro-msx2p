@@ -7,27 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7404130B2A4C6D8D0048DFB8 /* msx2def.h in Headers */ = {isa = PBXBuildFile; fileRef = 740412FF2A4C6D8C0048DFB8 /* msx2def.h */; };
-		7404130C2A4C6D8D0048DFB8 /* msx2.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 740413002A4C6D8C0048DFB8 /* msx2.hpp */; };
-		7404130D2A4C6D8D0048DFB8 /* msx2clock.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 740413012A4C6D8C0048DFB8 /* msx2clock.hpp */; };
-		7404130E2A4C6D8D0048DFB8 /* msx2kanji.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 740413022A4C6D8C0048DFB8 /* msx2kanji.hpp */; };
-		7404130F2A4C6D8D0048DFB8 /* emu2413.h in Headers */ = {isa = PBXBuildFile; fileRef = 740413032A4C6D8C0048DFB8 /* emu2413.h */; };
-		740413102A4C6D8D0048DFB8 /* scc.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 740413042A4C6D8D0048DFB8 /* scc.hpp */; };
-		740413112A4C6D8D0048DFB8 /* v9958.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 740413052A4C6D8D0048DFB8 /* v9958.hpp */; };
-		740413122A4C6D8D0048DFB8 /* z80.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 740413062A4C6D8D0048DFB8 /* z80.hpp */; };
-		740413132A4C6D8D0048DFB8 /* emu2413.c in Sources */ = {isa = PBXBuildFile; fileRef = 740413072A4C6D8D0048DFB8 /* emu2413.c */; };
-		740413142A4C6D8D0048DFB8 /* ay8910.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 740413082A4C6D8D0048DFB8 /* ay8910.hpp */; };
-		740413152A4C6D8D0048DFB8 /* msx2mmu.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 740413092A4C6D8D0048DFB8 /* msx2mmu.hpp */; };
-		740413162A4C6D8D0048DFB8 /* tc8566af.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 7404130A2A4C6D8D0048DFB8 /* tc8566af.hpp */; };
-		740413202A4C6D9A0048DFB8 /* lz4hc.h in Headers */ = {isa = PBXBuildFile; fileRef = 740413172A4C6D9A0048DFB8 /* lz4hc.h */; };
-		740413212A4C6D9A0048DFB8 /* lz4.c in Sources */ = {isa = PBXBuildFile; fileRef = 740413182A4C6D9A0048DFB8 /* lz4.c */; };
-		740413222A4C6D9A0048DFB8 /* lz4frame_static.h in Headers */ = {isa = PBXBuildFile; fileRef = 740413192A4C6D9A0048DFB8 /* lz4frame_static.h */; };
-		740413232A4C6D9A0048DFB8 /* lz4.h in Headers */ = {isa = PBXBuildFile; fileRef = 7404131A2A4C6D9A0048DFB8 /* lz4.h */; };
-		740413242A4C6D9A0048DFB8 /* lz4hc.c in Sources */ = {isa = PBXBuildFile; fileRef = 7404131B2A4C6D9A0048DFB8 /* lz4hc.c */; };
-		740413252A4C6D9A0048DFB8 /* lz4frame.c in Sources */ = {isa = PBXBuildFile; fileRef = 7404131C2A4C6D9A0048DFB8 /* lz4frame.c */; };
-		740413262A4C6D9A0048DFB8 /* xxhash.h in Headers */ = {isa = PBXBuildFile; fileRef = 7404131D2A4C6D9A0048DFB8 /* xxhash.h */; };
-		740413272A4C6D9A0048DFB8 /* xxhash.c in Sources */ = {isa = PBXBuildFile; fileRef = 7404131E2A4C6D9A0048DFB8 /* xxhash.c */; };
-		740413282A4C6D9A0048DFB8 /* lz4frame.h in Headers */ = {isa = PBXBuildFile; fileRef = 7404131F2A4C6D9A0048DFB8 /* lz4frame.h */; };
 		7405F0B82A4BAA2500D238FC /* MSX2View.h in Headers */ = {isa = PBXBuildFile; fileRef = 7405F0B62A4BAA2500D238FC /* MSX2View.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7405F0B92A4BAA2500D238FC /* MSX2View.m in Sources */ = {isa = PBXBuildFile; fileRef = 7405F0B72A4BAA2500D238FC /* MSX2View.m */; };
 		7405F0BC2A4BB83100D238FC /* MSX2JoyPad.h in Headers */ = {isa = PBXBuildFile; fileRef = 7405F0BA2A4BB83100D238FC /* MSX2JoyPad.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -51,6 +30,20 @@
 		749632D72A4C1EE800B7559B /* VirtualPadView.m in Sources */ = {isa = PBXBuildFile; fileRef = 749632D62A4C1EE800B7559B /* VirtualPadView.m */; };
 		7496B7342A4BA79000A37A12 /* MSX2CALayer.h in Headers */ = {isa = PBXBuildFile; fileRef = 7496B7322A4BA79000A37A12 /* MSX2CALayer.h */; };
 		7496B7352A4BA79000A37A12 /* MSX2CALayer.m in Sources */ = {isa = PBXBuildFile; fileRef = 7496B7332A4BA79000A37A12 /* MSX2CALayer.m */; };
+		74CC3F452A58C56E00153AD6 /* msx2.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F372A58C56D00153AD6 /* msx2.hpp */; };
+		74CC3F462A58C56E00153AD6 /* v9958.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F382A58C56E00153AD6 /* v9958.hpp */; };
+		74CC3F472A58C56E00153AD6 /* emu2413.h in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F392A58C56E00153AD6 /* emu2413.h */; };
+		74CC3F482A58C56E00153AD6 /* tc8566af.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F3A2A58C56E00153AD6 /* tc8566af.hpp */; };
+		74CC3F492A58C56E00153AD6 /* msx2mmu.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F3B2A58C56E00153AD6 /* msx2mmu.hpp */; };
+		74CC3F4A2A58C56E00153AD6 /* z80.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F3C2A58C56E00153AD6 /* z80.hpp */; };
+		74CC3F4B2A58C56E00153AD6 /* lz4.h in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F3D2A58C56E00153AD6 /* lz4.h */; };
+		74CC3F4C2A58C56E00153AD6 /* ay8910.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F3E2A58C56E00153AD6 /* ay8910.hpp */; };
+		74CC3F4D2A58C56E00153AD6 /* msx2clock.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F3F2A58C56E00153AD6 /* msx2clock.hpp */; };
+		74CC3F4E2A58C56E00153AD6 /* lz4.c in Sources */ = {isa = PBXBuildFile; fileRef = 74CC3F402A58C56E00153AD6 /* lz4.c */; };
+		74CC3F4F2A58C56E00153AD6 /* emu2413.c in Sources */ = {isa = PBXBuildFile; fileRef = 74CC3F412A58C56E00153AD6 /* emu2413.c */; };
+		74CC3F502A58C56E00153AD6 /* msx2kanji.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F422A58C56E00153AD6 /* msx2kanji.hpp */; };
+		74CC3F512A58C56E00153AD6 /* scc.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F432A58C56E00153AD6 /* scc.hpp */; };
+		74CC3F522A58C56E00153AD6 /* msx2def.h in Headers */ = {isa = PBXBuildFile; fileRef = 74CC3F442A58C56E00153AD6 /* msx2def.h */; };
 		74D439D72A4B02F800DC289B /* msx2gw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 74D439D52A4B02F800DC289B /* msx2gw.cpp */; };
 		74D439D82A4B02F800DC289B /* msx2gw.h in Headers */ = {isa = PBXBuildFile; fileRef = 74D439D62A4B02F800DC289B /* msx2gw.h */; };
 		74D439DE2A4B11DC00DC289B /* MSX2Core.h in Headers */ = {isa = PBXBuildFile; fileRef = 74D439DC2A4B11DC00DC289B /* MSX2Core.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -75,27 +68,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		740412FF2A4C6D8C0048DFB8 /* msx2def.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msx2def.h; path = ../../../src/core/msx2def.h; sourceTree = "<group>"; };
-		740413002A4C6D8C0048DFB8 /* msx2.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2.hpp; path = ../../../src/core/msx2.hpp; sourceTree = "<group>"; };
-		740413012A4C6D8C0048DFB8 /* msx2clock.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2clock.hpp; path = ../../../src/core/msx2clock.hpp; sourceTree = "<group>"; };
-		740413022A4C6D8C0048DFB8 /* msx2kanji.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2kanji.hpp; path = ../../../src/core/msx2kanji.hpp; sourceTree = "<group>"; };
-		740413032A4C6D8C0048DFB8 /* emu2413.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = emu2413.h; path = ../../../src/core/emu2413.h; sourceTree = "<group>"; };
-		740413042A4C6D8D0048DFB8 /* scc.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = scc.hpp; path = ../../../src/core/scc.hpp; sourceTree = "<group>"; };
-		740413052A4C6D8D0048DFB8 /* v9958.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = v9958.hpp; path = ../../../src/core/v9958.hpp; sourceTree = "<group>"; };
-		740413062A4C6D8D0048DFB8 /* z80.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = z80.hpp; path = ../../../src/core/z80.hpp; sourceTree = "<group>"; };
-		740413072A4C6D8D0048DFB8 /* emu2413.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = emu2413.c; path = ../../../src/core/emu2413.c; sourceTree = "<group>"; };
-		740413082A4C6D8D0048DFB8 /* ay8910.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ay8910.hpp; path = ../../../src/core/ay8910.hpp; sourceTree = "<group>"; };
-		740413092A4C6D8D0048DFB8 /* msx2mmu.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2mmu.hpp; path = ../../../src/core/msx2mmu.hpp; sourceTree = "<group>"; };
-		7404130A2A4C6D8D0048DFB8 /* tc8566af.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tc8566af.hpp; path = ../../../src/core/tc8566af.hpp; sourceTree = "<group>"; };
-		740413172A4C6D9A0048DFB8 /* lz4hc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4hc.h; path = ../../../src/lz4/lz4hc.h; sourceTree = "<group>"; };
-		740413182A4C6D9A0048DFB8 /* lz4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = lz4.c; path = ../../../src/lz4/lz4.c; sourceTree = "<group>"; };
-		740413192A4C6D9A0048DFB8 /* lz4frame_static.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4frame_static.h; path = ../../../src/lz4/lz4frame_static.h; sourceTree = "<group>"; };
-		7404131A2A4C6D9A0048DFB8 /* lz4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4.h; path = ../../../src/lz4/lz4.h; sourceTree = "<group>"; };
-		7404131B2A4C6D9A0048DFB8 /* lz4hc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = lz4hc.c; path = ../../../src/lz4/lz4hc.c; sourceTree = "<group>"; };
-		7404131C2A4C6D9A0048DFB8 /* lz4frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = lz4frame.c; path = ../../../src/lz4/lz4frame.c; sourceTree = "<group>"; };
-		7404131D2A4C6D9A0048DFB8 /* xxhash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = xxhash.h; path = ../../../src/lz4/xxhash.h; sourceTree = "<group>"; };
-		7404131E2A4C6D9A0048DFB8 /* xxhash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = xxhash.c; path = ../../../src/lz4/xxhash.c; sourceTree = "<group>"; };
-		7404131F2A4C6D9A0048DFB8 /* lz4frame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4frame.h; path = ../../../src/lz4/lz4frame.h; sourceTree = "<group>"; };
 		7405F0B62A4BAA2500D238FC /* MSX2View.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MSX2View.h; sourceTree = "<group>"; };
 		7405F0B72A4BAA2500D238FC /* MSX2View.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MSX2View.m; sourceTree = "<group>"; };
 		7405F0BA2A4BB83100D238FC /* MSX2JoyPad.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MSX2JoyPad.h; sourceTree = "<group>"; };
@@ -126,6 +98,20 @@
 		749632D62A4C1EE800B7559B /* VirtualPadView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VirtualPadView.m; sourceTree = "<group>"; };
 		7496B7322A4BA79000A37A12 /* MSX2CALayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MSX2CALayer.h; sourceTree = "<group>"; };
 		7496B7332A4BA79000A37A12 /* MSX2CALayer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MSX2CALayer.m; sourceTree = "<group>"; };
+		74CC3F372A58C56D00153AD6 /* msx2.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2.hpp; path = ../../../src/msx2.hpp; sourceTree = "<group>"; };
+		74CC3F382A58C56E00153AD6 /* v9958.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = v9958.hpp; path = ../../../src/v9958.hpp; sourceTree = "<group>"; };
+		74CC3F392A58C56E00153AD6 /* emu2413.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = emu2413.h; path = ../../../src/emu2413.h; sourceTree = "<group>"; };
+		74CC3F3A2A58C56E00153AD6 /* tc8566af.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tc8566af.hpp; path = ../../../src/tc8566af.hpp; sourceTree = "<group>"; };
+		74CC3F3B2A58C56E00153AD6 /* msx2mmu.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2mmu.hpp; path = ../../../src/msx2mmu.hpp; sourceTree = "<group>"; };
+		74CC3F3C2A58C56E00153AD6 /* z80.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = z80.hpp; path = ../../../src/z80.hpp; sourceTree = "<group>"; };
+		74CC3F3D2A58C56E00153AD6 /* lz4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lz4.h; path = ../../../src/lz4.h; sourceTree = "<group>"; };
+		74CC3F3E2A58C56E00153AD6 /* ay8910.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ay8910.hpp; path = ../../../src/ay8910.hpp; sourceTree = "<group>"; };
+		74CC3F3F2A58C56E00153AD6 /* msx2clock.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2clock.hpp; path = ../../../src/msx2clock.hpp; sourceTree = "<group>"; };
+		74CC3F402A58C56E00153AD6 /* lz4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = lz4.c; path = ../../../src/lz4.c; sourceTree = "<group>"; };
+		74CC3F412A58C56E00153AD6 /* emu2413.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = emu2413.c; path = ../../../src/emu2413.c; sourceTree = "<group>"; };
+		74CC3F422A58C56E00153AD6 /* msx2kanji.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx2kanji.hpp; path = ../../../src/msx2kanji.hpp; sourceTree = "<group>"; };
+		74CC3F432A58C56E00153AD6 /* scc.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = scc.hpp; path = ../../../src/scc.hpp; sourceTree = "<group>"; };
+		74CC3F442A58C56E00153AD6 /* msx2def.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msx2def.h; path = ../../../src/msx2def.h; sourceTree = "<group>"; };
 		74D439D52A4B02F800DC289B /* msx2gw.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = msx2gw.cpp; sourceTree = "<group>"; };
 		74D439D62A4B02F800DC289B /* msx2gw.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msx2gw.h; sourceTree = "<group>"; };
 		74D439D92A4B0D3C00DC289B /* sha1.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = sha1.hpp; sourceTree = "<group>"; };
@@ -204,7 +190,6 @@
 		741F13512A4AD0F0001B057E /* MSX2 */ = {
 			isa = PBXGroup;
 			children = (
-				74D439AA2A4B01C900DC289B /* lz4 */,
 				74D439A92A4B01A200DC289B /* core */,
 				741F13522A4AD0F0001B057E /* MSX2.h */,
 				74D439DC2A4B11DC00DC289B /* MSX2Core.h */,
@@ -272,36 +257,22 @@
 		74D439A92A4B01A200DC289B /* core */ = {
 			isa = PBXGroup;
 			children = (
-				740413082A4C6D8D0048DFB8 /* ay8910.hpp */,
-				740413072A4C6D8D0048DFB8 /* emu2413.c */,
-				740413032A4C6D8C0048DFB8 /* emu2413.h */,
-				740413002A4C6D8C0048DFB8 /* msx2.hpp */,
-				740413012A4C6D8C0048DFB8 /* msx2clock.hpp */,
-				740412FF2A4C6D8C0048DFB8 /* msx2def.h */,
-				740413022A4C6D8C0048DFB8 /* msx2kanji.hpp */,
-				740413092A4C6D8D0048DFB8 /* msx2mmu.hpp */,
-				740413042A4C6D8D0048DFB8 /* scc.hpp */,
-				7404130A2A4C6D8D0048DFB8 /* tc8566af.hpp */,
-				740413052A4C6D8D0048DFB8 /* v9958.hpp */,
-				740413062A4C6D8D0048DFB8 /* z80.hpp */,
+				74CC3F3E2A58C56E00153AD6 /* ay8910.hpp */,
+				74CC3F412A58C56E00153AD6 /* emu2413.c */,
+				74CC3F392A58C56E00153AD6 /* emu2413.h */,
+				74CC3F402A58C56E00153AD6 /* lz4.c */,
+				74CC3F3D2A58C56E00153AD6 /* lz4.h */,
+				74CC3F372A58C56D00153AD6 /* msx2.hpp */,
+				74CC3F3F2A58C56E00153AD6 /* msx2clock.hpp */,
+				74CC3F442A58C56E00153AD6 /* msx2def.h */,
+				74CC3F422A58C56E00153AD6 /* msx2kanji.hpp */,
+				74CC3F3B2A58C56E00153AD6 /* msx2mmu.hpp */,
+				74CC3F432A58C56E00153AD6 /* scc.hpp */,
+				74CC3F3A2A58C56E00153AD6 /* tc8566af.hpp */,
+				74CC3F382A58C56E00153AD6 /* v9958.hpp */,
+				74CC3F3C2A58C56E00153AD6 /* z80.hpp */,
 			);
 			path = core;
-			sourceTree = "<group>";
-		};
-		74D439AA2A4B01C900DC289B /* lz4 */ = {
-			isa = PBXGroup;
-			children = (
-				740413182A4C6D9A0048DFB8 /* lz4.c */,
-				7404131A2A4C6D9A0048DFB8 /* lz4.h */,
-				740413192A4C6D9A0048DFB8 /* lz4frame_static.h */,
-				7404131C2A4C6D9A0048DFB8 /* lz4frame.c */,
-				7404131F2A4C6D9A0048DFB8 /* lz4frame.h */,
-				7404131B2A4C6D9A0048DFB8 /* lz4hc.c */,
-				740413172A4C6D9A0048DFB8 /* lz4hc.h */,
-				7404131E2A4C6D9A0048DFB8 /* xxhash.c */,
-				7404131D2A4C6D9A0048DFB8 /* xxhash.h */,
-			);
-			path = lz4;
 			sourceTree = "<group>";
 		};
 		74FCC6BC2A4FF04F0079C4BD /* app-swift */ = {
@@ -339,30 +310,26 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				740413102A4C6D8D0048DFB8 /* scc.hpp in Headers */,
 				7405F0B82A4BAA2500D238FC /* MSX2View.h in Headers */,
-				740413112A4C6D8D0048DFB8 /* v9958.hpp in Headers */,
+				74CC3F512A58C56E00153AD6 /* scc.hpp in Headers */,
+				74CC3F492A58C56E00153AD6 /* msx2mmu.hpp in Headers */,
 				747420F02A4BBE650002D193 /* BufferQueue.h in Headers */,
-				740413162A4C6D8D0048DFB8 /* tc8566af.hpp in Headers */,
-				7404130D2A4C6D8D0048DFB8 /* msx2clock.hpp in Headers */,
-				7404130B2A4C6D8D0048DFB8 /* msx2def.h in Headers */,
+				74CC3F462A58C56E00153AD6 /* v9958.hpp in Headers */,
+				74CC3F472A58C56E00153AD6 /* emu2413.h in Headers */,
 				7405F0BC2A4BB83100D238FC /* MSX2JoyPad.h in Headers */,
+				74CC3F482A58C56E00153AD6 /* tc8566af.hpp in Headers */,
+				74CC3F4A2A58C56E00153AD6 /* z80.hpp in Headers */,
 				747420EC2A4BBDF90002D193 /* sound-ios.h in Headers */,
-				740413152A4C6D8D0048DFB8 /* msx2mmu.hpp in Headers */,
+				74CC3F4D2A58C56E00153AD6 /* msx2clock.hpp in Headers */,
+				74CC3F502A58C56E00153AD6 /* msx2kanji.hpp in Headers */,
+				74CC3F522A58C56E00153AD6 /* msx2def.h in Headers */,
+				74CC3F4B2A58C56E00153AD6 /* lz4.h in Headers */,
 				7496B7342A4BA79000A37A12 /* MSX2CALayer.h in Headers */,
-				740413232A4C6D9A0048DFB8 /* lz4.h in Headers */,
 				74D439D82A4B02F800DC289B /* msx2gw.h in Headers */,
-				740413282A4C6D9A0048DFB8 /* lz4frame.h in Headers */,
+				74CC3F4C2A58C56E00153AD6 /* ay8910.hpp in Headers */,
+				74CC3F452A58C56E00153AD6 /* msx2.hpp in Headers */,
 				74D439DE2A4B11DC00DC289B /* MSX2Core.h in Headers */,
-				740413262A4C6D9A0048DFB8 /* xxhash.h in Headers */,
-				740413142A4C6D8D0048DFB8 /* ay8910.hpp in Headers */,
-				7404130C2A4C6D8D0048DFB8 /* msx2.hpp in Headers */,
-				7404130E2A4C6D8D0048DFB8 /* msx2kanji.hpp in Headers */,
 				741F13532A4AD0F0001B057E /* MSX2.h in Headers */,
-				7404130F2A4C6D8D0048DFB8 /* emu2413.h in Headers */,
-				740413222A4C6D9A0048DFB8 /* lz4frame_static.h in Headers */,
-				740413202A4C6D9A0048DFB8 /* lz4hc.h in Headers */,
-				740413122A4C6D8D0048DFB8 /* z80.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -506,16 +473,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				74CC3F4E2A58C56E00153AD6 /* lz4.c in Sources */,
 				74D439D72A4B02F800DC289B /* msx2gw.cpp in Sources */,
-				740413272A4C6D9A0048DFB8 /* xxhash.c in Sources */,
 				7405F0BD2A4BB83100D238FC /* MSX2JoyPad.m in Sources */,
-				740413252A4C6D9A0048DFB8 /* lz4frame.c in Sources */,
 				7496B7352A4BA79000A37A12 /* MSX2CALayer.m in Sources */,
-				740413242A4C6D9A0048DFB8 /* lz4hc.c in Sources */,
-				740413132A4C6D8D0048DFB8 /* emu2413.c in Sources */,
 				7405F0B92A4BAA2500D238FC /* MSX2View.m in Sources */,
+				74CC3F4F2A58C56E00153AD6 /* emu2413.c in Sources */,
 				74D439DF2A4B11DC00DC289B /* MSX2Core.m in Sources */,
-				740413212A4C6D9A0048DFB8 /* lz4.c in Sources */,
 				747420EF2A4BBE650002D193 /* BufferQueue.cpp in Sources */,
 				747420EB2A4BBDF90002D193 /* sound-ios.cpp in Sources */,
 			);
