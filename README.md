@@ -30,8 +30,8 @@
   - [msx2-osx](./msx2-osx) macOS (Cocoa)
   - [msx2-android](./msx2-android) Android
   - [msx2-ios](./msx2-ios) iOS
+  - [msx2-dotnet](./msx2-dotnet) .NET Core
   - 以下のプラットフォームはまだ提供していません:
-    - .NET Core（将来的には作るかも）
     - Windows（将来的には作るかも）
     - Linux（将来的には作るかも）
     - Nintendo Switch（ライセンス的な事情で公開はできないかも）
