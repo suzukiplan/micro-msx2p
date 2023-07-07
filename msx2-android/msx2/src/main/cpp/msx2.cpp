@@ -2,7 +2,7 @@
 #include <jni.h>
 #include <unistd.h>
 #include <android/bitmap.h>
-#include "../../../../../src/core/msx2.hpp"
+#include "../../../../../src/msx2.hpp"
 #include "audio.hpp"
 #include <chrono>
 #include <thread>
