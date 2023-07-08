@@ -78,7 +78,7 @@ void setup() {
     booted = true;
     usleep(1000000);
     M5.Lcd.clear(0);
-    xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 1, nullptr, 1);
+    xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 16, nullptr, 1);
 }
 
 void loop() {
