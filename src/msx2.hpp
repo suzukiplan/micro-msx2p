@@ -27,7 +27,7 @@
 #ifndef INCLUDE_MSX2_HPP
 #define INCLUDE_MSX2_HPP
 #include "ay8910.hpp"
-#ifndef REMOVE_OPLL
+#ifndef MSX2_REMOVE_OPLL
 #include "emu2413.h"
 #endif
 #include "lz4.h"
@@ -149,7 +149,7 @@ class MSX2
     MSX2Kanji* kanji;
     SCC* scc;
     TC8566AF* fdc;
-#ifndef REMOVE_OPLL
+#ifndef MSX2_REMOVE_OPLL
     OPLL* ym2413;
 #endif
 
@@ -166,7 +166,7 @@ class MSX2
     {
         if (this->fdc) delete fdc;
         if (this->scc) delete scc;
-#ifndef REMOVE_OPLL
+#ifndef MSX2_REMOVE_OPLL
         if (this->ym2413) OPLL_delete(this->ym2413);
 #endif
         delete this->cpu;
@@ -195,7 +195,7 @@ class MSX2
         this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX2*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX2*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX2*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;
         this->scc = nullptr;
-#ifndef REMOVE_OPLL
+#ifndef MSX2_REMOVE_OPLL
         if (ym2413Enabled) {
             this->putlog("create YM2413 instance");
             this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
@@ -222,7 +222,7 @@ class MSX2
                 case 0x3FFB: ((MSX2*)arg)->fdc->write(5, value); break;
             } }, [](void* arg, unsigned short addr, unsigned char value) {
             switch (addr) {
-#ifndef REMOVE_OPLL
+#ifndef MSX2_REMOVE_OPLL
                 case 0x3FF4: OPLL_writeIO(((MSX2*)arg)->ym2413, 0, value); break;
                 case 0x3FF5: OPLL_writeIO(((MSX2*)arg)->ym2413, 1, value); break;
 #endif
@@ -400,7 +400,7 @@ class MSX2
         this->kanji->reset();
         if (this->scc) this->scc->reset();
         if (this->fdc) this->fdc->reset();
-#ifndef REMOVE_OPLL
+#ifndef MSX2_REMOVE_OPLL
         if (this->ym2413) OPLL_reset(this->ym2413);
 #endif
     }
@@ -449,7 +449,7 @@ class MSX2
     void setup(int pri, int sec, int idx, void* data, int size, const char* label = NULL)
     {
         if (0 == strcmp(label, "FM")) {
-#ifndef REMOVE_OPLL
+#ifndef MSX2_REMOVE_OPLL
             if (!this->ym2413) {
                 this->putlog("create YM2413 instance");
                 this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
@@ -563,7 +563,7 @@ class MSX2
             if (this->scc) {
                 this->scc->tick(&this->ib->soundBuffer[this->ib->soundBufferCursor], &this->ib->soundBuffer[this->ib->soundBufferCursor + 1], 81);
             }
-#ifndef REMOVE_OPLL
+#ifndef MSX2_REMOVE_OPLL
             if (this->ym2413) {
                 auto opllWav = OPLL_calc(this->ym2413);
                 int l = this->ib->soundBuffer[this->ib->soundBufferCursor];
@@ -694,7 +694,7 @@ class MSX2
     {
         this->ctx.io[port] = value;
         switch (port) {
-#ifdef REMOVE_OPLL
+#ifdef MSX2_REMOVE_OPLL
             case 0x7C: break;
             case 0x7D: break;
 #else
@@ -836,7 +836,7 @@ class MSX2
             this->writeSaveChunk("JCT", &this->fdc->journalCount, (int)sizeof(this->fdc->journalCount));
             this->writeSaveChunk("JDT", &this->fdc->journal, (int)sizeof(this->fdc->journal[0]) * this->fdc->journalCount);
         }
-#ifndef REMOVE_OPLL
+#ifndef MSX2_REMOVE_OPLL
         if (this->ym2413) {
             this->writeSaveChunk("OPL", this->ym2413, (int)sizeof(OPLL));
         }
@@ -931,7 +931,7 @@ class MSX2
                 } else {
                     putlog("ignored JDT (%d bytes)", chunkSize);
                 }
-#ifndef REMOVE_OPLL
+#ifndef MSX2_REMOVE_OPLL
             } else if (0 == strcmp(chunk, "OPL")) {
                 if (this->ym2413) {
                     putlog("extract OPL (%d bytes)", chunkSize);
@@ -976,7 +976,7 @@ class MSX2
             size += sizeof(sizeof(this->fdc->journalCount)) + 8;                 // JCT
             size += sizeof(this->fdc->journal[0]) * this->fdc->journalCount + 8; // JDT
         }
-#ifndef REMOVE_OPLL
+#ifndef MSX2_REMOVE_OPLL
         if (this->ym2413) {
             size += sizeof(OPLL) + 8; // OPL
         }
