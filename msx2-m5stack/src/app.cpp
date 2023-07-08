@@ -45,7 +45,7 @@ void setup() {
     SPIFFS.begin();
     Serial.begin(115200);
     putlog("Loading micro MSX2+ for M5Stack...");
-    msx2 = new MSX2(MSX2_COLOR_MODE_RGB555);
+    msx2 = new MSX2(MSX2_COLOR_MODE_RGB565);
     roms.main = readRom("/cbios_main_msx2+_jp.rom", &roms.mainSize);
     roms.logo = readRom("/cbios_logo_msx2+.rom", &roms.logoSize);
     roms.sub = readRom("/cbios_sub.rom", &roms.subSize);
@@ -57,7 +57,16 @@ void setup() {
     roms.game = readRom("/game.rom", &roms.gameSize);
     msx2->loadRom(roms.game, roms.gameSize, MSX2_ROM_TYPE_NORMAL);
     putlog("Setup finished.");
+    vTaskDelay(1000 / portTICK_RATE_MS);
+    M5.Lcd.clear(0);
 }
 
 void loop() {
+    msx2->tick(0, 0, 0);
+    M5.Lcd.drawBitmap(
+        (M5.Lcd.width() - msx2->getDisplayWidth()) / 2,
+        (M5.Lcd.height() - msx2->getDisplayHeight()) / 2,
+        msx2->getDisplayWidth(),
+        msx2->getDisplayHeight(),
+        msx2->getDisplay());
 }
