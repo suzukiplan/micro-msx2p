@@ -51,10 +51,55 @@ class MSX2
       public:
         short soundBuffer[65536];
         unsigned short soundBufferCursor;
-        char quickSaveBuffer[1024 * 1024 * 4];
-        char quickSaveBufferCompressed[1024 * 1024 * 4];
-        size_t quickSaveBufferSize;
+        char* quickSaveBuffer;
+        char* quickSaveBufferCompressed;
+        size_t quickSaveBufferPtr;
+        size_t quickSaveBufferHeapSize;
+
+        InternalBuffer() {
+            memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
+            this->soundBufferCursor = 0;
+            this->quickSaveBuffer = nullptr;
+            this->quickSaveBufferCompressed = nullptr;
+            this->quickSaveBufferPtr = 0;
+            this->quickSaveBufferHeapSize = 0;
+        }
+
+        ~InternalBuffer() {
+            this->safeReleaseQuickSaveBuffer();
+        }
+
+        void safeReleaseQuickSaveBuffer() {
+            if (this->quickSaveBuffer) {
+                free(this->quickSaveBuffer);
+                this->quickSaveBuffer = nullptr;
+            }
+            if (this->quickSaveBufferCompressed) {
+                free(this->quickSaveBufferCompressed);
+                this->quickSaveBufferCompressed = nullptr;
+            }
+            this->quickSaveBufferHeapSize = 0;
+        }
+
+        bool allocateQuickSaveBuffer(size_t size) {
+            if (size == this->quickSaveBufferHeapSize) {
+                return true;
+            }
+            this->safeReleaseQuickSaveBuffer();
+            this->quickSaveBuffer = (char*)malloc(size);
+            if (!this->quickSaveBuffer) {
+                return false;
+            }
+            this->quickSaveBufferCompressed = (char*)malloc(size);
+            if (!this->quickSaveBufferCompressed) {
+                this->safeReleaseQuickSaveBuffer();
+                return false;
+            }
+            this->quickSaveBufferHeapSize = size;
+            return true;
+        }
     };
+
     InternalBuffer* ib;
     bool debug;
 
@@ -763,7 +808,10 @@ class MSX2
 
     const void* quickSave(size_t* size)
     {
-        this->ib->quickSaveBufferSize = 0;
+        if (!this->ib->allocateQuickSaveBuffer(this->calcQuickSaveSize())) {
+            return nullptr;
+        }
+        this->ib->quickSaveBufferPtr = 0;
         this->writeSaveChunk("BRD", &this->ctx, (int)sizeof(this->ctx));
         this->writeSaveChunk("Z80", &this->cpu->reg, (int)sizeof(this->cpu->reg));
         this->writeSaveChunk("MMU", &this->mmu->ctx, (int)sizeof(this->mmu->ctx));
@@ -791,18 +839,21 @@ class MSX2
 #endif
         *size = LZ4_compress_default(this->ib->quickSaveBuffer,
                                      this->ib->quickSaveBufferCompressed,
-                                     (int)this->ib->quickSaveBufferSize,
-                                     sizeof(this->ib->quickSaveBufferCompressed));
+                                     (int)this->ib->quickSaveBufferPtr,
+                                     (int)this->ib->quickSaveBufferHeapSize);
         return this->ib->quickSaveBufferCompressed;
     }
 
     void quickLoad(const void* buffer, size_t bufferSize)
     {
+        if (!this->ib->allocateQuickSaveBuffer(this->calcQuickSaveSize())) {
+            return;
+        }
         this->reset();
         int size = LZ4_decompress_safe((const char*)buffer,
                                        this->ib->quickSaveBuffer,
                                        (int)bufferSize,
-                                       sizeof(this->ib->quickSaveBuffer));
+                                       (int)this->ib->quickSaveBufferHeapSize);
         const char* ptr = this->ib->quickSaveBuffer;
         while (8 <= size) {
             char chunk[4];
@@ -894,12 +945,39 @@ class MSX2
   private:
     void writeSaveChunk(const char* name, const void* data, int size)
     {
-        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferSize], name, 4);
-        this->ib->quickSaveBufferSize += 4;
-        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferSize], &size, 4);
-        this->ib->quickSaveBufferSize += 4;
-        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferSize], data, size);
-        this->ib->quickSaveBufferSize += size;
+        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferPtr], name, 4);
+        this->ib->quickSaveBufferPtr += 4;
+        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferPtr], &size, 4);
+        this->ib->quickSaveBufferPtr += 4;
+        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferPtr], data, size);
+        this->ib->quickSaveBufferPtr += size;
+    }
+
+    size_t calcQuickSaveSize()
+    {
+        size_t size = 0;
+        size += sizeof(this->ctx) + 8; // BRD
+        size += sizeof(this->cpu->reg) + 8; // Z80
+        size += sizeof(this->mmu->ctx) + 8; // MMU
+        size += sizeof(this->mmu->pac) + 8; // PAC
+        size += sizeof(this->mmu->ram) + 8; // R:0
+        size += this->mmu->sramEnabled ? sizeof(this->mmu->sram) + 8 : 0; // SRM
+        size += this->mmu->sccEnabled && this->scc ? sizeof(this->scc->ctx) + 8 : 0; // SCC
+        size += sizeof(this->psg->ctx) + 8; // PSG
+        size += sizeof(this->clock->ctx) + 8; // RTC
+        size += sizeof(this->kanji->ctx) + 8; // KNJ
+        size += sizeof(this->vdp->ctx) + 8; // VDP
+        if (this->fdc) {
+            size += sizeof(this->fdc->ctx) + 8; // FDC
+            size += sizeof(sizeof(this->fdc->journalCount)) + 8; // JCT
+            size += sizeof(this->fdc->journal[0]) * this->fdc->journalCount + 8; // JDT
+        }
+#ifndef REMOVE_OPLL
+        if (this->ym2413) {
+            size += sizeof(OPLL) + 8; // OPL
+        }
+#endif
+        return size;
     }
 };
 
