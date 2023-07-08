@@ -4,4 +4,4 @@ all: copy-core
 copy-core:
 	cp ../src/*.h include
 	cp ../src/*.hpp include
-	cp ../src/*.c src
+	cp ../src/lz4.c src
