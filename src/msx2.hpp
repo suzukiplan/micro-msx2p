@@ -583,6 +583,7 @@ class MSX2
             }
 #endif
             this->ib->soundBufferCursor += 2;
+            this->ib->soundBufferCursor &= sizeof(this->ib->soundBuffer) - 1;
         }
         // Asynchronous with VDP
         this->vdp->ctx.bobo += cpuClocks * VDP_CLOCK;
