@@ -550,7 +550,7 @@ class MSX2
     }
 
     inline unsigned short* getDisplay() { return this->vdp->display; }
-    inline int getDisplayWidth() { return 568; }
+    inline int getDisplayWidth() { return vdp->displayWidth(); }
     inline int getDisplayHeight() { return 240; }
 
     inline void consumeClock(int cpuClocks)

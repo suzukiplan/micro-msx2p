@@ -145,7 +145,11 @@ class V9958
 
   public:
     bool renderLimitOverSprites = true;
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+    unsigned short display[284 * 240];
+#else
     unsigned short display[568 * 240];
+#endif
     unsigned short palette[16];
     unsigned char lastRenderScanline;
 
@@ -636,6 +640,15 @@ class V9958
         }
     }
 
+    inline int displayWidth()
+    {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL        
+        return 284;
+#else
+        return 568;
+#endif
+    }
+
     inline void tick_display()
     {
         int scanline = this->evt.vi[this->ctx.countV] - this->getAdjustY();
@@ -656,17 +669,23 @@ class V9958
             return;
         }
         // render backdrop
-        auto renderPosition = &this->display[scanline * 568];
+        auto renderPosition = &this->display[scanline * this->displayWidth()];
         if (0b00100 == this->getScreenMode()) {
             unsigned short ec = this->palette[(this->ctx.reg[7] & 0b00001100) >> 2];
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+            for (int x = 0; x < 284; x++) {
+                renderPosition[x] = ec;
+            }
+#else
             unsigned short oc = this->palette[this->ctx.reg[7] & 0b00000011];
             for (int x = 0; x < 568; x += 2) {
                 renderPosition[x] = ec;
                 renderPosition[x + 1] = oc;
             }
+#endif
         } else {
             unsigned short bc = this->getBackdropColor();
-            for (int x = 0; x < 568; x++) {
+            for (int x = 0; x < this->displayWidth(); x++) {
                 renderPosition[x] = bc;
             }
         }
@@ -1108,6 +1127,18 @@ class V9958
         *(renderPosition + 1) = this->palette[paletteNumber];
     }
 
+    inline void renderPixelS1(unsigned short* renderPosition, int paletteNumber)
+    {
+        if (!paletteNumber) return;
+        *renderPosition = this->palette[paletteNumber];
+    }
+
+    inline void renderPixelS2(unsigned short* renderPosition, int paletteNumber)
+    {
+        if (!paletteNumber || !this->isSpriteDisplay()) return;
+        *renderPosition = this->palette[paletteNumber];
+    }
+
     inline void renderPixel2S1(unsigned short* renderPosition, int paletteNumber)
     {
         if (!paletteNumber) return;
@@ -1137,6 +1168,24 @@ class V9958
             unsigned char cc[2];
             cc[1] = (c & 0xF0) >> 4;
             cc[0] = c & 0x0F;
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b10000000) >> 7]);
+            cur++;
+            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b01000000) >> 6]);
+            cur++;
+            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b00100000) >> 5]);
+            cur++;
+            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b00010000) >> 4]);
+            cur++;
+            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b00001000) >> 3]);
+            cur++;
+            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b00000100) >> 2]);
+            cur++;
+            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b00000010) >> 1]);
+            cur++;
+            this->renderPixel(&renderPosition[cur], cc[ptn & 0b00000001]);
+            cur++;
+#else
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b10000000) >> 7]);
             cur += 2;
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b01000000) >> 6]);
@@ -1153,6 +1202,7 @@ class V9958
             cur += 2;
             this->renderPixel2(&renderPosition[cur], cc[ptn & 0b00000001]);
             cur += 2;
+#endif
         }
         renderSpritesMode1(lineNumber, renderPosition);
     }
@@ -1194,6 +1244,24 @@ class V9958
             cc[1] = cc[1] ? cc[1] : bd;
             cc[0] = c & 0x0F;
             cc[0] = cc[0] ? cc[0] : bd;
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b10000000) >> 7]);
+            if (256 <= cur) break;
+            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b01000000) >> 6]);
+            if (256 <= cur) break;
+            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00100000) >> 5]);
+            if (256 <= cur) break;
+            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00010000) >> 4]);
+            if (256 <= cur) break;
+            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00001000) >> 3]);
+            if (256 <= cur) break;
+            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00000100) >> 2]);
+            if (256 <= cur) break;
+            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00000010) >> 1]);
+            if (256 <= cur) break;
+            this->renderPixel(&renderPosition[cur++], cc[ptn & 0b00000001]);
+            if (256 <= cur) break;
+#else
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b10000000) >> 7]);
             cur += 2;
             if (512 <= cur) break;
@@ -1218,6 +1286,7 @@ class V9958
             this->renderPixel2(&renderPosition[cur], cc[ptn & 0b00000001]);
             cur += 2;
             if (512 <= cur) break;
+#endif
         }
         if (isSpriteMode2) {
             renderSpritesMode2(lineNumber, renderPosition);
@@ -1228,7 +1297,11 @@ class V9958
 
     inline void renderScanlineModeG4(int lineNumber, unsigned short* renderPosition)
     {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+        int curD = (this->ctx.reg[27] & 0b00000111) / 2;
+#else
         int curD = this->ctx.reg[27] & 0b00000111;
+#endif
         int addr = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 128 + this->getNameTableAddress();
         int addr2 = 0;
         int sp2 = this->getSP2();
@@ -1251,12 +1324,19 @@ class V9958
             addr |= (this->ctx.counter & 1) << 15;
         }
         for (int i = 0; i < 128; i++) {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+            this->renderPixel(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0xF0) >> 4);
+            if (256 <= curD) break;
+            this->renderPixel(&renderPosition[curD++], this->ctx.ram[addr + x] & 0x0F);
+            if (256 <= curD) break;
+#else
             this->renderPixel2(&renderPosition[curD], (this->ctx.ram[addr + x] & 0xF0) >> 4);
             curD += 2;
             if (512 <= curD) break;
             this->renderPixel2(&renderPosition[curD], this->ctx.ram[addr + x] & 0x0F);
             curD += 2;
             if (512 <= curD) break;
+#endif
             x++;
             x &= 0x7F;
             if (0 == x && sp2) {
@@ -1268,7 +1348,11 @@ class V9958
 
     inline void renderScanlineModeG5(int lineNumber, unsigned short* renderPosition)
     {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+        int curD = this->ctx.reg[27] & 0b00000111;
+#else
         int curD = (this->ctx.reg[27] & 0b00000111) << 1;
+#endif
         int addr = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 128 + this->getNameTableAddress();
         int sp2 = this->getSP2();
         int x = this->ctx.reg[26];
@@ -1285,6 +1369,12 @@ class V9958
         x <<= 2;
         for (int i = 0; i < 128; i++) {
             addr &= 0x1FFFF;
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0xC0) >> 6);
+            if (256 <= curD) break;
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0x0C) >> 2);
+            if (256 <= curD) break;
+#else
             this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0xC0) >> 6);
             if (512 <= curD) break;
             this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0x30) >> 4);
@@ -1293,6 +1383,7 @@ class V9958
             if (512 <= curD) break;
             this->renderPixel1(&renderPosition[curD++], this->ctx.ram[addr + x] & 0x03);
             if (512 <= curD) break;
+#endif
             x++;
             x &= 0x7F;
             if (0 == x && sp2) {
@@ -1304,7 +1395,11 @@ class V9958
 
     inline void renderScanlineModeG6(int lineNumber, unsigned short* renderPosition)
     {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+        int curD = this->ctx.reg[27] & 0b00000111;
+#else
         int curD = (this->ctx.reg[27] & 0b00000111) << 1;
+#endif
         int addr = ((lineNumber + this->ctx.reg[23]) & 0xFF) * 256 + this->getNameTableAddress();
         int sp2 = this->getSP2();
         int x = this->ctx.reg[26];
@@ -1323,6 +1418,14 @@ class V9958
             x &= 0b00011111;
         }
         x <<= 3;
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+        for (int i = 0; i < 256 && curD < 256; i++) {
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0xF0) >> 4);
+            x++;
+            x &= 0xFF;
+            addr ^= 0 == x && sp2 ? 0x10000 : 0;
+        }
+#else
         for (int i = 0; i < 256 && curD < 512; i++) {
             this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0xF0) >> 4);
             this->renderPixel1(&renderPosition[curD++], this->ctx.ram[addr + x] & 0x0F);
@@ -1330,6 +1433,7 @@ class V9958
             x &= 0xFF;
             addr ^= 0 == x && sp2 ? 0x10000 : 0;
         }
+#endif
         renderSpritesMode2(lineNumber, renderPosition);
     }
 
@@ -1379,15 +1483,23 @@ class V9958
                     } else {
                         renderPosition[curD] = this->yjkColor[y[n]][j][k];
                     }
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+                    curD++;
+#else
                     renderPosition[curD + 1] = renderPosition[curD];
                     curD += 2;
+#endif
                 }
             }
         } else {
             for (int i = 0; i < 256; i++) {
                 renderPosition[curD] = convertColor_8bit_to_16bit(this->ctx.ram[curP++]);
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+                curD++;
+#else
                 renderPosition[curD + 1] = renderPosition[curD];
                 curD += 2;
+#endif
             }
         }
         renderSpritesMode2(lineNumber, renderPosition);
@@ -1422,6 +1534,14 @@ class V9958
         int cur = 0;
         for (int i = 0; i < 40; i++) {
             unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + lineNumberMod8];
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+            this->renderPixel(&renderPosition[cur++], ptn & 0b10000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel(&renderPosition[cur++], ptn & 0b01000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel(&renderPosition[cur++], ptn & 0b00100000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel(&renderPosition[cur++], ptn & 0b00010000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel(&renderPosition[cur++], ptn & 0b00001000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel(&renderPosition[cur++], ptn & 0b00000100 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+#else
             this->renderPixel2(&renderPosition[cur], ptn & 0b10000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
             cur += 2;
             this->renderPixel2(&renderPosition[cur], ptn & 0b01000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
@@ -1434,6 +1554,7 @@ class V9958
             cur += 2;
             this->renderPixel2(&renderPosition[cur], ptn & 0b00000100 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
             cur += 2;
+#endif
         }
     }
 
@@ -1447,12 +1568,18 @@ class V9958
         int cur = 0;
         for (int i = 0; i < 80; i++) {
             unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + lineNumberMod8];
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+            this->renderPixel1(&renderPosition[cur++], ptn & 0b10000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel1(&renderPosition[cur++], ptn & 0b00100000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel1(&renderPosition[cur++], ptn & 0b00001000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+#else
             this->renderPixel1(&renderPosition[cur++], ptn & 0b10000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
             this->renderPixel1(&renderPosition[cur++], ptn & 0b01000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
             this->renderPixel1(&renderPosition[cur++], ptn & 0b00100000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
             this->renderPixel1(&renderPosition[cur++], ptn & 0b00010000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
             this->renderPixel1(&renderPosition[cur++], ptn & 0b00001000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
             this->renderPixel1(&renderPosition[cur++], ptn & 0b00000100 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+#endif
         }
     }
 
@@ -1515,7 +1642,11 @@ class V9958
                     }
                     if (0 == dlog[x]) {
                         if (this->ctx.ram[cur] & bit[j / mag]) {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+                            this->renderPixelS1(&renderPosition[x], col);
+#else
                             this->renderPixel2S1(&renderPosition[x << 1], col);
+#endif
                             dlog[x] = col;
                             wlog[x] = 1;
                         }
@@ -1530,7 +1661,11 @@ class V9958
                         }
                         if (0 == dlog[x]) {
                             if (this->ctx.ram[cur] & bit[j / mag]) {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+                                this->renderPixel2S1(&renderPosition[x], col);
+#else
                                 this->renderPixel2S1(&renderPosition[x << 1], col);
+#endif
                                 dlog[x] = col;
                                 wlog[x] = 1;
                             }
@@ -1608,10 +1743,18 @@ class V9958
                         if (this->ctx.ram[cur] & bit[j / mag]) {
                             if (cc) {
                                 if (!skip[x]) {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+                                    this->renderPixelS2(&renderPosition[x], dlog[x] | col);
+#else
                                     this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
+#endif
                                 }
                             } else {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+                                this->renderPixelS2(&renderPosition[x], col);
+#else
                                 this->renderPixel2S2(&renderPosition[x << 1], col);
+#endif
                                 dlog[x] = col;
                             }
                             wlog[x] = 1;
@@ -1631,10 +1774,18 @@ class V9958
                             if (this->ctx.ram[cur] & bit[j / mag]) {
                                 if (cc) {
                                     if (!skip[x]) {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+                                        this->renderPixelS2(&renderPosition[x], dlog[x] | col);
+#else
                                         this->renderPixel2S2(&renderPosition[x << 1], dlog[x] | col);
+#endif
                                     }
                                 } else {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+                                    this->renderPixelS2(&renderPosition[x], col);
+#else
                                     this->renderPixel2S2(&renderPosition[x << 1], col);
+#endif
                                     dlog[x] = col;
                                 }
                                 wlog[x] = 1;
