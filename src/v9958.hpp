@@ -693,7 +693,11 @@ class V9958
         if (this->getTopBorder() - this->getAdjustY() <= scanline) {
             int renderLine = scanline - (this->getTopBorder() - this->getAdjustY());
             if (renderLine < this->getLineNumber()) {
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+                this->renderScanline(renderLine, &renderPosition[13 - this->getAdjustX()]);
+#else
                 this->renderScanline(renderLine, &renderPosition[26 - (this->getAdjustX() << 1)]);
+#endif
             }
         }
     }
