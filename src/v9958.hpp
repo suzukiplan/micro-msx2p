@@ -1169,21 +1169,21 @@ class V9958
             cc[1] = (c & 0xF0) >> 4;
             cc[0] = c & 0x0F;
 #ifdef MSX2_DISPLAY_HALF_HORIZONTAL
-            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b10000000) >> 7]);
+            this->renderPixel1(&renderPosition[cur], cc[(ptn & 0b10000000) >> 7]);
             cur++;
-            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b01000000) >> 6]);
+            this->renderPixel1(&renderPosition[cur], cc[(ptn & 0b01000000) >> 6]);
             cur++;
-            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b00100000) >> 5]);
+            this->renderPixel1(&renderPosition[cur], cc[(ptn & 0b00100000) >> 5]);
             cur++;
-            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b00010000) >> 4]);
+            this->renderPixel1(&renderPosition[cur], cc[(ptn & 0b00010000) >> 4]);
             cur++;
-            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b00001000) >> 3]);
+            this->renderPixel1(&renderPosition[cur], cc[(ptn & 0b00001000) >> 3]);
             cur++;
-            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b00000100) >> 2]);
+            this->renderPixel1(&renderPosition[cur], cc[(ptn & 0b00000100) >> 2]);
             cur++;
-            this->renderPixel(&renderPosition[cur], cc[(ptn & 0b00000010) >> 1]);
+            this->renderPixel1(&renderPosition[cur], cc[(ptn & 0b00000010) >> 1]);
             cur++;
-            this->renderPixel(&renderPosition[cur], cc[ptn & 0b00000001]);
+            this->renderPixel1(&renderPosition[cur], cc[ptn & 0b00000001]);
             cur++;
 #else
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b10000000) >> 7]);
@@ -1245,21 +1245,21 @@ class V9958
             cc[0] = c & 0x0F;
             cc[0] = cc[0] ? cc[0] : bd;
 #ifdef MSX2_DISPLAY_HALF_HORIZONTAL
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b10000000) >> 7]);
+            this->renderPixel1(&renderPosition[cur++], cc[(ptn & 0b10000000) >> 7]);
             if (256 <= cur) break;
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b01000000) >> 6]);
+            this->renderPixel1(&renderPosition[cur++], cc[(ptn & 0b01000000) >> 6]);
             if (256 <= cur) break;
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00100000) >> 5]);
+            this->renderPixel1(&renderPosition[cur++], cc[(ptn & 0b00100000) >> 5]);
             if (256 <= cur) break;
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00010000) >> 4]);
+            this->renderPixel1(&renderPosition[cur++], cc[(ptn & 0b00010000) >> 4]);
             if (256 <= cur) break;
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00001000) >> 3]);
+            this->renderPixel1(&renderPosition[cur++], cc[(ptn & 0b00001000) >> 3]);
             if (256 <= cur) break;
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00000100) >> 2]);
+            this->renderPixel1(&renderPosition[cur++], cc[(ptn & 0b00000100) >> 2]);
             if (256 <= cur) break;
-            this->renderPixel(&renderPosition[cur++], cc[(ptn & 0b00000010) >> 1]);
+            this->renderPixel1(&renderPosition[cur++], cc[(ptn & 0b00000010) >> 1]);
             if (256 <= cur) break;
-            this->renderPixel(&renderPosition[cur++], cc[ptn & 0b00000001]);
+            this->renderPixel1(&renderPosition[cur++], cc[ptn & 0b00000001]);
             if (256 <= cur) break;
 #else
             this->renderPixel2(&renderPosition[cur], cc[(ptn & 0b10000000) >> 7]);
@@ -1325,9 +1325,9 @@ class V9958
         }
         for (int i = 0; i < 128; i++) {
 #ifdef MSX2_DISPLAY_HALF_HORIZONTAL
-            this->renderPixel(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0xF0) >> 4);
+            this->renderPixel1(&renderPosition[curD++], (this->ctx.ram[addr + x] & 0xF0) >> 4);
             if (256 <= curD) break;
-            this->renderPixel(&renderPosition[curD++], this->ctx.ram[addr + x] & 0x0F);
+            this->renderPixel1(&renderPosition[curD++], this->ctx.ram[addr + x] & 0x0F);
             if (256 <= curD) break;
 #else
             this->renderPixel2(&renderPosition[curD], (this->ctx.ram[addr + x] & 0xF0) >> 4);
@@ -1535,12 +1535,12 @@ class V9958
         for (int i = 0; i < 40; i++) {
             unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + lineNumberMod8];
 #ifdef MSX2_DISPLAY_HALF_HORIZONTAL
-            this->renderPixel(&renderPosition[cur++], ptn & 0b10000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
-            this->renderPixel(&renderPosition[cur++], ptn & 0b01000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
-            this->renderPixel(&renderPosition[cur++], ptn & 0b00100000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
-            this->renderPixel(&renderPosition[cur++], ptn & 0b00010000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
-            this->renderPixel(&renderPosition[cur++], ptn & 0b00001000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
-            this->renderPixel(&renderPosition[cur++], ptn & 0b00000100 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel1(&renderPosition[cur++], ptn & 0b10000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel1(&renderPosition[cur++], ptn & 0b01000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel1(&renderPosition[cur++], ptn & 0b00100000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel1(&renderPosition[cur++], ptn & 0b00010000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel1(&renderPosition[cur++], ptn & 0b00001000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
+            this->renderPixel1(&renderPosition[cur++], ptn & 0b00000100 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
 #else
             this->renderPixel2(&renderPosition[cur], ptn & 0b10000000 ? (this->ctx.reg[7] & 0xF0) >> 4 : this->ctx.reg[7] & 0x0F);
             cur += 2;
