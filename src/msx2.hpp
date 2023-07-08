@@ -56,7 +56,8 @@ class MSX2
         size_t quickSaveBufferPtr;
         size_t quickSaveBufferHeapSize;
 
-        InternalBuffer() {
+        InternalBuffer()
+        {
             memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
             this->soundBufferCursor = 0;
             this->quickSaveBuffer = nullptr;
@@ -65,11 +66,13 @@ class MSX2
             this->quickSaveBufferHeapSize = 0;
         }
 
-        ~InternalBuffer() {
+        ~InternalBuffer()
+        {
             this->safeReleaseQuickSaveBuffer();
         }
 
-        void safeReleaseQuickSaveBuffer() {
+        void safeReleaseQuickSaveBuffer()
+        {
             if (this->quickSaveBuffer) {
                 free(this->quickSaveBuffer);
                 this->quickSaveBuffer = nullptr;
@@ -81,7 +84,8 @@ class MSX2
             this->quickSaveBufferHeapSize = 0;
         }
 
-        bool allocateQuickSaveBuffer(size_t size) {
+        bool allocateQuickSaveBuffer(size_t size)
+        {
             if (size == this->quickSaveBufferHeapSize) {
                 return true;
             }
@@ -956,20 +960,20 @@ class MSX2
     size_t calcQuickSaveSize()
     {
         size_t size = 0;
-        size += sizeof(this->ctx) + 8; // BRD
-        size += sizeof(this->cpu->reg) + 8; // Z80
-        size += sizeof(this->mmu->ctx) + 8; // MMU
-        size += sizeof(this->mmu->pac) + 8; // PAC
-        size += sizeof(this->mmu->ram) + 8; // R:0
-        size += this->mmu->sramEnabled ? sizeof(this->mmu->sram) + 8 : 0; // SRM
+        size += sizeof(this->ctx) + 8;                                               // BRD
+        size += sizeof(this->cpu->reg) + 8;                                          // Z80
+        size += sizeof(this->mmu->ctx) + 8;                                          // MMU
+        size += sizeof(this->mmu->pac) + 8;                                          // PAC
+        size += sizeof(this->mmu->ram) + 8;                                          // R:0
+        size += this->mmu->sramEnabled ? sizeof(this->mmu->sram) + 8 : 0;            // SRM
         size += this->mmu->sccEnabled && this->scc ? sizeof(this->scc->ctx) + 8 : 0; // SCC
-        size += sizeof(this->psg->ctx) + 8; // PSG
-        size += sizeof(this->clock->ctx) + 8; // RTC
-        size += sizeof(this->kanji->ctx) + 8; // KNJ
-        size += sizeof(this->vdp->ctx) + 8; // VDP
+        size += sizeof(this->psg->ctx) + 8;                                          // PSG
+        size += sizeof(this->clock->ctx) + 8;                                        // RTC
+        size += sizeof(this->kanji->ctx) + 8;                                        // KNJ
+        size += sizeof(this->vdp->ctx) + 8;                                          // VDP
         if (this->fdc) {
-            size += sizeof(this->fdc->ctx) + 8; // FDC
-            size += sizeof(sizeof(this->fdc->journalCount)) + 8; // JCT
+            size += sizeof(this->fdc->ctx) + 8;                                  // FDC
+            size += sizeof(sizeof(this->fdc->journalCount)) + 8;                 // JCT
             size += sizeof(this->fdc->journal[0]) * this->fdc->journalCount + 8; // JDT
         }
 #ifndef REMOVE_OPLL
