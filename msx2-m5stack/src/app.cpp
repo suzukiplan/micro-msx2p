@@ -61,6 +61,35 @@ void ticker(void* arg)
     }
 }
 
+void renderer(void* arg)
+{
+    const uint16_t m5w = M5.Lcd.width();
+    const uint16_t m5h = M5.Lcd.height();
+    const uint16_t m2w = (uint16_t)msx2->getDisplayWidth();
+    const uint16_t m2h = (uint16_t)msx2->getDisplayHeight();
+    const uint16_t cx = (uint16_t)((m5w - m2w) / 2);
+    const uint16_t cy = (uint16_t)((m5h - m2h) / 2);
+    const size_t bitmapSize = m2w * m2h * 2;
+    uint16_t* bitmap = (uint16_t*)malloc(bitmapSize);
+    uint16_t backdrop;
+    uint16_t backdropPrev = 0;
+
+    while (1) {
+        mutex.lock();
+        memcpy(bitmap, msx2->getDisplay(), bitmapSize);
+        backdrop = msx2->getBackdropColor();
+        mutex.unlock();
+        M5.Lcd.startWrite();
+        if (backdrop != backdropPrev) {
+            M5.Lcd.fillRect(0, 0, cx, m5h, backdrop);
+            M5.Lcd.fillRect(cx + m2w, 0, cx, m5h, backdrop);
+            backdropPrev = backdrop;
+        }
+        M5.Lcd.drawBitmap(cx, cy, m2w, m2h, bitmap);
+        M5.Lcd.endWrite();
+    }
+}
+
 void setup() {
     M5.begin();
     SPIFFS.begin();
@@ -81,29 +110,9 @@ void setup() {
     booted = true;
     usleep(1000000);
     M5.Lcd.clear(0);
-    xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 16, nullptr, 1);
+    xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 1);
+    xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 0);
 }
 
 void loop() {
-    static const uint16_t m5w = M5.Lcd.width();
-    static const uint16_t m5h = M5.Lcd.height();
-    static const uint16_t m2w = (uint16_t)msx2->getDisplayWidth();
-    static const uint16_t m2h = (uint16_t)msx2->getDisplayHeight();
-    static const uint16_t cx = (uint16_t)((m5w - m2w) / 2);
-    static const uint16_t cy = (uint16_t)((m5h - m2h) / 2);
-    static const size_t bitmapSize = m2w * m2h * 2;
-    static uint16_t* bitmap = nullptr;
-    if (!bitmap) {
-        bitmap = (uint16_t*)malloc(bitmapSize);
-    }
-    mutex.lock();
-    memcpy(bitmap, msx2->getDisplay(), bitmapSize);
-    auto backdrop = msx2->getBackdropColor();
-    mutex.unlock();
-
-    M5.Lcd.startWrite();
-    M5.Lcd.fillRect(0, 0, cx, m5h, backdrop);
-    M5.Lcd.fillRect(cx + m2w, 0, cx, m5h, backdrop);
-    M5.Lcd.drawBitmap(cx, cy, m2w, m2h, bitmap);
-    M5.Lcd.endWrite();
 }
