@@ -47,11 +47,14 @@ void ticker(void* arg)
 {
     unsigned long start;
     int procTime;
+    void* soundData;
+    size_t soundSize;
     while (1) {
         start = millis();
         mutex.lock();
         msx2->tick(0, 0, 0);
         mutex.unlock();
+        soundData = msx2->getSound(&soundSize);
         procTime = (int)(millis() - start);
         bootMessage("%d", procTime);
         vTaskDelay(10);
