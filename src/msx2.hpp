@@ -946,6 +946,11 @@ class MSX2
         }
     }
 
+    unsigned short getBackdropColor()
+    {
+        return this->vdp ? this->vdp->getBackdropColor() : 0;
+    }
+
   private:
     void writeSaveChunk(const char* name, const void* data, int size)
     {
