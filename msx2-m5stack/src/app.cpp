@@ -85,19 +85,25 @@ void setup() {
 }
 
 void loop() {
-    static const int m5w = M5.Lcd.width();
-    static const int m5h = M5.Lcd.height();
-    static const int m2w = msx2->getDisplayWidth();
-    static const int m2h = msx2->getDisplayHeight();
-    static const int cx = (m5w - m2w) / 2;
-    static const int cy = (m5h - m2h) / 2;
-    static const size_t displaySize = m2w * m2h * 2;
-    static uint16_t* display = nullptr;
-    if (!display) {
-        display = (uint16_t*)malloc(displaySize);
+    static const uint16_t m5w = M5.Lcd.width();
+    static const uint16_t m5h = M5.Lcd.height();
+    static const uint16_t m2w = (uint16_t)msx2->getDisplayWidth();
+    static const uint16_t m2h = (uint16_t)msx2->getDisplayHeight();
+    static const uint16_t cx = (uint16_t)((m5w - m2w) / 2);
+    static const uint16_t cy = (uint16_t)((m5h - m2h) / 2);
+    static const size_t bitmapSize = m2w * m2h * 2;
+    static uint16_t* bitmap = nullptr;
+    if (!bitmap) {
+        bitmap = (uint16_t*)malloc(bitmapSize);
     }
     mutex.lock();
-    memcpy(display, msx2->getDisplay(), displaySize);
+    memcpy(bitmap, msx2->getDisplay(), bitmapSize);
+    auto backdrop = msx2->getBackdropColor();
     mutex.unlock();
-    M5.Lcd.drawBitmap(cx, cy, m2w, m2h, display);
+
+    M5.Lcd.startWrite();
+    M5.Lcd.fillRect(0, 0, cx, m5h, backdrop);
+    M5.Lcd.fillRect(cx + m2w, 0, cx, m5h, backdrop);
+    M5.Lcd.drawBitmap(cx, cy, m2w, m2h, bitmap);
+    M5.Lcd.endWrite();
 }
