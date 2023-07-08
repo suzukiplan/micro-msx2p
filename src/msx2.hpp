@@ -27,7 +27,9 @@
 #ifndef INCLUDE_MSX2_HPP
 #define INCLUDE_MSX2_HPP
 #include "ay8910.hpp"
+#ifndef REMOVE_OPLL
 #include "emu2413.h"
+#endif
 #include "lz4.h"
 #include "msx2clock.hpp"
 #include "msx2def.h"
@@ -98,7 +100,9 @@ class MSX2
     MSX2Kanji* kanji;
     SCC* scc;
     TC8566AF* fdc;
+#ifndef REMOVE_OPLL
     OPLL* ym2413;
+#endif
 
     struct Context {
         unsigned char io[256];
@@ -113,7 +117,9 @@ class MSX2
     {
         if (this->fdc) delete fdc;
         if (this->scc) delete scc;
+#ifndef REMOVE_OPLL
         if (this->ym2413) OPLL_delete(this->ym2413);
+#endif
         delete this->cpu;
         delete this->vdp;
         delete this->mmu;
@@ -140,12 +146,14 @@ class MSX2
         this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX2*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX2*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX2*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;
         this->scc = nullptr;
+#ifndef REMOVE_OPLL
         if (ym2413Enabled) {
             this->putlog("create YM2413 instance");
             this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
         } else {
             this->ym2413 = nullptr;
         }
+#endif
         this->vdp->initialize(
             colorMode, this, [](void* arg, int ie) {
             //((MSX2*)arg)->putlog("Detect IE%d (vf:%d, hf:%d)", ie, ((MSX2*)arg)->vdp->ctx.stat[0] & 0x80 ? 1 : 0,((MSX2*)arg)->vdp->ctx.stat[1] & 0x01);
@@ -165,8 +173,10 @@ class MSX2
                 case 0x3FFB: ((MSX2*)arg)->fdc->write(5, value); break;
             } }, [](void* arg, unsigned short addr, unsigned char value) {
             switch (addr) {
+#ifndef REMOVE_OPLL
                 case 0x3FF4: OPLL_writeIO(((MSX2*)arg)->ym2413, 0, value); break;
                 case 0x3FF5: OPLL_writeIO(((MSX2*)arg)->ym2413, 1, value); break;
+#endif
             } });
         this->fdc = nullptr;
 #if 0
@@ -341,7 +351,9 @@ class MSX2
         this->kanji->reset();
         if (this->scc) this->scc->reset();
         if (this->fdc) this->fdc->reset();
+#ifndef REMOVE_OPLL
         if (this->ym2413) OPLL_reset(this->ym2413);
+#endif
     }
 
     void putlog(const char* fmt, ...)
@@ -388,10 +400,12 @@ class MSX2
     void setup(int pri, int sec, int idx, void* data, int size, const char* label = NULL)
     {
         if (0 == strcmp(label, "FM")) {
+#ifndef REMOVE_OPLL
             if (!this->ym2413) {
                 this->putlog("create YM2413 instance");
                 this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
             }
+#endif
         } else if (0 == strcmp(label, "DISK")) {
             if (!this->fdc) {
                 this->putlog("create FDC instance");
@@ -500,6 +514,7 @@ class MSX2
             if (this->scc) {
                 this->scc->tick(&this->ib->soundBuffer[this->ib->soundBufferCursor], &this->ib->soundBuffer[this->ib->soundBufferCursor + 1], 81);
             }
+#ifndef REMOVE_OPLL
             if (this->ym2413) {
                 auto opllWav = OPLL_calc(this->ym2413);
                 int l = this->ib->soundBuffer[this->ib->soundBufferCursor];
@@ -517,6 +532,7 @@ class MSX2
                 this->ib->soundBuffer[this->ib->soundBufferCursor] = (short)l;
                 this->ib->soundBuffer[this->ib->soundBufferCursor + 1] = (short)r;
             }
+#endif
             this->ib->soundBufferCursor += 2;
         }
         // Asynchronous with VDP
@@ -629,12 +645,17 @@ class MSX2
     {
         this->ctx.io[port] = value;
         switch (port) {
+#ifdef REMOVE_OPLL
+            case 0x7C: break;
+            case 0x7D: break;
+#else
             case 0x7C:
                 if (this->ym2413) OPLL_writeIO(this->ym2413, 0, value);
                 break;
             case 0x7D:
                 if (this->ym2413) OPLL_writeIO(this->ym2413, 1, value);
                 break;
+#endif
             case 0x81: break; // 8251 status command
             case 0x88: this->vdp->outPort98(value); break;
             case 0x89: this->vdp->outPort99(value); break;
@@ -763,9 +784,11 @@ class MSX2
             this->writeSaveChunk("JCT", &this->fdc->journalCount, (int)sizeof(this->fdc->journalCount));
             this->writeSaveChunk("JDT", &this->fdc->journal, (int)sizeof(this->fdc->journal[0]) * this->fdc->journalCount);
         }
+#ifndef REMOVE_OPLL
         if (this->ym2413) {
             this->writeSaveChunk("OPL", this->ym2413, (int)sizeof(OPLL));
         }
+#endif
         *size = LZ4_compress_default(this->ib->quickSaveBuffer,
                                      this->ib->quickSaveBufferCompressed,
                                      (int)this->ib->quickSaveBufferSize,
@@ -853,6 +876,7 @@ class MSX2
                 } else {
                     putlog("ignored JDT (%d bytes)", chunkSize);
                 }
+#ifndef REMOVE_OPLL
             } else if (0 == strcmp(chunk, "OPL")) {
                 if (this->ym2413) {
                     putlog("extract OPL (%d bytes)", chunkSize);
@@ -860,6 +884,7 @@ class MSX2
                 } else {
                     putlog("ignored OPL (%d bytes)", chunkSize);
                 }
+#endif
             }
             ptr += chunkSize;
             size -= chunkSize;
