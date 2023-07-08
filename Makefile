@@ -14,6 +14,6 @@ format:
 	make execute-format FILENAME=v9958.hpp
 
 execute-format:
-	clang-format -style=file < ./src/core/${FILENAME} > ./src/core/${FILENAME}.bak
-	cat ./src/core/${FILENAME}.bak > ./src/core/${FILENAME}
-	rm ./src/core/${FILENAME}.bak
+	clang-format -style=file < ./src/${FILENAME} > ./src/${FILENAME}.bak
+	cat ./src/${FILENAME}.bak > ./src/${FILENAME}
+	rm ./src/${FILENAME}.bak
