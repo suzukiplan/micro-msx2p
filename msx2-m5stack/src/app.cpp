@@ -44,11 +44,19 @@ void setup() {
     M5.begin();
     SPIFFS.begin();
     Serial.begin(115200);
+    putlog("Loading micro MSX2+ for M5Stack...");
     msx2 = new MSX2(MSX2_COLOR_MODE_RGB555);
     roms.main = readRom("/cbios_main_msx2+_jp.rom", &roms.mainSize);
     roms.logo = readRom("/cbios_logo_msx2+.rom", &roms.logoSize);
     roms.sub = readRom("/cbios_sub.rom", &roms.subSize);
+    msx2->setupSecondaryExist(false, false, false, true);
+    msx2->setup(0, 0, 0, roms.main, roms.mainSize, "MAIN");
+    msx2->setup(0, 0, 4, roms.logo, roms.logoSize, "LOGO");
+    msx2->setup(3, 0, 0, roms.sub, roms.subSize, "SUB");
+    msx2->setupRAM(3, 3);
     roms.game = readRom("/game.rom", &roms.gameSize);
+    msx2->loadRom(roms.game, roms.gameSize, MSX2_ROM_TYPE_NORMAL);
+    putlog("Setup finished.");
 }
 
 void loop() {
