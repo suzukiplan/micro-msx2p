@@ -61,20 +61,19 @@ void ticker(void* arg)
 
 void renderer(void* arg)
 {
+    static uint16_t bitmap[256 * 192];
     const uint16_t m5w = M5.Lcd.width();
     const uint16_t m5h = M5.Lcd.height();
     const uint16_t m1w = (uint16_t)msx1->getDisplayWidth();
     const uint16_t m1h = (uint16_t)msx1->getDisplayHeight();
     const uint16_t cx = (uint16_t)((m5w - m1w) / 2);
     const uint16_t cy = (uint16_t)((m5h - m1h) / 2);
-    const size_t bitmapSize = m1w * m1h * 2;
-    uint16_t* bitmap = (uint16_t*)malloc(bitmapSize);
     uint16_t backdrop;
     uint16_t backdropPrev = 0;
 
     while (1) {
         mutex.lock();
-        memcpy(bitmap, msx1->getDisplay(), bitmapSize);
+        memcpy(bitmap, msx1->getDisplay(), sizeof(bitmap));
         backdrop = msx1->getBackdropColor();
         mutex.unlock();
         M5.Lcd.startWrite();
