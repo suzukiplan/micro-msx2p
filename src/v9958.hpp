@@ -642,7 +642,7 @@ class V9958
 
     inline int displayWidth()
     {
-#ifdef MSX2_DISPLAY_HALF_HORIZONTAL        
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
         return 284;
 #else
         return 568;
