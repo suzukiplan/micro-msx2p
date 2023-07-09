@@ -54,7 +54,7 @@ void ticker(void* arg)
         mutex.unlock();
         soundData = msx1->getSound(&soundSize);
         procTime = (int)(millis() - start);
-        bootMessage("%d", procTime);
+        bootMessage("%d (free-heap: %d)", procTime, esp_get_free_heap_size());
         vTaskDelay(10);
     }
 }
