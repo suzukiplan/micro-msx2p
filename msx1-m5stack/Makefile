@@ -1,4 +1,4 @@
-all: copy-core upload-roms upload-firmware
+all: copy-core upload-firmware
 
 upload-roms:
 	@echo ===== Upload ROM files to SPIFFS =====
