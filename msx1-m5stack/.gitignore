@@ -1,16 +1,8 @@
 .pio
 include/ay8910.hpp
-include/emu2413.h
-include/lz4.h
-include/msx2.hpp
-include/msx2clock.hpp
-include/msx2def.h
-include/msx2kanji.hpp
-include/msx2mmu.hpp
-include/scc.hpp
-include/tc8566af.hpp
-include/v9958.hpp
+include/msx1.hpp
+include/msx1def.h
+include/msx1mmu.hpp
+include/tms9918a.hpp
 include/z80.hpp
-src/emu2413.c
-src/lz4.c
 

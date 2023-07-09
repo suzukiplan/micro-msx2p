@@ -9,6 +9,5 @@ upload-firmware:
 	pio run -t upload
 
 copy-core:
-	cp ../src/*.h include
-	cp ../src/*.hpp include
-	cp ../src/lz4.c src
+	cp ../src1/*.h include
+	cp ../src1/*.hpp include
