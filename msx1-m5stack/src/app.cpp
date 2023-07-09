@@ -82,7 +82,7 @@ void renderer(void* arg)
             M5.Lcd.fillRect(0, 0, cx, m5h, backdrop);
             M5.Lcd.fillRect(cx + m1w, 0, cx, m5h, backdrop);
             M5.Lcd.fillRect(cx, 0, m1w, cy, backdrop);
-            M5.Lcd.fillRect(cx, cx + m1h, m1w, cy, backdrop);
+            M5.Lcd.fillRect(cx, cy + m1h, m1w, cy, backdrop);
             backdropPrev = backdrop;
         }
         M5.Lcd.drawBitmap(cx, cy, m1w, m1h, bitmap);
