@@ -92,7 +92,8 @@ void setup() {
     SPIFFS.begin();
     Serial.begin(115200);
     bootMessage("Loading micro msx1+ for M5Stack...");
-    msx1 = new MSX1(MSX1_COLOR_MODE_RGB565, [](void* arg, int frame, int lineNumber, uint16_t* display) {
+    auto ram = (uint8_t*)malloc(0x4000);
+    msx1 = new MSX1(MSX1_COLOR_MODE_RGB565, ram, 0x4000, [](void* arg, int frame, int lineNumber, uint16_t* display) {
         if (0 == (frame & 1)) {
             memcpy(&bitmap[lineNumber * 256], display, 512);
             if (191 == lineNumber) {
