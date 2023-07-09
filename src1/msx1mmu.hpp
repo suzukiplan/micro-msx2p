@@ -61,20 +61,32 @@ class MSX1MMU
     } ctx;
 
     bool sramEnabled;
-    unsigned char sram[0x2000];
-    unsigned char ram[0x4000];
+    unsigned char* sram;
+    unsigned char* ram;
+    size_t sramSize;
+    size_t ramSize;
 
-    MSX1MMU()
+    MSX1MMU(unsigned char* ram, size_t ramSize)
     {
         memset(&this->slots, 0, sizeof(this->slots));
-        memset(this->sram, 0, sizeof(this->sram));
         this->sramEnabled = false;
+        this->sram = nullptr;
+        this->sramSize = 0;
+        this->ram = ram;
+        this->ramSize = ramSize;
+        switch (ramSize) {
+            case 0x2000: break;
+            case 0x4000: break;
+            case 0x8000: break;
+            case 0x10000: break;
+            default: exit(-1); // invalid RAM size
+        }
     }
 
     void reset()
     {
         memset(&this->ctx, 0, sizeof(this->ctx));
-        memset(this->ram, 0, sizeof(this->ram));
+        memset(this->ram, 0, this->ramSize);
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 4; j++) {
                 this->ctx.cpos[i][j] = j;
@@ -85,7 +97,7 @@ class MSX1MMU
             strcpy(this->slots[3].data[i].label, "RAM");
             this->slots[3].data[i].isRAM = true;
             this->slots[3].data[i].isCartridge = false;
-            this->slots[3].data[i].ptr = &this->ram[(i * 0x2000) & 0x3FFF];
+            this->slots[3].data[i].ptr = &this->ram[(i * 0x2000) & (this->ramSize - 1)];
         }
     }
 
@@ -137,7 +149,11 @@ class MSX1MMU
                     this->ctx.cpos[pri - 1][i] = 0;
                 }
                 this->sramEnabled = true;
-                memset(this->sram, 0, sizeof(this->sram));
+                if (!this->sram) {
+                    this->sram = (unsigned char*)malloc(0x2000);
+                    this->sramSize = 0x2000;
+                }
+                memset(this->sram, 0, this->sramSize);
                 break;
             default:
                 printf("UNKNOWN ROM TYPE: %d\n", romType);

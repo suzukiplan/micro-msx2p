@@ -145,7 +145,7 @@ class MSX1
         delete this->ib;
     }
 
-    MSX1(int colorMode, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
+    MSX1(int colorMode, unsigned char* ram, size_t ramSize, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
     {
 #ifdef DEBUG
         this->debug = true;
@@ -154,7 +154,7 @@ class MSX1
 #endif
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
         this->ib = new InternalBuffer();
-        this->mmu = new MSX1MMU();
+        this->mmu = new MSX1MMU(ram, ramSize);
         this->vdp = new TMS9918A(
             colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu->requestBreak(); }, displayCallback);
         this->psg = new AY8910();
@@ -538,9 +538,9 @@ class MSX1
         this->writeSaveChunk("BRD", &this->ctx, (int)sizeof(this->ctx));
         this->writeSaveChunk("Z80", &this->cpu->reg, (int)sizeof(this->cpu->reg));
         this->writeSaveChunk("MMU", &this->mmu->ctx, (int)sizeof(this->mmu->ctx));
-        this->writeSaveChunk("RAM", &this->mmu->ram, (int)sizeof(this->mmu->ram));
-        if (this->mmu->sramEnabled) {
-            this->writeSaveChunk("SRM", &this->mmu->sram, (int)sizeof(this->mmu->sram));
+        this->writeSaveChunk("RAM", this->mmu->ram, (int)this->mmu->ramSize);
+        if (0 < this->mmu->sramSize) {
+            this->writeSaveChunk("SRM", this->mmu->sram, (int)this->mmu->sramSize);
         }
         this->writeSaveChunk("PSG", &this->psg->ctx, (int)sizeof(this->psg->ctx));
         this->writeSaveChunk("VDP", &this->vdp->ctx, (int)sizeof(this->vdp->ctx));
@@ -577,11 +577,11 @@ class MSX1
                 memcpy(&this->mmu->ctx, ptr, chunkSize);
                 this->mmu->bankSwitchover();
             } else if (0 == strcmp(chunk, "RAM")) {
-                putlog("extract R:0 (%d bytes)", chunkSize);
-                memcpy(&this->mmu->ram, ptr, chunkSize);
-            } else if (0 == strcmp(chunk, "SRM")) {
+                putlog("extract RAM (%d bytes)", chunkSize);
+                memcpy(this->mmu->ram, ptr, chunkSize <= this->mmu->ramSize ? chunkSize : this->mmu->ramSize);
+            } else if (0 == strcmp(chunk, "SRM") && this->mmu->sram) {
                 putlog("extract SRM (%d bytes)", chunkSize);
-                memcpy(&this->mmu->sram, ptr, chunkSize);
+                memcpy(this->mmu->sram, ptr, chunkSize <= this->mmu->sramSize ? chunkSize : this->mmu->sramSize);
             } else if (0 == strcmp(chunk, "PSG")) {
                 putlog("extract PSG (%d bytes)", chunkSize);
                 memcpy(&this->psg->ctx, ptr, chunkSize);
@@ -613,13 +613,13 @@ class MSX1
     size_t calcQuickSaveSize()
     {
         size_t size = 0;
-        size += sizeof(this->ctx) + 8;                                    // BRD
-        size += sizeof(this->cpu->reg) + 8;                               // Z80
-        size += sizeof(this->mmu->ctx) + 8;                               // MMU
-        size += sizeof(this->mmu->ram) + 8;                               // R:0
-        size += this->mmu->sramEnabled ? sizeof(this->mmu->sram) + 8 : 0; // SRM
-        size += sizeof(this->psg->ctx) + 8;                               // PSG
-        size += sizeof(this->vdp->ctx) + 8;                               // VDP
+        size += sizeof(this->ctx) + 8;                         // BRD
+        size += sizeof(this->cpu->reg) + 8;                    // Z80
+        size += sizeof(this->mmu->ctx) + 8;                    // MMU
+        size += this->mmu->ramSize + 8;                        // RAM
+        size += this->mmu->sram ? this->mmu->sramSize + 8 : 0; // SRM
+        size += sizeof(this->psg->ctx) + 8;                    // PSG
+        size += sizeof(this->vdp->ctx) + 8;                    // VDP
         return size;
     }
 };
