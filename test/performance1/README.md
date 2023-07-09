@@ -1,8 +1,8 @@
-# Performance Tester for MSX2+
+# Performance Tester for MSX1
 
 ## Description
 
-最適化オプション `-Os` でビルドして、C-BIOS でエミュレータ（MSX2+）を起動してから1分間（3600フレーム）実行するのに要した時間を測定します。
+最適化オプション `-Os` でビルドして、C-BIOS でエミュレータ（MSX1）を起動してから1分間（3600フレーム）実行するのに要した時間を測定します。
 
 ## How to Use
 
@@ -26,10 +26,6 @@ Frame usage: 20.21%
 
 また、本プログラムには以下のソフトウェアに依存しているため、再配布時にはそれぞれのライセンス条項の遵守をお願いいたします。
 
-- emu2413
-  - Web Site: [https://github.com/digital-sound-antiques/emu2413](https://github.com/digital-sound-antiques/emu2413)
-  - License: [MIT](../../licenses-copy/emu2413.txt)
-  - `Copyright (c) 2001-2019 Mitsutaka Okazaki`
 - SUZUKI PLAN - Z80 Emulator
   - Web Site: [https://github.com/suzukiplan/z80](https://github.com/suzukiplan/z80)
   - License: [MIT](../../licenses-copy/z80.txt)
