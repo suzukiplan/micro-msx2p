@@ -83,6 +83,13 @@ class MSX1MMU
         }
     }
 
+    ~MSX1MMU()
+    {
+        if (this->sram) {
+            free(this->sram);
+        }
+    }
+
     void reset()
     {
         memset(&this->ctx, 0, sizeof(this->ctx));
