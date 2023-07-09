@@ -1,9 +1,7 @@
-#include <mutex>
 #include "msx1.hpp"
 #include <M5Core2.h>
 
 static MSX1* msx1;
-static std::mutex mutex;
 static bool booted;
 static struct Roms {
     uint8_t* main;
@@ -14,6 +12,8 @@ static struct Roms {
     int gameSize;
 } roms;
 static uint16_t bitmap[256 * 192];
+static bool pauseRenderer;
+static unsigned short backdropColor;
 
 static void bootMessage(const char* format, ...)
 {
@@ -50,9 +50,7 @@ void ticker(void* arg)
     size_t soundSize;
     while (1) {
         start = millis();
-        mutex.lock();
         msx1->tick(0, 0, 0);
-        mutex.unlock();
         soundData = msx1->getSound(&soundSize);
         procTime = (int)(millis() - start);
         bootMessage("%d (free-heap: %d)", procTime, esp_get_free_heap_size());
@@ -68,23 +66,24 @@ void renderer(void* arg)
     const uint16_t m1h = (uint16_t)msx1->getDisplayHeight();
     const uint16_t cx = (uint16_t)((m5w - m1w) / 2);
     const uint16_t cy = (uint16_t)((m5h - m1h) / 2);
-    uint16_t backdrop;
     uint16_t backdropPrev = 0;
-
+    pauseRenderer = true;
     while (1) {
-        mutex.lock();
-        backdrop = msx1->getBackdropColor();
-        mutex.unlock();
-        M5.Lcd.startWrite();
-        if (backdrop != backdropPrev) {
-            M5.Lcd.fillRect(0, 0, cx, m5h, backdrop);
-            M5.Lcd.fillRect(cx + m1w, 0, cx, m5h, backdrop);
-            M5.Lcd.fillRect(cx, 0, m1w, cy, backdrop);
-            M5.Lcd.fillRect(cx, cy + m1h, m1w, cy, backdrop);
-            backdropPrev = backdrop;
+        if (pauseRenderer) {
+            vTaskDelay(100);
+        } else {
+            pauseRenderer = true;
+            M5.Lcd.startWrite();
+            if (backdropColor != backdropPrev) {
+                backdropPrev = backdropColor;
+                M5.Lcd.fillRect(0, 0, cx, m5h, backdropPrev);
+                M5.Lcd.fillRect(cx + m1w, 0, cx, m5h, backdropPrev);
+                M5.Lcd.fillRect(cx, 0, m1w, cy, backdropPrev);
+                M5.Lcd.fillRect(cx, cy + m1h, m1w, cy, backdropPrev);
+            }
+            M5.Lcd.drawBitmap(cx, cy, m1w, m1h, bitmap);
+            M5.Lcd.endWrite();
         }
-        M5.Lcd.drawBitmap(cx, cy, m1w, m1h, bitmap);
-        M5.Lcd.endWrite();
     }
 }
 
@@ -96,6 +95,10 @@ void setup() {
     msx1 = new MSX1(MSX1_COLOR_MODE_RGB565, [](void* arg, int frame, int lineNumber, uint16_t* display) {
         if (0 == (frame & 1)) {
             memcpy(&bitmap[lineNumber * 256], display, 512);
+            if (191 == lineNumber) {
+                backdropColor = ((MSX1*)arg)->getBackdropColor();
+                pauseRenderer = false;
+            }
         }
     });
     roms.main = readRom("/cbios_main_msx1.rom", &roms.mainSize);
