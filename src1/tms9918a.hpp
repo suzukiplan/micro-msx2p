@@ -65,16 +65,18 @@ class TMS9918A
     void* arg;
     void (*detectBlank)(void* arg);
     void (*detectBreak)(void* arg);
+    void (*displayCallback)(void* arg, int frame, int line, unsigned short* display);
 
   public:
-    unsigned short display[256 * 192]; // do not contain backdrop area
+    unsigned short* display;
+    size_t displaySize;
     unsigned short palette[16];
 
     struct Context {
         int bobo;
         int countH;
         int countV;
-        int reserved;
+        int frame;
         unsigned char ram[0x4000];
         unsigned char reg[8];
         unsigned char tmpAddr[2];
@@ -86,14 +88,17 @@ class TMS9918A
         unsigned char writeWait;
     } ctx;
 
-    TMS9918A(int colorMode, void* arg, void (*detectBlank)(void*), void (*detectBreak)(void*))
+    TMS9918A(int colorMode, void* arg, void (*detectBlank)(void*), void (*detectBreak)(void*), void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
     {
         this->arg = arg;
         this->detectBlank = detectBlank;
         this->detectBreak = detectBreak;
+        this->displayCallback = displayCallback;
+        this->displaySize = (this->displayCallback ? 256 : 256 * 192) << 1;
+        this->display = (unsigned short*)malloc(this->displaySize);
         unsigned int rgb[16] = {0x000000, 0x000000, 0x3EB849, 0x74D07D, 0x5955E0, 0x8076F1, 0xB95E51, 0x65DBEF, 0xDB6559, 0xFF897D, 0xCCC35E, 0xDED087, 0x3AA241, 0xB766B5, 0xCCCCCC, 0xFFFFFF};
         switch (colorMode) {
-            case 0:
+            case MSX1_COLOR_MODE_RGB555:
                 for (int i = 0; i < 16; i++) {
                     this->palette[i] = 0;
                     this->palette[i] |= (rgb[i] & 0b111110000000000000000000) >> 9;
@@ -101,7 +106,7 @@ class TMS9918A
                     this->palette[i] |= (rgb[i] & 0b000000000000000011111000) >> 3;
                 }
                 break;
-            case 1:
+            case MSX1_COLOR_MODE_RGB565:
                 for (int i = 0; i < 16; i++) {
                     this->palette[i] = 0;
                     this->palette[i] |= (rgb[i] & 0b111110000000000000000000) >> 8;
@@ -117,8 +122,8 @@ class TMS9918A
 
     void reset()
     {
-        memset(display, 0, sizeof(display));
-        memset(&ctx, 0, sizeof(ctx));
+        memset(this->display, 0, this->displaySize);
+        memset(&this->ctx, 0, sizeof(this->ctx));
     }
 
     inline int getVideoMode()
@@ -130,8 +135,7 @@ class TMS9918A
         return 0;                              // Mode 0
     }
 
-    inline int getVramSize() { return ctx.reg[1] & 0b10000000 ? 0x4000 : 0x1000; }
-    inline bool isEnabledExternalVideoInput() { return ctx.reg[0] & 0b00000001 ? true : false; }
+    inline int getVramSize() { return ctx.reg[1] & 0b10000000 ? 0x4000 : 0x4000; }
     inline bool isEnabledScreen() { return ctx.reg[1] & 0b01000000 ? true : false; }
     inline bool isEnabledInterrupt() { return ctx.reg[1] & 0b00100000 ? true : false; }
     inline unsigned short getBackdropColor() { return palette[ctx.reg[7] & 0b00001111]; }
@@ -165,6 +169,8 @@ class TMS9918A
                 case 262:
                     this->ctx.countV -= 262;
                     this->detectBreak(this->arg);
+                    this->ctx.frame++;
+                    this->ctx.frame &= 0xFFFF;
                     break;
             }
         }
@@ -223,6 +229,15 @@ class TMS9918A
                 case 0: this->renderScanlineMode0(lineNumber); break;
                 case 2: this->renderScanlineMode2(lineNumber); break;
             }
+        } else {
+            int dcur = this->getDisplayPtr(lineNumber);
+            unsigned short bd = this->getBackdropColor();
+            for (int i = 0; i < 256; i++) {
+                this->display[dcur++] = bd;
+            }
+        }
+        if (this->displayCallback) {
+            this->displayCallback(this->arg, this->ctx.frame, lineNumber, this->display);
         }
     }
 
@@ -249,6 +264,11 @@ class TMS9918A
         }
     }
 
+    inline int getDisplayPtr(int lineNumber)
+    {
+        return this->displayCallback ? 0 : lineNumber * 256;
+    }
+
     inline void renderScanlineMode0(int lineNumber)
     {
         int pn = (this->ctx.reg[2] & 0b00001111) << 10;
@@ -257,7 +277,7 @@ class TMS9918A
         int bd = this->ctx.reg[7] & 0b00001111;
         int pixelLine = lineNumber % 8;
         unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
-        int dcur = lineNumber * 256;
+        int dcur = this->getDisplayPtr(lineNumber);
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + pixelLine];
             unsigned char c = this->ctx.ram[ct + nam[i] / 8];
@@ -292,7 +312,7 @@ class TMS9918A
         int bd = this->ctx.reg[7] & 0b00001111;
         int pixelLine = lineNumber % 8;
         unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
-        int dcur = lineNumber * 256;
+        int dcur = this->getDisplayPtr(lineNumber);
         int ci = (lineNumber / 64) * 256;
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx.ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
@@ -334,7 +354,7 @@ class TMS9918A
         unsigned char wlog[256];
         memset(dlog, 0, sizeof(dlog));
         memset(wlog, 0, sizeof(wlog));
-        const int dcur = lineNumber * 256;
+        const int dcur = this->getDisplayPtr(lineNumber);
         for (int i = 0; i < 32; i++) {
             int cur = sa + i * 4;
             unsigned char y = this->ctx.ram[cur++];

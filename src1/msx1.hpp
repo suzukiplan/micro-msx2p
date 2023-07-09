@@ -145,7 +145,7 @@ class MSX1
         delete this->ib;
     }
 
-    MSX1(int colorMode)
+    MSX1(int colorMode, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
     {
 #ifdef DEBUG
         this->debug = true;
@@ -156,7 +156,7 @@ class MSX1
         this->ib = new InternalBuffer();
         this->mmu = new MSX1MMU();
         this->vdp = new TMS9918A(
-            colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu->requestBreak(); });
+            colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu->requestBreak(); }, displayCallback);
         this->psg = new AY8910();
         this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;

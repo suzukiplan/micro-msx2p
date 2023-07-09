@@ -13,6 +13,7 @@ static struct Roms {
     int logoSize;
     int gameSize;
 } roms;
+static uint16_t bitmap[256 * 192];
 
 static void bootMessage(const char* format, ...)
 {
@@ -61,7 +62,6 @@ void ticker(void* arg)
 
 void renderer(void* arg)
 {
-    static uint16_t bitmap[256 * 192];
     const uint16_t m5w = M5.Lcd.width();
     const uint16_t m5h = M5.Lcd.height();
     const uint16_t m1w = (uint16_t)msx1->getDisplayWidth();
@@ -73,7 +73,6 @@ void renderer(void* arg)
 
     while (1) {
         mutex.lock();
-        memcpy(bitmap, msx1->getDisplay(), sizeof(bitmap));
         backdrop = msx1->getBackdropColor();
         mutex.unlock();
         M5.Lcd.startWrite();
@@ -94,7 +93,11 @@ void setup() {
     SPIFFS.begin();
     Serial.begin(115200);
     bootMessage("Loading micro msx1+ for M5Stack...");
-    msx1 = new MSX1(MSX1_COLOR_MODE_RGB565);
+    msx1 = new MSX1(MSX1_COLOR_MODE_RGB565, [](void* arg, int frame, int lineNumber, uint16_t* display) {
+        if (0 == (frame & 1)) {
+            memcpy(&bitmap[lineNumber * 256], display, 512);
+        }
+    });
     roms.main = readRom("/cbios_main_msx1.rom", &roms.mainSize);
     roms.logo = readRom("/cbios_logo_msx1.rom", &roms.logoSize);
     msx1->setup(0, 0, roms.main, roms.mainSize, "MAIN");
