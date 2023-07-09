@@ -97,7 +97,7 @@ void setup() {
     bootMessage("Loading micro msx1+ for M5Stack...");
     msx1 = new MSX1(MSX1_COLOR_MODE_RGB565);
     roms.main = readRom("/cbios_main_msx1.rom", &roms.mainSize);
-    roms.logo = readRom("/cbios_logo_msx1", &roms.logoSize);
+    roms.logo = readRom("/cbios_logo_msx1.rom", &roms.logoSize);
     msx1->setup(0, 0, roms.main, roms.mainSize, "MAIN");
     msx1->setup(0, 4, roms.logo, roms.logoSize, "LOGO");
     roms.game = readRom("/game.rom", &roms.gameSize);
