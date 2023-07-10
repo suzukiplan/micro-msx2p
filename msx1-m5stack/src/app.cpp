@@ -3,6 +3,7 @@
 #include <M5GFX.h>
 
 static MSX1* msx1;
+static uint8_t ram[0x4000];
 static bool booted;
 static struct Roms {
     uint8_t* main;
@@ -100,8 +101,7 @@ void setup() {
     SPIFFS.begin();
     Serial.begin(115200);
     bootMessage("Loading micro msx1+ for M5Stack...");
-    auto ram = (uint8_t*)malloc(0x4000);
-    msx1 = new MSX1(MSX1::ColorMode::RGB565, ram, 0x4000, [](void* arg, int frame, int lineNumber, uint16_t* display) {
+    msx1 = new MSX1(MSX1::ColorMode::RGB565, ram, sizeof(ram), [](void* arg, int frame, int lineNumber, uint16_t* display) {
         if (0 == (frame & 1)) {
             canvas.pushImage(0, lineNumber, 256, 1, display);
             if (191 == lineNumber) {
