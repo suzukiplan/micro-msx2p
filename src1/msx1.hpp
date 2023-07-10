@@ -126,7 +126,7 @@ class MSX1
     Z80 cpu;
     MSX1MMU mmu;
     TMS9918A* vdp;
-    AY8910* psg;
+    AY8910 psg;
 
     struct Context {
         unsigned char key;
@@ -139,7 +139,6 @@ class MSX1
     ~MSX1()
     {
         delete this->vdp;
-        delete this->psg;
         delete this->ib;
     }
 
@@ -155,7 +154,6 @@ class MSX1
         this->mmu.setupRAM(ram, ramSize);
         this->vdp = new TMS9918A(
             colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
-        this->psg = new AY8910();
         this->cpu.setupCallbackFP([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu.wtc.fetch = 1;
         this->cpu.setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
@@ -306,7 +304,7 @@ class MSX1
         this->cpu.reg.IY = 0xFFFF;
         this->mmu.reset();
         this->vdp->reset();
-        this->psg->reset(27);
+        this->psg.reset(27);
     }
 
     void setup(int pri, int idx, void* data, int size, const char* label = NULL)
@@ -328,7 +326,7 @@ class MSX1
 
     void tick(unsigned char pad1, unsigned char pad2, unsigned char key)
     {
-        this->psg->setPads(pad1, pad2);
+        this->psg.setPads(pad1, pad2);
         this->ctx.key = key;
         this->keyCodeMap = nullptr;
         this->cpu.execute(0x7FFFFFFF);
@@ -336,7 +334,7 @@ class MSX1
 
     void tickWithKeyCodeMap(unsigned char pad1, unsigned char pad2, unsigned char* keyCodeMap)
     {
-        this->psg->setPads(pad1, pad2);
+        this->psg.setPads(pad1, pad2);
         this->ctx.key = 0;
         this->keyCodeMap = keyCodeMap;
         this->cpu.execute(0x7FFFFFFF);
@@ -366,10 +364,10 @@ class MSX1
     inline void consumeClock(int cpuClocks)
     {
         // Asynchronous with PSG
-        this->psg->ctx.bobo += cpuClocks * this->PSG_CLOCK;
-        while (0 < this->psg->ctx.bobo) {
-            this->psg->ctx.bobo -= this->CPU_CLOCK;
-            this->psg->tick(&this->ib->soundBuffer[this->ib->soundBufferCursor], nullptr, 81);
+        this->psg.ctx.bobo += cpuClocks * this->PSG_CLOCK;
+        while (0 < this->psg.ctx.bobo) {
+            this->psg.ctx.bobo -= this->CPU_CLOCK;
+            this->psg.tick(&this->ib->soundBuffer[this->ib->soundBufferCursor], nullptr, 81);
             this->ib->soundBufferCursor++;
             this->ib->soundBufferCursor &= sizeof(this->ib->soundBuffer) - 1;
         }
@@ -388,8 +386,8 @@ class MSX1
             case 0x98: return this->vdp->readData();
             case 0x99: return this->vdp->readStatus();
             case 0xA2: {
-                unsigned char result = this->psg->read();
-                if (14 == this->psg->ctx.latch || 15 == this->psg->ctx.latch) {
+                unsigned char result = this->psg.read();
+                if (14 == this->psg.ctx.latch || 15 == this->psg.ctx.latch) {
                     result |= 0b11000000; // unpush S1/S2
                 }
                 return result;
@@ -424,22 +422,22 @@ class MSX1
                         }
                     }
                 }
-                if (this->keyAssign[0].s1 && 0 == (this->psg->getPad1() & MSX1_JOY_S1)) {
+                if (this->keyAssign[0].s1 && 0 == (this->psg.getPad1() & MSX1_JOY_S1)) {
                     if (this->ctx.selectedKeyRow == this->keyAssign[0].s1->y[0]) {
                         result |= bit[this->keyAssign[0].s1->x[0]];
                     }
                 }
-                if (this->keyAssign[0].s2 && 0 == (this->psg->getPad1() & MSX1_JOY_S2)) {
+                if (this->keyAssign[0].s2 && 0 == (this->psg.getPad1() & MSX1_JOY_S2)) {
                     if (this->ctx.selectedKeyRow == this->keyAssign[0].s2->y[0]) {
                         result |= bit[this->keyAssign[0].s2->x[0]];
                     }
                 }
-                if (this->keyAssign[1].s1 && 0 == (this->psg->getPad2() & MSX1_JOY_S1)) {
+                if (this->keyAssign[1].s1 && 0 == (this->psg.getPad2() & MSX1_JOY_S1)) {
                     if (this->ctx.selectedKeyRow == this->keyAssign[1].s1->y[0]) {
                         result |= bit[this->keyAssign[1].s1->x[0]];
                     }
                 }
-                if (this->keyAssign[1].s2 && 0 == (this->psg->getPad2() & MSX1_JOY_S2)) {
+                if (this->keyAssign[1].s2 && 0 == (this->psg.getPad2() & MSX1_JOY_S2)) {
                     if (this->ctx.selectedKeyRow == this->keyAssign[1].s2->y[0]) {
                         result |= bit[this->keyAssign[1].s2->x[0]];
                     }
@@ -456,8 +454,8 @@ class MSX1
         switch (port) {
             case 0x98: this->vdp->writeData(value); break;
             case 0x99: this->vdp->writeAddress(value); break;
-            case 0xA0: this->psg->latch(value); break;
-            case 0xA1: this->psg->write(value); break;
+            case 0xA0: this->psg.latch(value); break;
+            case 0xA1: this->psg.write(value); break;
             case 0xA8: this->mmu.updatePrimary(value); break;
             case 0xAA: {
                 unsigned char mod = this->ctx.regC ^ value;
@@ -499,7 +497,7 @@ class MSX1
         if (0 < this->mmu.sramSize) {
             this->writeSaveChunk("SRM", this->mmu.sram, (int)this->mmu.sramSize);
         }
-        this->writeSaveChunk("PSG", &this->psg->ctx, (int)sizeof(this->psg->ctx));
+        this->writeSaveChunk("PSG", &this->psg.ctx, (int)sizeof(this->psg.ctx));
         this->writeSaveChunk("VDP", this->vdp->ctx, (int)sizeof(TMS9918A::Context));
         *size = this->ib->quickSaveBufferPtr;
         return this->ib->quickSaveBuffer;
@@ -535,7 +533,7 @@ class MSX1
             } else if (0 == strcmp(chunk, "SRM") && this->mmu.sram) {
                 memcpy(this->mmu.sram, ptr, chunkSize <= this->mmu.sramSize ? chunkSize : this->mmu.sramSize);
             } else if (0 == strcmp(chunk, "PSG")) {
-                memcpy(&this->psg->ctx, ptr, chunkSize);
+                memcpy(&this->psg.ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "VDP")) {
                 memcpy(this->vdp->ctx, ptr, chunkSize);
             }
@@ -568,7 +566,7 @@ class MSX1
         size += sizeof(this->mmu.ctx) + 8;                    // MMU
         size += this->mmu.ramSize + 8;                        // RAM
         size += this->mmu.sram ? this->mmu.sramSize + 8 : 0; // SRM
-        size += sizeof(this->psg->ctx) + 8;                    // PSG
+        size += sizeof(this->psg.ctx) + 8;                    // PSG
         size += sizeof(TMS9918A::Context) + 8;                 // VDP
         return size;
     }
