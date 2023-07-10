@@ -2,7 +2,6 @@
 #include <M5Core2.h>
 #include <M5GFX.h>
 
-static MSX1* msx1;
 static uint8_t ram[0x4000];
 static TMS9918A::Context vram;
 static bool booted;
@@ -19,6 +18,15 @@ static M5Canvas canvas(&gfx);
 static uint16_t displayBuffer[256];
 static bool pauseRenderer;
 static unsigned short backdropColor;
+static MSX1 msx1(MSX1::ColorMode::RGB565, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
+    if (0 == (frame & 1)) {
+        canvas.pushImage(0, lineNumber, 256, 1, display);
+        if (191 == lineNumber) {
+            backdropColor = ((MSX1*)arg)->getBackdropColor();
+            pauseRenderer = false;
+        }
+    }
+});
 
 static void bootMessage(const char* format, ...)
 {
@@ -57,8 +65,8 @@ void ticker(void* arg)
     size_t soundSize;
     while (1) {
         start = millis();
-        msx1->tick(0, 0, 0);
-        soundData = msx1->getSound(&soundSize);
+        msx1.tick(0, 0, 0);
+        soundData = msx1.getSound(&soundSize);
         procTime = (int)(millis() - start);
         bootMessage("%d (free-heap: %d)", procTime, esp_get_free_heap_size());
         vTaskDelay(10);
@@ -69,8 +77,8 @@ void renderer(void* arg)
 {
     const uint16_t m5w = gfx.width();
     const uint16_t m5h = gfx.height();
-    const uint16_t m1w = (uint16_t)msx1->getDisplayWidth();
-    const uint16_t m1h = (uint16_t)msx1->getDisplayHeight();
+    const uint16_t m1w = (uint16_t)msx1.getDisplayWidth();
+    const uint16_t m1h = (uint16_t)msx1.getDisplayHeight();
     const uint16_t cx = (uint16_t)((m5w - m1w) / 2);
     const uint16_t cy = (uint16_t)((m5h - m1h) / 2);
     uint16_t backdropPrev = 0;
@@ -104,22 +112,13 @@ void setup() {
     SPIFFS.begin();
     Serial.begin(115200);
     bootMessage("Loading micro MSX2+ (using MSX1 core) for M5Stack...");
-    msx1 = new MSX1(MSX1::ColorMode::RGB565, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
-        if (0 == (frame & 1)) {
-            canvas.pushImage(0, lineNumber, 256, 1, display);
-            if (191 == lineNumber) {
-                backdropColor = ((MSX1*)arg)->getBackdropColor();
-                pauseRenderer = false;
-            }
-        }
-    });
-    msx1->vdp->useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
+    msx1.vdp->useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
     roms.main = readRom("/cbios_main_msx1.rom", &roms.mainSize);
     roms.logo = readRom("/cbios_logo_msx1.rom", &roms.logoSize);
-    msx1->setup(0, 0, roms.main, roms.mainSize, "MAIN");
-    msx1->setup(0, 4, roms.logo, roms.logoSize, "LOGO");
+    msx1.setup(0, 0, roms.main, roms.mainSize, "MAIN");
+    msx1.setup(0, 4, roms.logo, roms.logoSize, "LOGO");
     roms.game = readRom("/game.rom", &roms.gameSize);
-    msx1->loadRom(roms.game, roms.gameSize, MSX1_ROM_TYPE_NORMAL);
+    msx1.loadRom(roms.game, roms.gameSize, MSX1_ROM_TYPE_NORMAL);
     bootMessage("Setup finished.");
     booted = true;
     usleep(1000000);
