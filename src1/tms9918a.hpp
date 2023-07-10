@@ -105,7 +105,7 @@ class TMS9918A
         return ((src & 0x00FF) << 8) | work;
     }
 
-    TMS9918A(ColorMode colorMode, void* arg, void (*detectBlank)(void*), void (*detectBreak)(void*), void (*displayCallback)(void*, int, int, unsigned short*) = nullptr, Context* vram = nullptr)
+    void initialize(ColorMode colorMode, void* arg, void (*detectBlank)(void*), void (*detectBreak)(void*), void (*displayCallback)(void*, int, int, unsigned short*) = nullptr, Context* vram = nullptr)
     {
         this->arg = arg;
         this->detectBlank = detectBlank;

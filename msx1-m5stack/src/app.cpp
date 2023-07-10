@@ -23,7 +23,7 @@ static MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](v
         canvas.pushImage(0, lineNumber, 256, 1, display);
         if (191 == lineNumber) {
             auto a = (MSX1*)arg;
-            backdropColor = a->vdp->swap16(a->getBackdropColor());
+            backdropColor = a->vdp.swap16(a->getBackdropColor());
             pauseRenderer = false;
         }
     }
@@ -109,7 +109,7 @@ void setup() {
     SPIFFS.begin();
     Serial.begin(115200);
     putlog("Loading micro MSX2+ (MSX1-core) for M5Stack...");
-    msx1.vdp->useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
+    msx1.vdp.useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
     roms.main = readRom("/cbios_main_msx1.rom", &roms.mainSize);
     roms.logo = readRom("/cbios_logo_msx1.rom", &roms.logoSize);
     msx1.setup(0, 0, roms.main, roms.mainSize, "MAIN");

@@ -125,7 +125,7 @@ class MSX1
   public:
     Z80 cpu;
     MSX1MMU mmu;
-    TMS9918A* vdp;
+    TMS9918A vdp;
     AY8910 psg;
 
     struct Context {
@@ -138,7 +138,6 @@ class MSX1
 
     ~MSX1()
     {
-        delete this->vdp;
         delete this->ib;
     }
 
@@ -152,8 +151,7 @@ class MSX1
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
         this->ib = new InternalBuffer();
         this->mmu.setupRAM(ram, ramSize);
-        this->vdp = new TMS9918A(
-            colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
+        this->vdp.initialize(colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
         this->cpu.setupCallbackFP([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu.wtc.fetch = 1;
         this->cpu.setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
@@ -303,7 +301,7 @@ class MSX1
         this->cpu.reg.IX = 0xFFFF;
         this->cpu.reg.IY = 0xFFFF;
         this->mmu.reset();
-        this->vdp->reset();
+        this->vdp.reset();
         this->psg.reset(27);
     }
 
@@ -357,7 +355,7 @@ class MSX1
         return this->ib->soundBuffer;
     }
 
-    inline unsigned short* getDisplay() { return this->vdp->display; }
+    inline unsigned short* getDisplay() { return this->vdp.display; }
     inline int getDisplayWidth() { return 256; }
     inline int getDisplayHeight() { return 192; }
 
@@ -372,10 +370,10 @@ class MSX1
             this->ib->soundBufferCursor &= sizeof(this->ib->soundBuffer) - 1;
         }
         // Asynchronous with VDP
-        this->vdp->ctx->bobo += cpuClocks * VDP_CLOCK;
-        while (0 < this->vdp->ctx->bobo) {
-            this->vdp->ctx->bobo -= CPU_CLOCK;
-            this->vdp->tick();
+        this->vdp.ctx->bobo += cpuClocks * VDP_CLOCK;
+        while (0 < this->vdp.ctx->bobo) {
+            this->vdp.ctx->bobo -= CPU_CLOCK;
+            this->vdp.tick();
         }
     }
 
@@ -383,8 +381,8 @@ class MSX1
     {
         switch (port) {
             case 0x90: return 0x00; // printer
-            case 0x98: return this->vdp->readData();
-            case 0x99: return this->vdp->readStatus();
+            case 0x98: return this->vdp.readData();
+            case 0x99: return this->vdp.readStatus();
             case 0xA2: {
                 unsigned char result = this->psg.read();
                 if (14 == this->psg.ctx.latch || 15 == this->psg.ctx.latch) {
@@ -452,8 +450,8 @@ class MSX1
     inline void outPort(unsigned char port, unsigned char value)
     {
         switch (port) {
-            case 0x98: this->vdp->writeData(value); break;
-            case 0x99: this->vdp->writeAddress(value); break;
+            case 0x98: this->vdp.writeData(value); break;
+            case 0x99: this->vdp.writeAddress(value); break;
             case 0xA0: this->psg.latch(value); break;
             case 0xA1: this->psg.write(value); break;
             case 0xA8: this->mmu.updatePrimary(value); break;
@@ -498,7 +496,7 @@ class MSX1
             this->writeSaveChunk("SRM", this->mmu.sram, (int)this->mmu.sramSize);
         }
         this->writeSaveChunk("PSG", &this->psg.ctx, (int)sizeof(this->psg.ctx));
-        this->writeSaveChunk("VDP", this->vdp->ctx, (int)sizeof(TMS9918A::Context));
+        this->writeSaveChunk("VDP", this->vdp.ctx, (int)sizeof(TMS9918A::Context));
         *size = this->ib->quickSaveBufferPtr;
         return this->ib->quickSaveBuffer;
     }
@@ -535,7 +533,7 @@ class MSX1
             } else if (0 == strcmp(chunk, "PSG")) {
                 memcpy(&this->psg.ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "VDP")) {
-                memcpy(this->vdp->ctx, ptr, chunkSize);
+                memcpy(this->vdp.ctx, ptr, chunkSize);
             }
             ptr += chunkSize;
             size -= chunkSize;
@@ -544,7 +542,7 @@ class MSX1
 
     unsigned short getBackdropColor()
     {
-        return this->vdp ? this->vdp->getBackdropColor() : 0;
+        return this->vdp.getBackdropColor();
     }
 
   private:
