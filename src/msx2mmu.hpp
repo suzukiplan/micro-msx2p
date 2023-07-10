@@ -245,7 +245,7 @@ class MSX2MMU
             for (int j = 2; j < 6; j += 2) {
                 if (this->slots[i][0].data[j].isCartridge) {
                     for (int k = 0; k < 2; k++) {
-                        //printf("this->slots[%d][0].data[%d].ptr=ROM[%05X]\n",i,j+k,this->ctx.cpos[i - 1][j - 2 + k] * 0x2000);
+                        // printf("this->slots[%d][0].data[%d].ptr=ROM[%05X]\n",i,j+k,this->ctx.cpos[i - 1][j - 2 + k] * 0x2000);
                         if (this->ctx.isSelectSRAM[j + k]) {
                             this->slots[i][0].data[j + k].ptr = sram;
                             this->slots[i][0].data[j + k].isRAM = true;
@@ -261,7 +261,7 @@ class MSX2MMU
 
     inline void updateMemoryMapper(int page, unsigned char value)
     {
-        //printf("update memory mapper: page %d = %d\n", page, value);
+        // printf("update memory mapper: page %d = %d\n", page, value);
         this->ctx.mmap[page] = value;
     }
 

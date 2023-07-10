@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#define COMMAND_DEBUG
+// #define COMMAND_DEBUG
 
 class V9958
 {
