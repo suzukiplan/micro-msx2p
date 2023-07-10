@@ -5,10 +5,11 @@
 
 ## Pre-requests
 
-- Platform I/O (CLI only)
+- [PlatformIO Core (CLI)](https://docs.platformio.org/en/latest/core/index.html)
+  - macOS: `brew install platformio`
 - GNU Make
 
-> Playform I/O は Visual Studio Code 経由で用いる方式が一般的には多いですが、本プロジェクトでは CLI (pioコマンド) のみ用いるので Visual Studio Code や Plugin のインストールは不要です。必ずコマンドライン版の Platform I/O をインストールするようにしてください。
+> Playform I/O は Visual Studio Code 経由で用いる方式が一般的には多いですが、本プロジェクトでは CLI (pioコマンド) のみ用いるので Visual Studio Code や Plugin のインストールは不要です。
 
 ## Build Support OS
 
