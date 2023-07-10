@@ -123,7 +123,7 @@ class MSX1
     }
 
   public:
-    Z80* cpu;
+    Z80 cpu;
     MSX1MMU* mmu;
     TMS9918A* vdp;
     AY8910* psg;
@@ -138,7 +138,6 @@ class MSX1
 
     ~MSX1()
     {
-        delete this->cpu;
         delete this->vdp;
         delete this->mmu;
         delete this->psg;
@@ -156,11 +155,11 @@ class MSX1
         this->ib = new InternalBuffer();
         this->mmu = new MSX1MMU(ram, ramSize);
         this->vdp = new TMS9918A(
-            colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu->requestBreak(); }, displayCallback, vram);
+            colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
         this->psg = new AY8910();
-        this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
-        this->cpu->wtc.fetch = 1;
-        this->cpu->setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
+        this->cpu.setupCallbackFP([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
+        this->cpu.wtc.fetch = 1;
+        this->cpu.setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX1*)arg)->consumeClock(cpuClocks);
         });
         memset(&keyCodes, 0, sizeof(keyCodes));
@@ -297,15 +296,15 @@ class MSX1
     {
         memset(this->ib->soundBuffer, 0, sizeof(this->ib->soundBuffer));
         this->ib->soundBufferCursor = 0;
-        memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
-        memset(&this->cpu->reg.pair, 0xFF, sizeof(this->cpu->reg.pair));
-        memset(&this->cpu->reg.back, 0xFF, sizeof(this->cpu->reg.back));
+        memset(&this->cpu.reg, 0, sizeof(this->cpu.reg));
+        memset(&this->cpu.reg.pair, 0xFF, sizeof(this->cpu.reg.pair));
+        memset(&this->cpu.reg.back, 0xFF, sizeof(this->cpu.reg.back));
         memset(&this->ctx, 0, sizeof(this->ctx));
         this->ctx.regC = 0x50;
         this->keyCodeMap = nullptr;
-        this->cpu->reg.SP = 0xF000;
-        this->cpu->reg.IX = 0xFFFF;
-        this->cpu->reg.IY = 0xFFFF;
+        this->cpu.reg.SP = 0xF000;
+        this->cpu.reg.IX = 0xFFFF;
+        this->cpu.reg.IY = 0xFFFF;
         this->mmu->reset();
         this->vdp->reset();
         this->psg->reset(27);
@@ -333,7 +332,7 @@ class MSX1
         this->psg->setPads(pad1, pad2);
         this->ctx.key = key;
         this->keyCodeMap = nullptr;
-        this->cpu->execute(0x7FFFFFFF);
+        this->cpu.execute(0x7FFFFFFF);
     }
 
     void tickWithKeyCodeMap(unsigned char pad1, unsigned char pad2, unsigned char* keyCodeMap)
@@ -341,7 +340,7 @@ class MSX1
         this->psg->setPads(pad1, pad2);
         this->ctx.key = 0;
         this->keyCodeMap = keyCodeMap;
-        this->cpu->execute(0x7FFFFFFF);
+        this->cpu.execute(0x7FFFFFFF);
     }
 
     size_t getMaxSoundSize()
@@ -495,7 +494,7 @@ class MSX1
         }
         this->ib->quickSaveBufferPtr = 0;
         this->writeSaveChunk("BRD", &this->ctx, (int)sizeof(this->ctx));
-        this->writeSaveChunk("Z80", &this->cpu->reg, (int)sizeof(this->cpu->reg));
+        this->writeSaveChunk("Z80", &this->cpu.reg, (int)sizeof(this->cpu.reg));
         this->writeSaveChunk("MMU", &this->mmu->ctx, (int)sizeof(this->mmu->ctx));
         this->writeSaveChunk("RAM", this->mmu->ram, (int)this->mmu->ramSize);
         if (0 < this->mmu->sramSize) {
@@ -528,7 +527,7 @@ class MSX1
             if (0 == strcmp(chunk, "BRD")) {
                 memcpy(&this->ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "Z80")) {
-                memcpy(&this->cpu->reg, ptr, chunkSize);
+                memcpy(&this->cpu.reg, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "MMU")) {
                 memcpy(&this->mmu->ctx, ptr, chunkSize);
                 this->mmu->bankSwitchover();
@@ -566,7 +565,7 @@ class MSX1
     {
         size_t size = 0;
         size += sizeof(this->ctx) + 8;                         // BRD
-        size += sizeof(this->cpu->reg) + 8;                    // Z80
+        size += sizeof(this->cpu.reg) + 8;                    // Z80
         size += sizeof(this->mmu->ctx) + 8;                    // MMU
         size += this->mmu->ramSize + 8;                        // RAM
         size += this->mmu->sram ? this->mmu->sramSize + 8 : 0; // SRM
