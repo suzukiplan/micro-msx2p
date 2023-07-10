@@ -99,7 +99,7 @@ void setup() {
     gfx.begin();
     gfx.setColorDepth(16);
     gfx.fillScreen(TFT_BLACK);
-    canvas.setColorDepth(4);
+    canvas.setColorDepth(16);
     canvas.createSprite(256, 192);
     SPIFFS.begin();
     Serial.begin(115200);
