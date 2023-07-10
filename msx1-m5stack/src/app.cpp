@@ -67,7 +67,7 @@ void ticker(void* arg)
         msx1.tick(0, 0, 0);
         soundData = msx1.getSound(&soundSize);
         putlog("%d (free-heap: %d)", (int)(millis() - start), esp_get_free_heap_size());
-        vTaskDelay(10);
+        vTaskDelay(16);
     }
 }
 
@@ -82,21 +82,20 @@ void renderer(void* arg)
     uint16_t backdropPrev = 0;
     pauseRenderer = true;
     while (1) {
-        if (pauseRenderer) {
-            vTaskDelay(100);
-        } else {
-            pauseRenderer = true;
-            gfx.startWrite();
-            if (backdropColor != backdropPrev) {
-                backdropPrev = backdropColor;
-                gfx.fillRect(0, 0, cx, m5h, backdropPrev);
-                gfx.fillRect(cx + m1w, 0, cx, m5h, backdropPrev);
-                gfx.fillRect(cx, 0, m1w, cy, backdropPrev);
-                gfx.fillRect(cx, cy + m1h, m1w, cy, backdropPrev);
-            }
-            canvas.pushSprite(cx, cy);
-            gfx.endWrite();
+        while (pauseRenderer) {
+            vTaskDelay(33);
         }
+        pauseRenderer = true;
+        gfx.startWrite();
+        if (backdropColor != backdropPrev) {
+            backdropPrev = backdropColor;
+            gfx.fillRect(0, 0, cx, m5h, backdropPrev);
+            gfx.fillRect(cx + m1w, 0, cx, m5h, backdropPrev);
+            gfx.fillRect(cx, 0, m1w, cy, backdropPrev);
+            gfx.fillRect(cx, cy + m1h, m1w, cy, backdropPrev);
+        }
+        canvas.pushSprite(cx, cy);
+        gfx.endWrite();
     }
 }
 
