@@ -101,7 +101,7 @@ void setup() {
     gfx.fillScreen(TFT_BLACK);
     SPIFFS.begin();
     Serial.begin(115200);
-    bootMessage("Loading micro msx1+ for M5Stack...");
+    bootMessage("Loading micro MSX2+ (using MSX1 core) for M5Stack...");
     msx1 = new MSX1(MSX1::ColorMode::RGB565, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
         if (0 == (frame & 1)) {
             canvas.pushImage(0, lineNumber, 256, 1, display);
