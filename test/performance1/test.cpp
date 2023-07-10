@@ -131,7 +131,7 @@ const void* getBitmapScreen(MSX1* msx1, size_t* size) {
 int main()
 {
     unsigned char ram[0x2000];
-    MSX1* msx1 = new MSX1(MSX1::ColorMode::RGB555, ram, sizeof(ram));
+    MSX1* msx1 = new MSX1(MSX1::ColorMode::RGB555, ram, sizeof(ram), nullptr);
     void* main = init(msx1, 0, 0, "cbios_main_msx1.rom", "MAIN");
     void* logo = init(msx1, 0, 4, "cbios_logo_msx1.rom", "LOGO");
     void* game = init(msx1, 0, 4, "game.rom", "CART");
