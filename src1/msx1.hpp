@@ -162,8 +162,7 @@ class MSX1
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
         this->ib = new InternalBuffer();
         this->mmu = new MSX1MMU(ram, ramSize);
-        this->vdp = new TMS9918A(
-            (int)colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu->requestBreak(); }, displayCallback, vram);
+        this->vdp = new TMS9918A((int)colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu->requestBreak(); }, displayCallback, vram);
         this->psg = new AY8910();
         this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;
@@ -318,31 +317,6 @@ class MSX1
         this->psg->reset(27);
     }
 
-    void putlog(const char* fmt, ...)
-    {
-        if (!this->debug) return;
-        static int seqno = 0;
-        char buf[256];
-        va_list args;
-        va_start(args, fmt);
-        vsnprintf(buf, sizeof(buf), fmt, args);
-        va_end(args);
-        char addr[256];
-        auto db = this->mmu->getDataBlock(this->cpu->reg.PC);
-        if (db->isCartridge) {
-            int romAddr = (int)(db->ptr - this->mmu->cartridge.ptr);
-            snprintf(addr, sizeof(addr), "[PC=%04X:%X+%04X,SP=%04X]", this->cpu->reg.PC, this->cpu->reg.SP, romAddr, this->cpu->reg.PC & 0x1FFF);
-        } else {
-            snprintf(addr, sizeof(addr), "[PC=%04X,SP=%04X]", this->cpu->reg.PC, this->cpu->reg.SP);
-        }
-        printf("%7d %s %d:%d:%d:%d V:%03d %s\n", ++seqno, addr,
-               this->mmu->ctx.pri[0],
-               this->mmu->ctx.pri[1],
-               this->mmu->ctx.pri[2],
-               this->mmu->ctx.pri[3],
-               this->vdp->ctx->countV, buf);
-    }
-
     void setup(int pri, int idx, void* data, int size, const char* label = NULL)
     {
         this->mmu->setup(pri, idx, (unsigned char*)data, size, label);
@@ -418,7 +392,6 @@ class MSX1
     inline unsigned char inPort(unsigned char port)
     {
         switch (port) {
-            case 0x81: return 0xFF; // 8251 status command
             case 0x90: return 0x00; // printer
             case 0x98: return this->vdp->readData();
             case 0x99: return this->vdp->readStatus();
@@ -482,7 +455,6 @@ class MSX1
                 return ~result;
             }
             case 0xAA: return this->ctx.regC;
-            default: this->putlog("ignore an unknown input port $%02X\n", port);
         }
         return 0xFF;
     }
@@ -490,9 +462,6 @@ class MSX1
     inline void outPort(unsigned char port, unsigned char value)
     {
         switch (port) {
-            case 0x81: break; // 8251 status command
-            case 0x90: break; // printer
-            case 0x91: break; // printer
             case 0x98: this->vdp->writeData(value); break;
             case 0x99: this->vdp->writeAddress(value); break;
             case 0xA0: this->psg->latch(value); break;
@@ -504,12 +473,6 @@ class MSX1
                     this->ctx.regC = value;
                     if (mod & 0x0F) {
                         this->ctx.selectedKeyRow = this->ctx.regC & 0x0F;
-                    }
-                    if (mod & 0xA0) {
-                        // TODO: update pluse signal
-                    }
-                    if (mod & 0x40) {
-                        // TODO: update caps led
                     }
                 }
                 break;
@@ -524,15 +487,10 @@ class MSX1
                     }
                     if (bit <= 3) {
                         this->ctx.selectedKeyRow = this->ctx.regC & 0x0F;
-                    } else if (5 == bit || 7 == bit) {
-                        // TODO: update pulse signal
-                    } else if (6 == bit) {
-                        // TODO: update caps led
                     }
                 }
                 break;
             }
-            default: this->putlog("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
     }
 
@@ -574,26 +532,19 @@ class MSX1
             ptr += 4;
             if (chunkSize < 0) break;
             if (0 == strcmp(chunk, "BRD")) {
-                putlog("extract BRD (%d bytes)", chunkSize);
                 memcpy(&this->ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "Z80")) {
-                putlog("extract Z80 (%d bytes)", chunkSize);
                 memcpy(&this->cpu->reg, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "MMU")) {
-                putlog("extract MMU (%d bytes)", chunkSize);
                 memcpy(&this->mmu->ctx, ptr, chunkSize);
                 this->mmu->bankSwitchover();
             } else if (0 == strcmp(chunk, "RAM")) {
-                putlog("extract RAM (%d bytes)", chunkSize);
                 memcpy(this->mmu->ram, ptr, chunkSize <= this->mmu->ramSize ? chunkSize : this->mmu->ramSize);
             } else if (0 == strcmp(chunk, "SRM") && this->mmu->sram) {
-                putlog("extract SRM (%d bytes)", chunkSize);
                 memcpy(this->mmu->sram, ptr, chunkSize <= this->mmu->sramSize ? chunkSize : this->mmu->sramSize);
             } else if (0 == strcmp(chunk, "PSG")) {
-                putlog("extract PSG (%d bytes)", chunkSize);
                 memcpy(&this->psg->ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "VDP")) {
-                putlog("extract VDP (%d bytes)", chunkSize);
                 memcpy(this->vdp->ctx, ptr, chunkSize);
             }
             ptr += chunkSize;
