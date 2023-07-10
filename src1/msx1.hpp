@@ -152,7 +152,7 @@ class MSX1
         delete this->ib;
     }
 
-    MSX1(ColorMode colorMode, unsigned char* ram, size_t ramSize, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
+    MSX1(ColorMode colorMode, unsigned char* ram, size_t ramSize, TMS9918A::Context* vram, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
     {
 #ifdef DEBUG
         this->debug = true;
@@ -163,7 +163,7 @@ class MSX1
         this->ib = new InternalBuffer();
         this->mmu = new MSX1MMU(ram, ramSize);
         this->vdp = new TMS9918A(
-            (int)colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu->requestBreak(); }, displayCallback);
+            (int)colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu->requestBreak(); }, displayCallback, vram);
         this->psg = new AY8910();
         this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;
@@ -340,7 +340,7 @@ class MSX1
                this->mmu->ctx.pri[1],
                this->mmu->ctx.pri[2],
                this->mmu->ctx.pri[3],
-               this->vdp->ctx.countV, buf);
+               this->vdp->ctx->countV, buf);
     }
 
     void setup(int pri, int idx, void* data, int size, const char* label = NULL)
@@ -408,9 +408,9 @@ class MSX1
             this->ib->soundBufferCursor &= sizeof(this->ib->soundBuffer) - 1;
         }
         // Asynchronous with VDP
-        this->vdp->ctx.bobo += cpuClocks * VDP_CLOCK;
-        while (0 < this->vdp->ctx.bobo) {
-            this->vdp->ctx.bobo -= CPU_CLOCK;
+        this->vdp->ctx->bobo += cpuClocks * VDP_CLOCK;
+        while (0 < this->vdp->ctx->bobo) {
+            this->vdp->ctx->bobo -= CPU_CLOCK;
             this->vdp->tick();
         }
     }
@@ -550,7 +550,7 @@ class MSX1
             this->writeSaveChunk("SRM", this->mmu->sram, (int)this->mmu->sramSize);
         }
         this->writeSaveChunk("PSG", &this->psg->ctx, (int)sizeof(this->psg->ctx));
-        this->writeSaveChunk("VDP", &this->vdp->ctx, (int)sizeof(this->vdp->ctx));
+        this->writeSaveChunk("VDP", this->vdp->ctx, (int)sizeof(TMS9918A::Context));
         *size = this->ib->quickSaveBufferPtr;
         return this->ib->quickSaveBuffer;
     }
@@ -594,7 +594,7 @@ class MSX1
                 memcpy(&this->psg->ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "VDP")) {
                 putlog("extract VDP (%d bytes)", chunkSize);
-                memcpy(&this->vdp->ctx, ptr, chunkSize);
+                memcpy(this->vdp->ctx, ptr, chunkSize);
             }
             ptr += chunkSize;
             size -= chunkSize;
@@ -626,7 +626,7 @@ class MSX1
         size += this->mmu->ramSize + 8;                        // RAM
         size += this->mmu->sram ? this->mmu->sramSize + 8 : 0; // SRM
         size += sizeof(this->psg->ctx) + 8;                    // PSG
-        size += sizeof(this->vdp->ctx) + 8;                    // VDP
+        size += sizeof(TMS9918A::Context) + 8;                 // VDP
         return size;
     }
 };
