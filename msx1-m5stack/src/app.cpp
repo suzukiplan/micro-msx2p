@@ -60,16 +60,13 @@ static uint8_t* readRom(const char* path, int* size)
 
 void ticker(void* arg)
 {
-    unsigned long start;
-    int procTime;
     void* soundData;
     size_t soundSize;
     while (1) {
-        start = millis();
+        auto start = millis();
         msx1.tick(0, 0, 0);
         soundData = msx1.getSound(&soundSize);
-        procTime = (int)(millis() - start);
-        putlog("%d (free-heap: %d)", procTime, esp_get_free_heap_size());
+        putlog("%d (free-heap: %d)", (int)(millis() - start), esp_get_free_heap_size());
         vTaskDelay(10);
     }
 }
@@ -112,7 +109,7 @@ void setup() {
     canvas.createSprite(256, 192);
     SPIFFS.begin();
     Serial.begin(115200);
-    putlog("Loading micro MSX2+ (using MSX1 core) for M5Stack...");
+    putlog("Loading micro MSX2+ (MSX1-core) for M5Stack...");
     msx1.vdp->useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
     roms.main = readRom("/cbios_main_msx1.rom", &roms.mainSize);
     roms.logo = readRom("/cbios_logo_msx1.rom", &roms.logoSize);
