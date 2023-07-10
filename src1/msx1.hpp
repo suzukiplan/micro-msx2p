@@ -86,7 +86,7 @@ class MSX1
         }
     };
 
-    InternalBuffer* ib;
+    InternalBuffer ib;
     bool debug;
 
     struct KeyCode {
@@ -138,7 +138,6 @@ class MSX1
 
     ~MSX1()
     {
-        delete this->ib;
     }
 
     MSX1(TMS9918A::ColorMode colorMode, unsigned char* ram, size_t ramSize, TMS9918A::Context* vram, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
@@ -149,7 +148,6 @@ class MSX1
         this->debug = false;
 #endif
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
-        this->ib = new InternalBuffer();
         this->mmu.setupRAM(ram, ramSize);
         this->vdp.initialize(
             colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
@@ -290,8 +288,8 @@ class MSX1
 
     void reset()
     {
-        memset(this->ib->soundBuffer, 0, sizeof(this->ib->soundBuffer));
-        this->ib->soundBufferCursor = 0;
+        memset(this->ib.soundBuffer, 0, sizeof(this->ib.soundBuffer));
+        this->ib.soundBufferCursor = 0;
         memset(&this->cpu.reg, 0, sizeof(this->cpu.reg));
         memset(&this->cpu.reg.pair, 0xFF, sizeof(this->cpu.reg.pair));
         memset(&this->cpu.reg.back, 0xFF, sizeof(this->cpu.reg.back));
@@ -341,19 +339,19 @@ class MSX1
 
     size_t getMaxSoundSize()
     {
-        return sizeof(this->ib->soundBuffer);
+        return sizeof(this->ib.soundBuffer);
     }
 
     size_t getCurrentSoundSize()
     {
-        return this->ib->soundBufferCursor * 2;
+        return this->ib.soundBufferCursor * 2;
     }
 
     void* getSound(size_t* soundSize)
     {
-        *soundSize = this->ib->soundBufferCursor * 2;
-        this->ib->soundBufferCursor = 0;
-        return this->ib->soundBuffer;
+        *soundSize = this->ib.soundBufferCursor * 2;
+        this->ib.soundBufferCursor = 0;
+        return this->ib.soundBuffer;
     }
 
     inline unsigned short* getDisplay() { return this->vdp.display; }
@@ -366,9 +364,9 @@ class MSX1
         this->psg.ctx.bobo += cpuClocks * this->PSG_CLOCK;
         while (0 < this->psg.ctx.bobo) {
             this->psg.ctx.bobo -= this->CPU_CLOCK;
-            this->psg.tick(&this->ib->soundBuffer[this->ib->soundBufferCursor], nullptr, 81);
-            this->ib->soundBufferCursor++;
-            this->ib->soundBufferCursor &= sizeof(this->ib->soundBuffer) - 1;
+            this->psg.tick(&this->ib.soundBuffer[this->ib.soundBufferCursor], nullptr, 81);
+            this->ib.soundBufferCursor++;
+            this->ib.soundBufferCursor &= sizeof(this->ib.soundBuffer) - 1;
         }
         // Asynchronous with VDP
         this->vdp.ctx->bobo += cpuClocks * VDP_CLOCK;
@@ -485,10 +483,10 @@ class MSX1
 
     const void* quickSave(size_t* size)
     {
-        if (!this->ib->allocateQuickSaveBuffer(this->calcQuickSaveSize())) {
+        if (!this->ib.allocateQuickSaveBuffer(this->calcQuickSaveSize())) {
             return nullptr;
         }
-        this->ib->quickSaveBufferPtr = 0;
+        this->ib.quickSaveBufferPtr = 0;
         this->writeSaveChunk("BRD", &this->ctx, (int)sizeof(this->ctx));
         this->writeSaveChunk("Z80", &this->cpu.reg, (int)sizeof(this->cpu.reg));
         this->writeSaveChunk("MMU", &this->mmu.ctx, (int)sizeof(this->mmu.ctx));
@@ -498,17 +496,17 @@ class MSX1
         }
         this->writeSaveChunk("PSG", &this->psg.ctx, (int)sizeof(this->psg.ctx));
         this->writeSaveChunk("VDP", this->vdp.ctx, (int)sizeof(TMS9918A::Context));
-        *size = this->ib->quickSaveBufferPtr;
-        return this->ib->quickSaveBuffer;
+        *size = this->ib.quickSaveBufferPtr;
+        return this->ib.quickSaveBuffer;
     }
 
     void quickLoad(const void* buffer, size_t bufferSize)
     {
-        if (!this->ib->allocateQuickSaveBuffer(this->calcQuickSaveSize())) {
+        if (!this->ib.allocateQuickSaveBuffer(this->calcQuickSaveSize())) {
             return;
         }
         this->reset();
-        const char* ptr = this->ib->quickSaveBuffer;
+        const char* ptr = this->ib.quickSaveBuffer;
         int size = (int)bufferSize;
         while (8 <= size) {
             char chunk[4];
@@ -549,12 +547,12 @@ class MSX1
   private:
     void writeSaveChunk(const char* name, const void* data, int size)
     {
-        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferPtr], name, 4);
-        this->ib->quickSaveBufferPtr += 4;
-        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferPtr], &size, 4);
-        this->ib->quickSaveBufferPtr += 4;
-        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferPtr], data, size);
-        this->ib->quickSaveBufferPtr += size;
+        memcpy(&this->ib.quickSaveBuffer[this->ib.quickSaveBufferPtr], name, 4);
+        this->ib.quickSaveBufferPtr += 4;
+        memcpy(&this->ib.quickSaveBuffer[this->ib.quickSaveBufferPtr], &size, 4);
+        this->ib.quickSaveBufferPtr += 4;
+        memcpy(&this->ib.quickSaveBuffer[this->ib.quickSaveBufferPtr], data, size);
+        this->ib.quickSaveBufferPtr += size;
     }
 
     size_t calcQuickSaveSize()
