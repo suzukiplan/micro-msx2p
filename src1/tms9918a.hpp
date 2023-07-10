@@ -135,7 +135,7 @@ class TMS9918A
         this->releaseDisplayBuffer();
     }
 
-    void useOwnDisplayBuffer(uint16_t* displayBuffer, size_t displayBufferSize)
+    void useOwnDisplayBuffer(unsigned short* displayBuffer, size_t displayBufferSize)
     {
         this->releaseDisplayBuffer();
         this->display = displayBuffer;
