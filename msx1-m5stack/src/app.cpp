@@ -99,6 +99,8 @@ void setup() {
     gfx.begin();
     gfx.setColorDepth(16);
     gfx.fillScreen(TFT_BLACK);
+    canvas.setColorDepth(4);
+    canvas.createSprite(256, 192);
     SPIFFS.begin();
     Serial.begin(115200);
     bootMessage("Loading micro MSX2+ (using MSX1 core) for M5Stack...");
@@ -122,9 +124,6 @@ void setup() {
     booted = true;
     usleep(1000000);
     gfx.clear();
-    canvas.setColorDepth(16);
-    canvas.createSprite(256, 192);
-    canvas.clear();
     xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 1);
     xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 0);
 }
