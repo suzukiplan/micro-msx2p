@@ -34,13 +34,6 @@
 
 class MSX1
 {
-  public:
-    enum class ColorMode {
-        RGB555 = 0,
-        RGB565 = 1,
-        BGR565 = 2,
-    };
-
   private:
     const int CPU_CLOCK = 3584160;
     const int VDP_CLOCK = 21504960;
@@ -152,7 +145,7 @@ class MSX1
         delete this->ib;
     }
 
-    MSX1(ColorMode colorMode, unsigned char* ram, size_t ramSize, TMS9918A::Context* vram, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
+    MSX1(TMS9918A::ColorMode colorMode, unsigned char* ram, size_t ramSize, TMS9918A::Context* vram, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
     {
 #ifdef DEBUG
         this->debug = true;
@@ -162,7 +155,8 @@ class MSX1
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
         this->ib = new InternalBuffer();
         this->mmu = new MSX1MMU(ram, ramSize);
-        this->vdp = new TMS9918A((int)colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu->requestBreak(); }, displayCallback, vram);
+        this->vdp = new TMS9918A(
+            colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu->generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu->requestBreak(); }, displayCallback, vram);
         this->psg = new AY8910();
         this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;

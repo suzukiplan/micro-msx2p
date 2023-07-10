@@ -18,11 +18,12 @@ static M5Canvas canvas(&gfx);
 static uint16_t displayBuffer[256];
 static bool pauseRenderer;
 static unsigned short backdropColor;
-static MSX1 msx1(MSX1::ColorMode::RGB565, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
+static MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
     if (0 == (frame & 1)) {
         canvas.pushImage(0, lineNumber, 256, 1, display);
         if (191 == lineNumber) {
-            backdropColor = ((MSX1*)arg)->getBackdropColor();
+            auto a = (MSX1*)arg;
+            backdropColor = a->vdp->swap16(a->getBackdropColor());
             pauseRenderer = false;
         }
     }

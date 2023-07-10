@@ -61,6 +61,13 @@
 
 class TMS9918A
 {
+  public:
+    enum class ColorMode {
+        RGB555,
+        RGB565,
+        RGB565_Swap,
+    };
+
   private:
     void* arg;
     void (*detectBlank)(void* arg);
@@ -92,7 +99,13 @@ class TMS9918A
     Context* ctx;
     bool ctxNeedFree;
 
-    TMS9918A(int colorMode, void* arg, void (*detectBlank)(void*), void (*detectBreak)(void*), void (*displayCallback)(void*, int, int, unsigned short*) = nullptr, Context* vram = nullptr)
+    unsigned short swap16(unsigned short src)
+    {
+        auto work = (src & 0xFF00) >> 8;
+        return ((src & 0x00FF) << 8) | work;
+    }
+
+    TMS9918A(ColorMode colorMode, void* arg, void (*detectBlank)(void*), void (*detectBreak)(void*), void (*displayCallback)(void*, int, int, unsigned short*) = nullptr, Context* vram = nullptr)
     {
         this->arg = arg;
         this->detectBlank = detectBlank;
@@ -106,7 +119,7 @@ class TMS9918A
         memset(this->ctx, 0, sizeof(Context));
 
         switch (colorMode) {
-            case 0: // RGB555
+            case ColorMode::RGB555:
                 for (int i = 0; i < 16; i++) {
                     this->palette[i] = 0;
                     this->palette[i] |= (this->rgb888[i] & 0b111110000000000000000000) >> 9;
@@ -114,7 +127,7 @@ class TMS9918A
                     this->palette[i] |= (this->rgb888[i] & 0b000000000000000011111000) >> 3;
                 }
                 break;
-            case 1: // RGB565
+            case ColorMode::RGB565:
                 for (int i = 0; i < 16; i++) {
                     this->palette[i] = 0;
                     this->palette[i] |= (this->rgb888[i] & 0b111110000000000000000000) >> 8;
@@ -122,12 +135,13 @@ class TMS9918A
                     this->palette[i] |= (this->rgb888[i] & 0b000000000000000011111000) >> 3;
                 }
                 break;
-            case 2: // BGR565
+            case ColorMode::RGB565_Swap:
                 for (int i = 0; i < 16; i++) {
                     this->palette[i] = 0;
-                    this->palette[i] |= (this->rgb888[i] & 0b111110000000000000000000) >> 19;
+                    this->palette[i] |= (this->rgb888[i] & 0b111110000000000000000000) >> 8;
                     this->palette[i] |= (this->rgb888[i] & 0b000000001111110000000000) >> 5;
-                    this->palette[i] |= (this->rgb888[i] & 0b000000000000000011111000) << 8;
+                    this->palette[i] |= (this->rgb888[i] & 0b000000000000000011111000) >> 3;
+                    this->palette[i] = swap16(this->palette[i]);
                 }
                 break;
             default:
