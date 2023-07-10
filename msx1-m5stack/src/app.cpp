@@ -28,7 +28,7 @@ static MSX1 msx1(MSX1::ColorMode::RGB565, ram, sizeof(ram), &vram, [](void* arg,
     }
 });
 
-static void bootMessage(const char* format, ...)
+static void putlog(const char* format, ...)
 {
     char buf[256];
     va_list args;
@@ -48,7 +48,7 @@ static uint8_t* readRom(const char* path, int* size)
     File file = SPIFFS.open(path);
     if (!file) return nullptr;
     *size = file.available();
-    bootMessage("Read %s (%d bytes)", path, *size);
+    putlog("Read %s (%d bytes)", path, *size);
     uint8_t* result = (uint8_t*)malloc(*size);
     if (!result) return nullptr;
     for (int i = 0; i < *size; i++) {
@@ -68,7 +68,7 @@ void ticker(void* arg)
         msx1.tick(0, 0, 0);
         soundData = msx1.getSound(&soundSize);
         procTime = (int)(millis() - start);
-        bootMessage("%d (free-heap: %d)", procTime, esp_get_free_heap_size());
+        putlog("%d (free-heap: %d)", procTime, esp_get_free_heap_size());
         vTaskDelay(10);
     }
 }
@@ -111,7 +111,7 @@ void setup() {
     canvas.createSprite(256, 192);
     SPIFFS.begin();
     Serial.begin(115200);
-    bootMessage("Loading micro MSX2+ (using MSX1 core) for M5Stack...");
+    putlog("Loading micro MSX2+ (using MSX1 core) for M5Stack...");
     msx1.vdp->useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
     roms.main = readRom("/cbios_main_msx1.rom", &roms.mainSize);
     roms.logo = readRom("/cbios_logo_msx1.rom", &roms.logoSize);
@@ -119,7 +119,7 @@ void setup() {
     msx1.setup(0, 4, roms.logo, roms.logoSize, "LOGO");
     roms.game = readRom("/game.rom", &roms.gameSize);
     msx1.loadRom(roms.game, roms.gameSize, MSX1_ROM_TYPE_NORMAL);
-    bootMessage("Setup finished.");
+    putlog("Setup finished.");
     booted = true;
     usleep(1000000);
     gfx.clear();
