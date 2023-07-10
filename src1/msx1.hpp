@@ -124,7 +124,7 @@ class MSX1
 
   public:
     Z80 cpu;
-    MSX1MMU* mmu;
+    MSX1MMU mmu;
     TMS9918A* vdp;
     AY8910* psg;
 
@@ -139,7 +139,6 @@ class MSX1
     ~MSX1()
     {
         delete this->vdp;
-        delete this->mmu;
         delete this->psg;
         delete this->ib;
     }
@@ -153,11 +152,11 @@ class MSX1
 #endif
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
         this->ib = new InternalBuffer();
-        this->mmu = new MSX1MMU(ram, ramSize);
+        this->mmu.setupRAM(ram, ramSize);
         this->vdp = new TMS9918A(
             colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
         this->psg = new AY8910();
-        this->cpu.setupCallbackFP([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
+        this->cpu.setupCallbackFP([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu.wtc.fetch = 1;
         this->cpu.setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX1*)arg)->consumeClock(cpuClocks);
@@ -305,25 +304,25 @@ class MSX1
         this->cpu.reg.SP = 0xF000;
         this->cpu.reg.IX = 0xFFFF;
         this->cpu.reg.IY = 0xFFFF;
-        this->mmu->reset();
+        this->mmu.reset();
         this->vdp->reset();
         this->psg->reset(27);
     }
 
     void setup(int pri, int idx, void* data, int size, const char* label = NULL)
     {
-        this->mmu->setup(pri, idx, (unsigned char*)data, size, label);
+        this->mmu.setup(pri, idx, (unsigned char*)data, size, label);
     }
 
     void loadRom(void* data, int size, int romType)
     {
-        this->mmu->setupCartridge(1, 2, data, size, romType);
+        this->mmu.setupCartridge(1, 2, data, size, romType);
         this->reset();
     }
 
     void ejectRom()
     {
-        this->mmu->clearCartridge();
+        this->mmu.clearCartridge();
         this->reset();
     }
 
@@ -395,7 +394,7 @@ class MSX1
                 }
                 return result;
             }
-            case 0xA8: return this->mmu->getPrimary();
+            case 0xA8: return this->mmu.getPrimary();
             case 0xA9: {
                 // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
                 static unsigned char bit[8] = {
@@ -459,7 +458,7 @@ class MSX1
             case 0x99: this->vdp->writeAddress(value); break;
             case 0xA0: this->psg->latch(value); break;
             case 0xA1: this->psg->write(value); break;
-            case 0xA8: this->mmu->updatePrimary(value); break;
+            case 0xA8: this->mmu.updatePrimary(value); break;
             case 0xAA: {
                 unsigned char mod = this->ctx.regC ^ value;
                 if (mod) {
@@ -495,10 +494,10 @@ class MSX1
         this->ib->quickSaveBufferPtr = 0;
         this->writeSaveChunk("BRD", &this->ctx, (int)sizeof(this->ctx));
         this->writeSaveChunk("Z80", &this->cpu.reg, (int)sizeof(this->cpu.reg));
-        this->writeSaveChunk("MMU", &this->mmu->ctx, (int)sizeof(this->mmu->ctx));
-        this->writeSaveChunk("RAM", this->mmu->ram, (int)this->mmu->ramSize);
-        if (0 < this->mmu->sramSize) {
-            this->writeSaveChunk("SRM", this->mmu->sram, (int)this->mmu->sramSize);
+        this->writeSaveChunk("MMU", &this->mmu.ctx, (int)sizeof(this->mmu.ctx));
+        this->writeSaveChunk("RAM", this->mmu.ram, (int)this->mmu.ramSize);
+        if (0 < this->mmu.sramSize) {
+            this->writeSaveChunk("SRM", this->mmu.sram, (int)this->mmu.sramSize);
         }
         this->writeSaveChunk("PSG", &this->psg->ctx, (int)sizeof(this->psg->ctx));
         this->writeSaveChunk("VDP", this->vdp->ctx, (int)sizeof(TMS9918A::Context));
@@ -529,12 +528,12 @@ class MSX1
             } else if (0 == strcmp(chunk, "Z80")) {
                 memcpy(&this->cpu.reg, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "MMU")) {
-                memcpy(&this->mmu->ctx, ptr, chunkSize);
-                this->mmu->bankSwitchover();
+                memcpy(&this->mmu.ctx, ptr, chunkSize);
+                this->mmu.bankSwitchover();
             } else if (0 == strcmp(chunk, "RAM")) {
-                memcpy(this->mmu->ram, ptr, chunkSize <= this->mmu->ramSize ? chunkSize : this->mmu->ramSize);
-            } else if (0 == strcmp(chunk, "SRM") && this->mmu->sram) {
-                memcpy(this->mmu->sram, ptr, chunkSize <= this->mmu->sramSize ? chunkSize : this->mmu->sramSize);
+                memcpy(this->mmu.ram, ptr, chunkSize <= this->mmu.ramSize ? chunkSize : this->mmu.ramSize);
+            } else if (0 == strcmp(chunk, "SRM") && this->mmu.sram) {
+                memcpy(this->mmu.sram, ptr, chunkSize <= this->mmu.sramSize ? chunkSize : this->mmu.sramSize);
             } else if (0 == strcmp(chunk, "PSG")) {
                 memcpy(&this->psg->ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "VDP")) {
@@ -566,9 +565,9 @@ class MSX1
         size_t size = 0;
         size += sizeof(this->ctx) + 8;                         // BRD
         size += sizeof(this->cpu.reg) + 8;                    // Z80
-        size += sizeof(this->mmu->ctx) + 8;                    // MMU
-        size += this->mmu->ramSize + 8;                        // RAM
-        size += this->mmu->sram ? this->mmu->sramSize + 8 : 0; // SRM
+        size += sizeof(this->mmu.ctx) + 8;                    // MMU
+        size += this->mmu.ramSize + 8;                        // RAM
+        size += this->mmu.sram ? this->mmu.sramSize + 8 : 0; // SRM
         size += sizeof(this->psg->ctx) + 8;                    // PSG
         size += sizeof(TMS9918A::Context) + 8;                 // VDP
         return size;

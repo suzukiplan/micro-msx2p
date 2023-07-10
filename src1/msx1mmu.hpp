@@ -66,12 +66,23 @@ class MSX1MMU
     size_t sramSize;
     size_t ramSize;
 
-    MSX1MMU(unsigned char* ram, size_t ramSize)
+    MSX1MMU()
     {
         memset(&this->slots, 0, sizeof(this->slots));
         this->sramEnabled = false;
         this->sram = nullptr;
         this->sramSize = 0;
+    }
+
+    ~MSX1MMU()
+    {
+        if (this->sram) {
+            free(this->sram);
+        }
+    }
+
+    void setupRAM(unsigned char* ram, size_t ramSize)
+    {
         this->ram = ram;
         this->ramSize = ramSize;
         switch (ramSize) {
@@ -80,13 +91,6 @@ class MSX1MMU
             case 0x8000: break;
             case 0x10000: break;
             default: exit(-1); // invalid RAM size
-        }
-    }
-
-    ~MSX1MMU()
-    {
-        if (this->sram) {
-            free(this->sram);
         }
     }
 
