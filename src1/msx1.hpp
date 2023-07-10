@@ -151,7 +151,8 @@ class MSX1
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
         this->ib = new InternalBuffer();
         this->mmu.setupRAM(ram, ramSize);
-        this->vdp.initialize(colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
+        this->vdp.initialize(
+            colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
         this->cpu.setupCallbackFP([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu.wtc.fetch = 1;
         this->cpu.setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
@@ -559,13 +560,13 @@ class MSX1
     size_t calcQuickSaveSize()
     {
         size_t size = 0;
-        size += sizeof(this->ctx) + 8;                         // BRD
-        size += sizeof(this->cpu.reg) + 8;                    // Z80
-        size += sizeof(this->mmu.ctx) + 8;                    // MMU
-        size += this->mmu.ramSize + 8;                        // RAM
+        size += sizeof(this->ctx) + 8;                       // BRD
+        size += sizeof(this->cpu.reg) + 8;                   // Z80
+        size += sizeof(this->mmu.ctx) + 8;                   // MMU
+        size += this->mmu.ramSize + 8;                       // RAM
         size += this->mmu.sram ? this->mmu.sramSize + 8 : 0; // SRM
-        size += sizeof(this->psg.ctx) + 8;                    // PSG
-        size += sizeof(TMS9918A::Context) + 8;                 // VDP
+        size += sizeof(this->psg.ctx) + 8;                   // PSG
+        size += sizeof(TMS9918A::Context) + 8;               // VDP
         return size;
     }
 };
