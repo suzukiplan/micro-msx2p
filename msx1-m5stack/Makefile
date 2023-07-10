@@ -1,5 +1,9 @@
 all: copy-core upload-firmware
 
+build: copy-core
+	@echo ===== Build the firmware =====
+	pio run
+
 upload-roms:
 	@echo ===== Upload ROM files to SPIFFS =====
 	pio run -t uploadfs
