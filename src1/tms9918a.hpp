@@ -70,7 +70,9 @@ class TMS9918A
   public:
     unsigned short* display;
     size_t displaySize;
+    bool displayNeedFree;
     unsigned short palette[16];
+    const unsigned int rgb888[16] = {0x000000, 0x000000, 0x3EB849, 0x74D07D, 0x5955E0, 0x8076F1, 0xB95E51, 0x65DBEF, 0xDB6559, 0xFF897D, 0xCCC35E, 0xDED087, 0x3AA241, 0xB766B5, 0xCCCCCC, 0xFFFFFF};
 
     struct Context {
         int bobo;
@@ -96,28 +98,48 @@ class TMS9918A
         this->displayCallback = displayCallback;
         this->displaySize = (this->displayCallback ? 256 : 256 * 192) << 1;
         this->display = (unsigned short*)malloc(this->displaySize);
-        unsigned int rgb[16] = {0x000000, 0x000000, 0x3EB849, 0x74D07D, 0x5955E0, 0x8076F1, 0xB95E51, 0x65DBEF, 0xDB6559, 0xFF897D, 0xCCC35E, 0xDED087, 0x3AA241, 0xB766B5, 0xCCCCCC, 0xFFFFFF};
+        this->displayNeedFree = true;
         switch (colorMode) {
-            case MSX1_COLOR_MODE_RGB555:
+            case 0: // RGB555
                 for (int i = 0; i < 16; i++) {
                     this->palette[i] = 0;
-                    this->palette[i] |= (rgb[i] & 0b111110000000000000000000) >> 9;
-                    this->palette[i] |= (rgb[i] & 0b000000001111100000000000) >> 6;
-                    this->palette[i] |= (rgb[i] & 0b000000000000000011111000) >> 3;
+                    this->palette[i] |= (this->rgb888[i] & 0b111110000000000000000000) >> 9;
+                    this->palette[i] |= (this->rgb888[i] & 0b000000001111100000000000) >> 6;
+                    this->palette[i] |= (this->rgb888[i] & 0b000000000000000011111000) >> 3;
                 }
                 break;
-            case MSX1_COLOR_MODE_RGB565:
+            case 1: // RGB565
                 for (int i = 0; i < 16; i++) {
                     this->palette[i] = 0;
-                    this->palette[i] |= (rgb[i] & 0b111110000000000000000000) >> 8;
-                    this->palette[i] |= (rgb[i] & 0b000000001111110000000000) >> 5;
-                    this->palette[i] |= (rgb[i] & 0b000000000000000011111000) >> 3;
+                    this->palette[i] |= (this->rgb888[i] & 0b111110000000000000000000) >> 8;
+                    this->palette[i] |= (this->rgb888[i] & 0b000000001111110000000000) >> 5;
+                    this->palette[i] |= (this->rgb888[i] & 0b000000000000000011111000) >> 3;
+                }
+                break;
+            case 2: // BGR565
+                for (int i = 0; i < 16; i++) {
+                    this->palette[i] = 0;
+                    this->palette[i] |= (this->rgb888[i] & 0b111110000000000000000000) >> 19;
+                    this->palette[i] |= (this->rgb888[i] & 0b000000001111110000000000) >> 5;
+                    this->palette[i] |= (this->rgb888[i] & 0b000000000000000011111000) << 8;
                 }
                 break;
             default:
                 memset(this->palette, 0, sizeof(this->palette));
         }
         this->reset();
+    }
+
+    ~TMS9918A()
+    {
+        this->releaseDisplayBuffer();
+    }
+
+    void useOwnDisplayBuffer(uint16_t* displayBuffer, size_t displayBufferSize)
+    {
+        this->releaseDisplayBuffer();
+        this->display = displayBuffer;
+        this->displaySize = displayBufferSize;
     }
 
     void reset()
@@ -221,6 +243,16 @@ class TMS9918A
     }
 
   private:
+    void releaseDisplayBuffer()
+    {
+        if (this->displayNeedFree) {
+            free(this->display);
+            this->display = nullptr;
+            this->displaySize = 0;
+            this->displayNeedFree = false;
+        }
+    }
+
     inline void renderScanline(int lineNumber)
     {
         // TODO: Several modes (1, 3, undocumented) are not implemented

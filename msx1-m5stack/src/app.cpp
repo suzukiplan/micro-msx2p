@@ -1,5 +1,6 @@
 #include "msx1.hpp"
 #include <M5Core2.h>
+#include <M5GFX.h>
 
 static MSX1* msx1;
 static bool booted;
@@ -11,7 +12,9 @@ static struct Roms {
     int logoSize;
     int gameSize;
 } roms;
-static uint16_t bitmap[256 * 192];
+static M5GFX gfx;
+static M5Canvas canvas(&gfx);
+static uint16_t displayBuffer[256];
 static bool pauseRenderer;
 static unsigned short backdropColor;
 
@@ -24,7 +27,9 @@ static void bootMessage(const char* format, ...)
     va_end(args);
     Serial.println(buf);
     if (!booted) {
-        M5.Lcd.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
+        gfx.startWrite();
+        gfx.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
+        gfx.endWrite();
     }
 }
 
@@ -60,8 +65,8 @@ void ticker(void* arg)
 
 void renderer(void* arg)
 {
-    const uint16_t m5w = M5.Lcd.width();
-    const uint16_t m5h = M5.Lcd.height();
+    const uint16_t m5w = gfx.width();
+    const uint16_t m5h = gfx.height();
     const uint16_t m1w = (uint16_t)msx1->getDisplayWidth();
     const uint16_t m1h = (uint16_t)msx1->getDisplayHeight();
     const uint16_t cx = (uint16_t)((m5w - m1w) / 2);
@@ -73,35 +78,39 @@ void renderer(void* arg)
             vTaskDelay(100);
         } else {
             pauseRenderer = true;
-            M5.Lcd.startWrite();
+            gfx.startWrite();
             if (backdropColor != backdropPrev) {
                 backdropPrev = backdropColor;
-                M5.Lcd.fillRect(0, 0, cx, m5h, backdropPrev);
-                M5.Lcd.fillRect(cx + m1w, 0, cx, m5h, backdropPrev);
-                M5.Lcd.fillRect(cx, 0, m1w, cy, backdropPrev);
-                M5.Lcd.fillRect(cx, cy + m1h, m1w, cy, backdropPrev);
+                gfx.fillRect(0, 0, cx, m5h, backdropPrev);
+                gfx.fillRect(cx + m1w, 0, cx, m5h, backdropPrev);
+                gfx.fillRect(cx, 0, m1w, cy, backdropPrev);
+                gfx.fillRect(cx, cy + m1h, m1w, cy, backdropPrev);
             }
-            M5.Lcd.drawBitmap(cx, cy, m1w, m1h, bitmap);
-            M5.Lcd.endWrite();
+            canvas.pushSprite(cx, cy);
+            gfx.endWrite();
         }
     }
 }
 
 void setup() {
     M5.begin();
+    gfx.begin();
+    gfx.setColorDepth(16);
+    gfx.fillScreen(TFT_BLACK);
     SPIFFS.begin();
     Serial.begin(115200);
     bootMessage("Loading micro msx1+ for M5Stack...");
     auto ram = (uint8_t*)malloc(0x4000);
-    msx1 = new MSX1(MSX1_COLOR_MODE_RGB565, ram, 0x4000, [](void* arg, int frame, int lineNumber, uint16_t* display) {
+    msx1 = new MSX1(MSX1::ColorMode::RGB565, ram, 0x4000, [](void* arg, int frame, int lineNumber, uint16_t* display) {
         if (0 == (frame & 1)) {
-            memcpy(&bitmap[lineNumber * 256], display, 512);
+            canvas.pushImage(0, lineNumber, 256, 1, display);
             if (191 == lineNumber) {
                 backdropColor = ((MSX1*)arg)->getBackdropColor();
                 pauseRenderer = false;
             }
         }
     });
+    msx1->vdp->useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
     roms.main = readRom("/cbios_main_msx1.rom", &roms.mainSize);
     roms.logo = readRom("/cbios_logo_msx1.rom", &roms.logoSize);
     msx1->setup(0, 0, roms.main, roms.mainSize, "MAIN");
@@ -111,10 +120,25 @@ void setup() {
     bootMessage("Setup finished.");
     booted = true;
     usleep(1000000);
-    M5.Lcd.clear(0);
+    gfx.clear();
+    canvas.setColorDepth(16);
+    canvas.createSprite(256, 192);
+    canvas.clear();
     xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 1);
     xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 0);
 }
 
 void loop() {
+    // ここでは、
+    // - システムボタンを使ってホットキー操作
+    //   - 左ボタン: ホットキーメニュー
+    //     - リセット
+    //     - 音量調整
+    //     - セーブスロット選択 (1, 2, 3)
+    //     - 中ボタンの割当変更 (Reset, Save, Load)
+    //     - 右ボタンの割当変更 (Reset, Save, Load)
+    //   - 中ボタン: クイックロード
+    //   - 右ボタン: クイックセーブ
+    // - ゲームパッドの入力をエミュレータに渡す
+    // あたりを実装予定
 }
