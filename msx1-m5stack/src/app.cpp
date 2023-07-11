@@ -1,18 +1,11 @@
 #include "msx1.hpp"
 #include <M5Core2.h>
 #include <M5GFX.h>
+#include "roms.hpp"
 
 static uint8_t ram[0x4000];
 static TMS9918A::Context vram;
 static bool booted;
-static struct Roms {
-    uint8_t* main;
-    uint8_t* logo;
-    uint8_t* game;
-    int mainSize;
-    int logoSize;
-    int gameSize;
-} roms;
 static M5GFX gfx;
 static M5Canvas canvas(&gfx);
 static uint16_t displayBuffer[256];
@@ -42,20 +35,6 @@ static void putlog(const char* format, ...)
         gfx.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
         gfx.endWrite();
     }
-}
-
-static uint8_t* readRom(const char* path, int* size)
-{
-    File file = SPIFFS.open(path);
-    if (!file) return nullptr;
-    *size = file.available();
-    putlog("Read %s (%d bytes)", path, *size);
-    uint8_t* result = (uint8_t*)malloc(*size);
-    if (!result) return nullptr;
-    for (int i = 0; i < *size; i++) {
-        result[i] = file.read() & 0xFF;
-    }
-    return result;    
 }
 
 void ticker(void* arg)
@@ -106,7 +85,6 @@ void setup() {
     gfx.fillScreen(TFT_BLACK);
     canvas.setColorDepth(16);
     canvas.createSprite(256, 192);
-    SPIFFS.begin();
     Serial.begin(115200);
     putlog("Checking memory usage before launch MSX...");
     putlog("- HEAP: %d", esp_get_free_heap_size());
@@ -115,12 +93,9 @@ void setup() {
     putlog("- MALLOC_CAP_INTERNAL: %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     putlog("Loading micro MSX2+ (MSX1-core) for M5Stack...");
     msx1.vdp.useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
-    roms.main = readRom("/cbios_main_msx1.rom", &roms.mainSize);
-    roms.logo = readRom("/cbios_logo_msx1.rom", &roms.logoSize);
-    msx1.setup(0, 0, roms.main, roms.mainSize, "MAIN");
-    msx1.setup(0, 4, roms.logo, roms.logoSize, "LOGO");
-    roms.game = readRom("/game.rom", &roms.gameSize);
-    msx1.loadRom(roms.game, roms.gameSize, MSX1_ROM_TYPE_NORMAL);
+    msx1.setup(0, 0, (void*)rom_cbios_main_msx1, sizeof(rom_cbios_main_msx1), "MAIN");
+    msx1.setup(0, 4, (void*)rom_cbios_logo_msx1, sizeof(rom_cbios_logo_msx1), "LOGO");
+    msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL);
     putlog("Setup finished.");
     booted = true;
     usleep(1000000);

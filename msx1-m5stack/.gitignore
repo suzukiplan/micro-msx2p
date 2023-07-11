@@ -5,4 +5,5 @@ include/msx1def.h
 include/msx1mmu.hpp
 include/tms9918a.hpp
 include/z80.hpp
-
+src/rom_*.c
+include/roms.hpp
