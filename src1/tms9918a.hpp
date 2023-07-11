@@ -87,7 +87,7 @@ class TMS9918A
         int countV;
         int frame;
         int isRenderingLine;
-        int reverved[3];
+        int reverved32[3];
         unsigned char ram[0x4000];
         unsigned char reg[8];
         unsigned char tmpAddr[2];
@@ -96,7 +96,7 @@ class TMS9918A
         unsigned char stat;
         unsigned char latch;
         unsigned char readBuffer;
-        unsigned char writeWait;
+        unsigned char reserved8[1];
     } Context;
     Context* ctx;
     bool ctxNeedFree;
@@ -194,13 +194,6 @@ class TMS9918A
                 this->renderScanline(this->ctx->countV - 27);
             }
         }
-        // delay write the VRAM
-        if (this->ctx->writeWait) {
-            this->ctx->writeWait--;
-            if (0 == this->ctx->writeWait) {
-                this->ctx->ram[this->ctx->writeAddr] = this->ctx->readBuffer;
-            }
-        }
         // sync blank or end-of-frame
         if (342 == this->ctx->countH) {
             this->ctx->countH = 0;
@@ -248,7 +241,7 @@ class TMS9918A
         this->ctx->addr &= this->getVramSize() - 1;
         this->ctx->readBuffer = value;
         this->ctx->writeAddr = this->ctx->addr++;
-        this->ctx->writeWait = 10; // write back to VRAM from readBuffer after 10Hz (about 1.86 micro second delay)
+        this->ctx->ram[this->ctx->writeAddr] = this->ctx->readBuffer;
         this->ctx->latch = 0;
     }
 
