@@ -180,7 +180,6 @@ class TMS9918A
         return 0;                               // Mode 0
     }
 
-    inline int getVramSize() { return ctx->reg[1] & 0b10000000 ? 0x4000 : 0x4000; }
     inline bool isEnabledScreen() { return ctx->reg[1] & 0b01000000 ? true : false; }
     inline bool isEnabledInterrupt() { return ctx->reg[1] & 0b00100000 ? true : false; }
     inline unsigned short getBackdropColor() { return palette[ctx->reg[7] & 0b00001111]; }
@@ -238,7 +237,7 @@ class TMS9918A
 
     inline void writeData(unsigned char value)
     {
-        this->ctx->addr &= this->getVramSize() - 1;
+        this->ctx->addr &= 0x3FFF;
         this->ctx->readBuffer = value;
         this->ctx->writeAddr = this->ctx->addr++;
         this->ctx->ram[this->ctx->writeAddr] = this->ctx->readBuffer;
@@ -309,12 +308,12 @@ class TMS9918A
         this->ctx->addr = this->ctx->tmpAddr[1];
         this->ctx->addr <<= 8;
         this->ctx->addr |= this->ctx->tmpAddr[0];
-        this->ctx->addr &= this->getVramSize() - 1;
+        this->ctx->addr &= 0x3FFF;
     }
 
     inline void readVideoMemory()
     {
-        this->ctx->addr &= this->getVramSize() - 1;
+        this->ctx->addr &= 0x3FFF;
         this->ctx->readBuffer = this->ctx->ram[this->ctx->addr++];
     }
 
