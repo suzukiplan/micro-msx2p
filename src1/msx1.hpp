@@ -321,7 +321,7 @@ class MSX1
         this->psg.setPads(pad1, pad2);
         this->ctx.key = key;
         this->keyCodeMap = nullptr;
-        this->cpu.execute(0x7FFFFFFF);
+        this->cpu.execute();
     }
 
     void tickWithKeyCodeMap(unsigned char pad1, unsigned char pad2, unsigned char* keyCodeMap)
@@ -329,7 +329,7 @@ class MSX1
         this->psg.setPads(pad1, pad2);
         this->ctx.key = 0;
         this->keyCodeMap = keyCodeMap;
-        this->cpu.execute(0x7FFFFFFF);
+        this->cpu.execute();
     }
 
     size_t getMaxSoundSize()
