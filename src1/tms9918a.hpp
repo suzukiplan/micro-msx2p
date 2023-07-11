@@ -341,6 +341,7 @@ class TMS9918A
         int pixelLine = lineNumber % 8;
         unsigned char* nam = &this->ctx->ram[pn + lineNumber / 8 * 32];
         int dcur = this->getDisplayPtr(lineNumber);
+        int dcur0 = dcur;
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx->ram[pg + nam[i] * 8 + pixelLine];
             unsigned char c = this->ctx->ram[ct + nam[i] / 8];
@@ -358,7 +359,7 @@ class TMS9918A
             this->display[dcur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
             this->display[dcur++] = this->palette[cc[ptn & 0b00000001]];
         }
-        renderSprites(lineNumber);
+        renderSprites(lineNumber, &display[dcur0]);
     }
 
     inline void renderScanlineMode2(int lineNumber)
@@ -376,6 +377,7 @@ class TMS9918A
         int pixelLine = lineNumber % 8;
         unsigned char* nam = &this->ctx->ram[pn + lineNumber / 8 * 32];
         int dcur = this->getDisplayPtr(lineNumber);
+        int dcur0 = dcur;
         int ci = (lineNumber / 64) * 256;
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx->ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
@@ -394,10 +396,10 @@ class TMS9918A
             this->display[dcur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
             this->display[dcur++] = this->palette[cc[ptn & 0b00000001]];
         }
-        renderSprites(lineNumber);
+        renderSprites(lineNumber, &display[dcur0]);
     }
 
-    inline void renderSprites(int lineNumber)
+    inline void renderSprites(int lineNumber, unsigned short* renderPosition)
     {
         static const unsigned char bit[8] = {
             0b10000000,
@@ -408,174 +410,85 @@ class TMS9918A
             0b00000100,
             0b00000010,
             0b00000001};
-        bool si = this->ctx->reg[1] & 0b00000010 ? true : false;
-        bool mag = this->ctx->reg[1] & 0b00000001 ? true : false;
+        int si = this->ctx->reg[1] & 0b00000010 ? 16 : 8;
+        int mag = this->ctx->reg[1] & 0b00000001 ? 2 : 1;
         int sa = (this->ctx->reg[5] & 0b01111111) << 7;
         int sg = (this->ctx->reg[6] & 0b00000111) << 11;
         int sn = 0;
+        int tsn = 0;
         unsigned char dlog[256];
         unsigned char wlog[256];
         memset(dlog, 0, sizeof(dlog));
         memset(wlog, 0, sizeof(wlog));
-        const int dcur = this->getDisplayPtr(lineNumber);
+        bool limitOver = false;
         for (int i = 0; i < 32; i++) {
             int cur = sa + i * 4;
             unsigned char y = this->ctx->ram[cur++];
             if (208 == y) break;
-            unsigned char x = this->ctx->ram[cur++];
+            int x = this->ctx->ram[cur++];
             unsigned char ptn = this->ctx->ram[cur++];
             unsigned char col = this->ctx->ram[cur++];
             if (col & 0x80) x -= 32;
             col &= 0b00001111;
-            y++;
-            if (mag) {
-                if (si) {
-                    // 16x16 x 2
-                    if (y <= lineNumber && lineNumber < y + 32) {
-                        sn++;
-                        if (5 <= sn) {
-                            this->ctx->stat &= 0b11100000;
-                            this->ctx->stat |= 0b01000000 | i;
-                            break;
-                        } else {
-                            this->ctx->stat &= 0b11100000;
-                            this->ctx->stat |= i;
-                        }
-                        int pixelLine = lineNumber - y;
-                        cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 16; j++, x++) {
-                            if (wlog[x]) {
-                                this->ctx->stat |= 0b00100000;
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx->ram[cur] & bit[j / 2]) {
-                                    this->display[dcur + x] = this->palette[col];
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
-                        }
-                        cur += 16;
-                        for (int j = 0; !overflow && j < 16; j++, x++) {
-                            if (wlog[x]) {
-                                this->ctx->stat |= 0b00100000;
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx->ram[cur] & bit[j / 2]) {
-                                    this->display[dcur + x] = this->palette[col];
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
-                        }
-                    }
+            y += 1 + this->ctx->reg[23];
+            if (y <= lineNumber && lineNumber < y + si * mag) {
+                sn++;
+                if (!col) tsn++;
+                if (5 == sn) {
+                    this->set5S(true, i);
+                    if (4 <= tsn) break;
+                    limitOver = true;
+                } else if (sn < 5) {
+                    this->set5S(false, i);
+                }
+                int pixelLine = lineNumber - y;
+                if (16 == si) {
+                    cur = sg + (ptn & 252) * 8 + pixelLine % (8 * mag) / mag + (pixelLine < 8 * mag ? 0 : 8);
                 } else {
-                    // 8x8 x 2
-                    if (y <= lineNumber && lineNumber < y + 16) {
-                        sn++;
-                        if (5 <= sn) {
-                            this->ctx->stat &= 0b11100000;
-                            this->ctx->stat |= 0b01000000 | i;
-                            break;
-                        } else {
-                            this->ctx->stat &= 0b11100000;
-                            this->ctx->stat |= i;
-                        }
-                        cur = sg + ptn * 8 + lineNumber % 8;
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 16; j++, x++) {
-                            if (wlog[x]) {
-                                this->ctx->stat |= 0b00100000;
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx->ram[cur] & bit[j / 2]) {
-                                    this->display[dcur + x] = this->palette[col];
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
+                    cur = sg + ptn * 8 + lineNumber % (8 * mag) / mag;
+                }
+                for (int j = 0; x < 256 && j < 8 * mag; j++, x++) {
+                    if (x < 0) continue;
+                    if (wlog[x] && !limitOver) {
+                        this->setCollision();
+                    }
+                    if (0 == dlog[x]) {
+                        if (this->ctx->ram[cur] & bit[j / mag]) {
+                            renderPosition[x] = this->palette[col];
+                            dlog[x] = col;
+                            wlog[x] = 1;
                         }
                     }
                 }
-            } else {
-                if (si) {
-                    // 16x16 x 1
-                    if (y <= lineNumber && lineNumber < y + 16) {
-                        sn++;
-                        if (5 <= sn) {
-                            this->ctx->stat &= 0b11100000;
-                            this->ctx->stat |= 0b01000000 | i;
-                            break;
-                        } else {
-                            this->ctx->stat &= 0b11100000;
-                            this->ctx->stat |= i;
+                if (16 == si) {
+                    cur += 16 * mag;
+                    for (int j = 0; x < 256 && j < 8 * mag; j++, x++) {
+                        if (x < 0) continue;
+                        if (wlog[x] && !limitOver) {
+                            this->setCollision();
                         }
-                        int pixelLine = lineNumber - y;
-                        cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 8; j++, x++) {
-                            if (wlog[x]) {
-                                this->ctx->stat |= 0b00100000;
+                        if (0 == dlog[x]) {
+                            if (this->ctx->ram[cur] & bit[j / mag]) {
+                                renderPosition[x] = this->palette[col];
+                                dlog[x] = col;
+                                wlog[x] = 1;
                             }
-                            if (0 == dlog[x]) {
-                                if (this->ctx->ram[cur] & bit[j]) {
-                                    this->display[dcur + x] = this->palette[col];
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
-                        }
-                        cur += 16;
-                        for (int j = 0; !overflow && j < 8; j++, x++) {
-                            if (wlog[x]) {
-                                this->ctx->stat |= 0b00100000;
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx->ram[cur] & bit[j]) {
-                                    this->display[dcur + x] = this->palette[col];
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
-                        }
-                    }
-                } else {
-                    // 8x8 x 1
-                    if (y <= lineNumber && lineNumber < y + 8) {
-                        sn++;
-                        if (5 <= sn) {
-                            this->ctx->stat &= 0b11100000;
-                            this->ctx->stat |= 0b01000000 | i;
-                            break;
-                        } else {
-                            this->ctx->stat &= 0b11100000;
-                            this->ctx->stat |= i;
-                        }
-                        cur = sg + ptn * 8 + lineNumber % 8;
-                        bool overflow = false;
-                        for (int j = 0; !overflow && j < 8; j++, x++) {
-                            if (wlog[x]) {
-                                this->ctx->stat |= 0b00100000;
-                            }
-                            if (0 == dlog[x]) {
-                                if (this->ctx->ram[cur] & bit[j]) {
-                                    this->display[dcur + x] = this->palette[col];
-                                    dlog[x] = col;
-                                    wlog[x] = 1;
-                                }
-                            }
-                            overflow = x == 0xFF;
                         }
                     }
                 }
             }
         }
+    }
+
+    inline void set5S(bool f, int n)
+    {
+        this->ctx->stat &= 0b11100000;
+        this->ctx->stat |= (f ? 0b01000000 : 0) | (n & 0b00011111);
+    }
+
+    inline void setCollision()
+    {
+        this->ctx->stat |= 0b00100000;
     }
 };
 
