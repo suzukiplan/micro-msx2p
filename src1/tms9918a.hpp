@@ -430,7 +430,7 @@ class TMS9918A
             unsigned char col = this->ctx->ram[cur++];
             if (col & 0x80) x -= 32;
             col &= 0b00001111;
-            y += 1 + this->ctx->reg[23];
+            y += 1;
             if (y <= lineNumber && lineNumber < y + si * mag) {
                 sn++;
                 if (!col) tsn++;
