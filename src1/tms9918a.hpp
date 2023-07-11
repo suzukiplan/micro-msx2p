@@ -86,6 +86,8 @@ class TMS9918A
         int countH;
         int countV;
         int frame;
+        int isRenderingLine;
+        int reverved[3];
         unsigned char ram[0x4000];
         unsigned char reg[8];
         unsigned char tmpAddr[2];
@@ -187,7 +189,7 @@ class TMS9918A
     {
         this->ctx->countH++;
         // render backdrop border
-        if (27 <= this->ctx->countV && this->ctx->countV < 27 + 192) {
+        if (this->ctx->isRenderingLine) {
             if (24 + TMS9918A_SCREEN_WIDTH == this->ctx->countH) {
                 this->renderScanline(this->ctx->countV - 27);
             }
@@ -203,6 +205,12 @@ class TMS9918A
         if (342 == this->ctx->countH) {
             this->ctx->countH -= 342;
             switch (++this->ctx->countV) {
+                case 27:
+                    this->ctx->isRenderingLine = 1;
+                    break;
+                case 27 + 192:
+                    this->ctx->isRenderingLine = 0;
+                    break;
                 case 238:
                     this->ctx->stat |= 0x80;
                     if (this->isEnabledInterrupt()) {
