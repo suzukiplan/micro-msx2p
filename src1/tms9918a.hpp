@@ -345,19 +345,19 @@ class TMS9918A
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx->ram[pg + nam[i] * 8 + pixelLine];
             unsigned char c = this->ctx->ram[ct + nam[i] / 8];
-            unsigned char cc[2];
+            unsigned short cc[2];
             cc[1] = (c & 0xF0) >> 4;
-            cc[1] = cc[1] ? cc[1] : bd;
+            cc[1] = this->palette[cc[1] ? cc[1] : bd];
             cc[0] = c & 0x0F;
-            cc[0] = cc[0] ? cc[0] : bd;
-            this->display[dcur++] = this->palette[cc[(ptn & 0b10000000) >> 7]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b01000000) >> 6]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b00100000) >> 5]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b00010000) >> 4]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b00001000) >> 3]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b00000100) >> 2]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
-            this->display[dcur++] = this->palette[cc[ptn & 0b00000001]];
+            cc[0] = this->palette[cc[0] ? cc[0] : bd];
+            this->display[dcur++] = cc[(ptn & 0b10000000) >> 7];
+            this->display[dcur++] = cc[(ptn & 0b01000000) >> 6];
+            this->display[dcur++] = cc[(ptn & 0b00100000) >> 5];
+            this->display[dcur++] = cc[(ptn & 0b00010000) >> 4];
+            this->display[dcur++] = cc[(ptn & 0b00001000) >> 3];
+            this->display[dcur++] = cc[(ptn & 0b00000100) >> 2];
+            this->display[dcur++] = cc[(ptn & 0b00000010) >> 1];
+            this->display[dcur++] = cc[ptn & 0b00000001];
         }
         renderSprites(lineNumber, &display[dcur0]);
     }
@@ -382,19 +382,19 @@ class TMS9918A
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx->ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
             unsigned char c = this->ctx->ram[ct + ((nam[i] + ci) & cmask) * 8 + pixelLine];
-            unsigned char cc[2];
+            unsigned short cc[2];
             cc[1] = (c & 0xF0) >> 4;
-            cc[1] = cc[1] ? cc[1] : bd;
+            cc[1] = this->palette[cc[1] ? cc[1] : bd];
             cc[0] = c & 0x0F;
-            cc[0] = cc[0] ? cc[0] : bd;
-            this->display[dcur++] = this->palette[cc[(ptn & 0b10000000) >> 7]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b01000000) >> 6]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b00100000) >> 5]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b00010000) >> 4]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b00001000) >> 3]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b00000100) >> 2]];
-            this->display[dcur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
-            this->display[dcur++] = this->palette[cc[ptn & 0b00000001]];
+            cc[0] = this->palette[cc[0] ? cc[0] : bd];
+            this->display[dcur++] = cc[(ptn & 0b10000000) >> 7];
+            this->display[dcur++] = cc[(ptn & 0b01000000) >> 6];
+            this->display[dcur++] = cc[(ptn & 0b00100000) >> 5];
+            this->display[dcur++] = cc[(ptn & 0b00010000) >> 4];
+            this->display[dcur++] = cc[(ptn & 0b00001000) >> 3];
+            this->display[dcur++] = cc[(ptn & 0b00000100) >> 2];
+            this->display[dcur++] = cc[(ptn & 0b00000010) >> 1];
+            this->display[dcur++] = cc[ptn & 0b00000001];
         }
         renderSprites(lineNumber, &display[dcur0]);
     }
