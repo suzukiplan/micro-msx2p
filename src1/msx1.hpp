@@ -392,7 +392,7 @@ class MSX1
             case 0xA8: return this->mmu.getPrimary();
             case 0xA9: {
                 // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
-                static unsigned char bit[8] = {
+                static const unsigned char bit[8] = {
                     0b00000001,
                     0b00000010,
                     0b00000100,
