@@ -41,11 +41,18 @@ void ticker(void* arg)
 {
     void* soundData;
     size_t soundSize;
+    int min = 0x7FFFFFFF;
+    int max = -1;
     while (1) {
         auto start = millis();
-        msx1.tick(0, 0, 0);
+        msx1.tick(0, 0, 0); // even frame (rendering)
         soundData = msx1.getSound(&soundSize);
-        putlog("%d (heap: %d, exec: %d, dma-l: %d, intr: %d)", (int)(millis() - start), esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_EXEC), heap_caps_get_largest_free_block(MALLOC_CAP_DMA), heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+        msx1.tick(0, 0, 0); // odd frame (skip rendering)
+        soundData = msx1.getSound(&soundSize);
+        auto procTime = (int)(millis() - start);
+        if (procTime < min) min = procTime;
+        if (max < procTime) max = procTime;
+        putlog("%d min:%d, max:%d", procTime, min, max);
         vTaskDelay(16);
     }
 }
