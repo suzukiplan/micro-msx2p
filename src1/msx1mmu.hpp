@@ -1,5 +1,5 @@
 /**
- * micro MSX2+ - Memory Management Unit (MSX-SLOT) for MSX1 16KB RAM
+ * micro MSX2+ - Memory Management Unit (MSX-SLOT) for MSX1
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
