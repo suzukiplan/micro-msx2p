@@ -59,12 +59,6 @@ void ticker(void* arg)
 
 void renderer(void* arg)
 {
-    const uint16_t m5w = gfx.width();
-    const uint16_t m5h = gfx.height();
-    const uint16_t m1w = (uint16_t)msx1.getDisplayWidth();
-    const uint16_t m1h = (uint16_t)msx1.getDisplayHeight();
-    const uint16_t cx = (uint16_t)((m5w - m1w) / 2);
-    const uint16_t cy = (uint16_t)((m5h - m1h) / 2);
     uint16_t backdropPrev = 0;
     pauseRenderer = true;
     while (1) {
@@ -75,12 +69,12 @@ void renderer(void* arg)
         gfx.startWrite();
         if (backdropColor != backdropPrev) {
             backdropPrev = backdropColor;
-            gfx.fillRect(0, 0, cx, m5h, backdropPrev);
-            gfx.fillRect(cx + m1w, 0, cx, m5h, backdropPrev);
-            gfx.fillRect(cx, 0, m1w, cy, backdropPrev);
-            gfx.fillRect(cx, cy + m1h, m1w, cy, backdropPrev);
+            gfx.fillRect(0, 0, 320, 24, backdropPrev);
+            gfx.fillRect(0, 216, 320, 24, backdropPrev);
+            gfx.fillRect(0, 24, 32, 192, backdropPrev);
+            gfx.fillRect(288, 24, 32, 192, backdropPrev);
         }
-        canvas.pushSprite(cx, cy);
+        canvas.pushSprite(32, 24);
         gfx.endWrite();
     }
 }
