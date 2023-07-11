@@ -87,7 +87,6 @@ class MSX1
     };
 
     InternalBuffer ib;
-    bool debug;
 
     struct KeyCode {
         int num;
@@ -142,20 +141,16 @@ class MSX1
 
     MSX1(TMS9918A::ColorMode colorMode, unsigned char* ram, size_t ramSize, TMS9918A::Context* vram, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
     {
-#ifdef DEBUG
-        this->debug = true;
-#else
-        this->debug = false;
-#endif
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
         this->mmu.setupRAM(ram, ramSize);
         this->vdp.initialize(
             colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
-        this->cpu.setupCallbackFP([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
+        this->cpu.setupCallbackFP([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort(port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu.wtc.fetch = 1;
         this->cpu.setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX1*)arg)->consumeClock(cpuClocks);
         });
+        this->initPortTable();
         memset(&keyCodes, 0, sizeof(keyCodes));
         initKeyCode('0', 0, 0);
         initKeyCode('1', 1, 0);
@@ -364,8 +359,7 @@ class MSX1
         this->psg.ctx.bobo += cpuClocks * this->PSG_CLOCK;
         while (0 < this->psg.ctx.bobo) {
             this->psg.ctx.bobo -= this->CPU_CLOCK;
-            this->psg.tick(&this->ib.soundBuffer[this->ib.soundBufferCursor], nullptr, 81);
-            this->ib.soundBufferCursor++;
+            this->ib.soundBuffer[this->ib.soundBufferCursor++] = this->psg.tick(81);
             this->ib.soundBufferCursor &= sizeof(this->ib.soundBuffer) - 1;
         }
         // Asynchronous with VDP
@@ -376,107 +370,133 @@ class MSX1
         }
     }
 
-    inline unsigned char inPort(unsigned char port)
+    unsigned char (*inPortTable[0x100])(MSX1*);
+    void (*outPortTable[0x100])(MSX1*, unsigned char value);
+
+    void initPortTable()
     {
-        switch (port) {
-            case 0x90: return 0x00; // printer
-            case 0x98: return this->vdp.readData();
-            case 0x99: return this->vdp.readStatus();
-            case 0xA2: {
-                unsigned char result = this->psg.read();
-                if (14 == this->psg.ctx.latch || 15 == this->psg.ctx.latch) {
-                    result |= 0b11000000; // unpush S1/S2
-                }
-                return result;
+        for (int i = 0; i < 0x100; i++) {
+            switch (i) {
+                case 0x98: inPortTable[i] = inPort98; break;
+                case 0x99: inPortTable[i] = inPort99; break;
+                case 0xA2: inPortTable[i] = inPortA2; break;
+                case 0xA8: inPortTable[i] = inPortA8; break;
+                case 0xA9: inPortTable[i] = inPortA9; break;
+                case 0xAA: inPortTable[i] = inPortAA; break;
+                default: inPortTable[i] = inPortNotAvailable;
             }
-            case 0xA8: return this->mmu.getPrimary();
-            case 0xA9: {
-                // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
-                static const unsigned char bit[8] = {
-                    0b00000001,
-                    0b00000010,
-                    0b00000100,
-                    0b00001000,
-                    0b00010000,
-                    0b00100000,
-                    0b01000000,
-                    0b10000000};
-                unsigned char result = 0;
-                if (this->keyCodeMap) {
-                    result |= this->keyCodeMap[this->ctx.selectedKeyRow];
-                } else {
-                    if (this->ctx.key && this->keyCodes[this->ctx.key].exist) {
-                        if (this->keyCodes[this->ctx.key].shift) {
-                            if (this->ctx.selectedKeyRow == 6) {
-                                result |= bit[0];
-                            }
-                        }
-                        for (int i = 0; i < this->keyCodes[this->ctx.key].num; i++) {
-                            if (this->ctx.selectedKeyRow == this->keyCodes[this->ctx.key].y[i]) {
-                                this->ctx.readKey++;
-                                result |= bit[this->keyCodes[this->ctx.key].x[i]];
-                            }
-                        }
-                    }
-                }
-                if (this->keyAssign[0].s1 && 0 == (this->psg.getPad1() & MSX1_JOY_S1)) {
-                    if (this->ctx.selectedKeyRow == this->keyAssign[0].s1->y[0]) {
-                        result |= bit[this->keyAssign[0].s1->x[0]];
-                    }
-                }
-                if (this->keyAssign[0].s2 && 0 == (this->psg.getPad1() & MSX1_JOY_S2)) {
-                    if (this->ctx.selectedKeyRow == this->keyAssign[0].s2->y[0]) {
-                        result |= bit[this->keyAssign[0].s2->x[0]];
-                    }
-                }
-                if (this->keyAssign[1].s1 && 0 == (this->psg.getPad2() & MSX1_JOY_S1)) {
-                    if (this->ctx.selectedKeyRow == this->keyAssign[1].s1->y[0]) {
-                        result |= bit[this->keyAssign[1].s1->x[0]];
-                    }
-                }
-                if (this->keyAssign[1].s2 && 0 == (this->psg.getPad2() & MSX1_JOY_S2)) {
-                    if (this->ctx.selectedKeyRow == this->keyAssign[1].s2->y[0]) {
-                        result |= bit[this->keyAssign[1].s2->x[0]];
-                    }
-                }
-                return ~result;
+            switch (i) {
+                case 0x98: outPortTable[i] = outPort98; break;
+                case 0x99: outPortTable[i] = outPort99; break;
+                case 0xA0: outPortTable[i] = outPortA0; break;
+                case 0xA1: outPortTable[i] = outPortA1; break;
+                case 0xA8: outPortTable[i] = outPortA8; break;
+                case 0xAA: outPortTable[i] = outPortAA; break;
+                case 0xAB: outPortTable[i] = outPortAB; break;
+                default: outPortTable[i] = outPortNotAvailable;
             }
-            case 0xAA: return this->ctx.regC;
         }
-        return 0xFF;
     }
 
-    inline void outPort(unsigned char port, unsigned char value)
+    inline unsigned char inPort(int port) { return inPortTable[port](this); }
+    static inline unsigned char inPortNotAvailable(MSX1* this_) { return 0xFF; }
+    static inline unsigned char inPort98(MSX1* this_) { return this_->vdp.readData(); }
+    static inline unsigned char inPort99(MSX1* this_) { return this_->vdp.readStatus(); }
+    static inline unsigned char inPortA8(MSX1* this_) { return this_->mmu.getPrimary(); }
+    static inline unsigned char inPortAA(MSX1* this_) { return this_->ctx.regC; }
+
+    static inline unsigned char inPortA2(MSX1* this_)
     {
-        switch (port) {
-            case 0x98: this->vdp.writeData(value); break;
-            case 0x99: this->vdp.writeAddress(value); break;
-            case 0xA0: this->psg.latch(value); break;
-            case 0xA1: this->psg.write(value); break;
-            case 0xA8: this->mmu.updatePrimary(value); break;
-            case 0xAA: {
-                unsigned char mod = this->ctx.regC ^ value;
-                if (mod) {
-                    this->ctx.regC = value;
-                    if (mod & 0x0F) {
-                        this->ctx.selectedKeyRow = this->ctx.regC & 0x0F;
+        unsigned char result = this_->psg.read();
+        if (14 == this_->psg.ctx.latch || 15 == this_->psg.ctx.latch) {
+            result |= 0b11000000; // unpush S1/S2
+        }
+        return result;
+    }
+
+    static inline unsigned char inPortA9(MSX1* this_)
+    {
+        // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
+        static const unsigned char bit[8] = {
+            0b00000001,
+            0b00000010,
+            0b00000100,
+            0b00001000,
+            0b00010000,
+            0b00100000,
+            0b01000000,
+            0b10000000};
+        unsigned char result = 0;
+        if (this_->keyCodeMap) {
+            result |= this_->keyCodeMap[this_->ctx.selectedKeyRow];
+        } else {
+            if (this_->ctx.key && this_->keyCodes[this_->ctx.key].exist) {
+                if (this_->keyCodes[this_->ctx.key].shift) {
+                    if (this_->ctx.selectedKeyRow == 6) {
+                        result |= bit[0];
                     }
                 }
-                break;
+                for (int i = 0; i < this_->keyCodes[this_->ctx.key].num; i++) {
+                    if (this_->ctx.selectedKeyRow == this_->keyCodes[this_->ctx.key].y[i]) {
+                        this_->ctx.readKey++;
+                        result |= bit[this_->keyCodes[this_->ctx.key].x[i]];
+                    }
+                }
             }
-            case 0xAB: {
-                if (0 == (value & 0x80)) {
-                    unsigned char bit = (value & 0x0E) >> 1;
-                    if (value & 0x01) {
-                        this->ctx.regC |= 1 << bit;
-                    } else {
-                        this->ctx.regC &= ~(1 << bit);
-                    }
-                    if (bit <= 3) {
-                        this->ctx.selectedKeyRow = this->ctx.regC & 0x0F;
-                    }
-                }
-                break;
+        }
+        if (this_->keyAssign[0].s1 && 0 == (this_->psg.getPad1() & MSX1_JOY_S1)) {
+            if (this_->ctx.selectedKeyRow == this_->keyAssign[0].s1->y[0]) {
+                result |= bit[this_->keyAssign[0].s1->x[0]];
+            }
+        }
+        if (this_->keyAssign[0].s2 && 0 == (this_->psg.getPad1() & MSX1_JOY_S2)) {
+            if (this_->ctx.selectedKeyRow == this_->keyAssign[0].s2->y[0]) {
+                result |= bit[this_->keyAssign[0].s2->x[0]];
+            }
+        }
+        if (this_->keyAssign[1].s1 && 0 == (this_->psg.getPad2() & MSX1_JOY_S1)) {
+            if (this_->ctx.selectedKeyRow == this_->keyAssign[1].s1->y[0]) {
+                result |= bit[this_->keyAssign[1].s1->x[0]];
+            }
+        }
+        if (this_->keyAssign[1].s2 && 0 == (this_->psg.getPad2() & MSX1_JOY_S2)) {
+            if (this_->ctx.selectedKeyRow == this_->keyAssign[1].s2->y[0]) {
+                result |= bit[this_->keyAssign[1].s2->x[0]];
+            }
+        }
+        return ~result;
+    }
+
+    inline void outPort(int port, unsigned char value) { outPortTable[port](this, value); }
+    static inline void outPortNotAvailable(MSX1* this_, unsigned char value) {}
+    static inline void outPort98(MSX1* this_, unsigned char value) { this_->vdp.writeData(value); }
+    static inline void outPort99(MSX1* this_, unsigned char value) { this_->vdp.writeAddress(value); }
+    static inline void outPortA0(MSX1* this_, unsigned char value) { this_->psg.latch(value); }
+    static inline void outPortA1(MSX1* this_, unsigned char value) { this_->psg.write(value); }
+    static inline void outPortA8(MSX1* this_, unsigned char value) { this_->mmu.updatePrimary(value); }
+
+    static inline void outPortAA(MSX1* this_, unsigned char value)
+    {
+        unsigned char mod = this_->ctx.regC ^ value;
+        if (mod) {
+            this_->ctx.regC = value;
+            if (mod & 0x0F) {
+                this_->ctx.selectedKeyRow = this_->ctx.regC & 0x0F;
+            }
+        }
+    }
+
+    static inline void outPortAB(MSX1* this_, unsigned char value)
+    {
+        if (0 == (value & 0x80)) {
+            unsigned char bit = (value & 0x0E) >> 1;
+            if (value & 0x01) {
+                this_->ctx.regC |= 1 << bit;
+            } else {
+                this_->ctx.regC &= ~(1 << bit);
+            }
+            if (bit <= 3) {
+                this_->ctx.selectedKeyRow = this_->ctx.regC & 0x0F;
             }
         }
     }

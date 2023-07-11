@@ -25,3 +25,5 @@ a1ws*.dsk
 .DS_Store
 msx2-osx/bios2/*
 
+.vscode
+

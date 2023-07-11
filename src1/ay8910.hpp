@@ -116,7 +116,7 @@ class AY8910
         }
     }
 
-    inline void tick(short* left, short* right, unsigned int cycles)
+    inline short tick(unsigned int cycles)
     {
         if (this->ctx.eHolding) {
             this->ctx.eCounter += cycles;
@@ -171,8 +171,7 @@ class AY8910
             mix = 32767;
         else if (mix < -32768)
             mix = -32768;
-        if (left) *left = (short)mix;
-        if (right) *right = *left;
+        return (short)mix;
     }
 
   private:
