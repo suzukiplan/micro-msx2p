@@ -3,11 +3,18 @@
 #include <M5GFX.h>
 #include "roms.hpp"
 
+class CustomCanvas : public lgfx::LGFX_Sprite {
+  public:
+    CustomCanvas() : LGFX_Sprite() {}
+    CustomCanvas(LovyanGFX* parent) : LGFX_Sprite(parent) { _psram = false; }
+    void* frameBuffer(uint8_t) { return getBuffer(); }
+};
+
 static uint8_t ram[0x4000];
 static TMS9918A::Context vram;
 static bool booted;
 static M5GFX gfx;
-static M5Canvas canvas(&gfx);
+static CustomCanvas canvas(&gfx);
 static uint16_t displayBuffer[256];
 static bool pauseRenderer;
 static unsigned short backdropColor;
