@@ -203,7 +203,7 @@ class TMS9918A
         }
         // sync blank or end-of-frame
         if (342 == this->ctx->countH) {
-            this->ctx->countH -= 342;
+            this->ctx->countH = 0;
             switch (++this->ctx->countV) {
                 case 27:
                     this->ctx->isRenderingLine = 1;
@@ -218,7 +218,7 @@ class TMS9918A
                     }
                     break;
                 case 262:
-                    this->ctx->countV -= 262;
+                    this->ctx->countV = 0;
                     this->detectBreak(this->arg);
                     this->ctx->frame++;
                     this->ctx->frame &= 0xFFFF;
