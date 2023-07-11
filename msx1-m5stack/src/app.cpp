@@ -66,7 +66,7 @@ void ticker(void* arg)
         auto start = millis();
         msx1.tick(0, 0, 0);
         soundData = msx1.getSound(&soundSize);
-        putlog("%d (free-heap: %d)", (int)(millis() - start), esp_get_free_heap_size());
+        putlog("%d (heap: %d, exec: %d, dma-l: %d, intr: %d)", (int)(millis() - start), esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_EXEC), heap_caps_get_largest_free_block(MALLOC_CAP_DMA), heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
         vTaskDelay(16);
     }
 }
@@ -108,6 +108,11 @@ void setup() {
     canvas.createSprite(256, 192);
     SPIFFS.begin();
     Serial.begin(115200);
+    putlog("Checking memory usage before launch MSX...");
+    putlog("- HEAP: %d", esp_get_free_heap_size());
+    putlog("- MALLOC_CAP_EXEC: %d", heap_caps_get_free_size(MALLOC_CAP_EXEC));
+    putlog("- MALLOC_CAP_DMA-L: %d", heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
+    putlog("- MALLOC_CAP_INTERNAL: %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     putlog("Loading micro MSX2+ (MSX1-core) for M5Stack...");
     msx1.vdp.useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
     roms.main = readRom("/cbios_main_msx1.rom", &roms.mainSize);
