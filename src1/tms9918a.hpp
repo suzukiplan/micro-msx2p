@@ -257,7 +257,7 @@ class TMS9918A
                 this->updateAddress();
                 this->readVideoMemory();
             }
-        } else if (1 == this->ctx->latch) {
+        } else {
             this->ctx->addr &= 0xFF00;
             this->ctx->addr |= this->ctx->tmpAddr[0];
         }
