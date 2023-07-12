@@ -342,10 +342,12 @@ class TMS9918A
         unsigned char* nam = &this->ctx->ram[pn + lineNumber / 8 * 32];
         int dcur = this->getDisplayPtr(lineNumber);
         int dcur0 = dcur;
+        int ptn;
+        int c;
+        int cc[2];
         for (int i = 0; i < 32; i++) {
-            unsigned char ptn = this->ctx->ram[pg + nam[i] * 8 + pixelLine];
-            unsigned char c = this->ctx->ram[ct + nam[i] / 8];
-            unsigned short cc[2];
+            ptn = this->ctx->ram[pg + nam[i] * 8 + pixelLine];
+            c = this->ctx->ram[ct + nam[i] / 8];
             cc[1] = (c & 0xF0) >> 4;
             cc[1] = this->palette[cc[1] ? cc[1] : bd];
             cc[0] = c & 0x0F;
@@ -379,10 +381,12 @@ class TMS9918A
         int dcur = this->getDisplayPtr(lineNumber);
         int dcur0 = dcur;
         int ci = (lineNumber / 64) * 256;
+        int ptn;
+        int c;
+        int cc[2];
         for (int i = 0; i < 32; i++) {
-            unsigned char ptn = this->ctx->ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
-            unsigned char c = this->ctx->ram[ct + ((nam[i] + ci) & cmask) * 8 + pixelLine];
-            unsigned short cc[2];
+            ptn = this->ctx->ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
+            c = this->ctx->ram[ct + ((nam[i] + ci) & cmask) * 8 + pixelLine];
             cc[1] = (c & 0xF0) >> 4;
             cc[1] = this->palette[cc[1] ? cc[1] : bd];
             cc[0] = c & 0x0F;
@@ -421,13 +425,18 @@ class TMS9918A
         memset(dlog, 0, sizeof(dlog));
         memset(wlog, 0, sizeof(wlog));
         bool limitOver = false;
+        int cur;
+        int y;
+        int x;
+        int ptn;
+        int col;
         for (int i = 0; i < 32; i++) {
-            int cur = sa + i * 4;
-            unsigned char y = this->ctx->ram[cur++];
+            cur = sa + i * 4;
+            y = this->ctx->ram[cur++];
             if (208 == y) break;
-            int x = this->ctx->ram[cur++];
-            unsigned char ptn = this->ctx->ram[cur++];
-            unsigned char col = this->ctx->ram[cur++];
+            x = this->ctx->ram[cur++];
+            ptn = this->ctx->ram[cur++];
+            col = this->ctx->ram[cur++];
             if (col & 0x80) x -= 32;
             col &= 0b00001111;
             y += 1;
