@@ -65,10 +65,13 @@ class MSX1MMU
     unsigned char* ram;
     size_t sramSize;
     size_t ramSize;
+    unsigned char empty[0x2000];
 
     MSX1MMU()
     {
+        memset(this->empty, 0xFF, sizeof(this->empty));
         memset(&this->slots, 0, sizeof(this->slots));
+        for (int i = 0; i < 4; i++) this->setupEmpty(i);
         this->sramEnabled = false;
         this->sram = nullptr;
         this->sramSize = 0;
@@ -79,6 +82,21 @@ class MSX1MMU
         if (this->sram) {
             free(this->sram);
         }
+    }
+
+    void setupEmpty(int pri)
+    {
+        for (int idx = 0; idx < 8; idx++) {
+            this->setupEmpty(pri, idx);
+        }
+    }
+
+    void setupEmpty(int pri, int idx)
+    {
+        strcpy(slots[pri].data[idx].label, "(empty)");
+        slots[pri].data[idx].ptr = empty;
+        slots[pri].data[idx].isRAM = false;
+        slots[pri].data[idx].isCartridge = false;
     }
 
     void setupRAM(unsigned char* ram, size_t ramSize)
@@ -119,7 +137,7 @@ class MSX1MMU
         this->cartridge.romType = 0;
         memset(this->ctx.cpos, 0, sizeof(this->ctx.cpos));
         for (int pri = 1; pri <= 2; pri++) {
-            memset(&this->slots[pri], 0, sizeof(Slot));
+            this->setupEmpty(pri);
         }
     }
 
@@ -234,15 +252,14 @@ class MSX1MMU
 
     inline unsigned char read(unsigned short addr)
     {
-        auto ptr = this->getDataBlock(addr)->ptr;
-        return ptr ? ptr[addr & 0x1FFF] : 0xFF;
+        return this->getDataBlock(addr)->ptr[addr & 0x1FFF];
     }
 
     inline void write(unsigned short addr, unsigned char value)
     {
         auto pri = this->ctx.pri[(addr & 0b1100000000000000) >> 14];
         auto data = this->getDataBlock(addr);
-        if (data->isRAM && data->ptr) {
+        if (data->isRAM) {
             data->ptr[addr & 0x1FFF] = value;
         } else if (data->isCartridge) {
             switch (this->cartridge.romType) {
