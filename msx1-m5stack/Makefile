@@ -2,7 +2,6 @@ all: copy-core
 	pio run -t upload
 
 build: copy-core
-	@echo ===== Build the firmware =====
 	pio run
 
 copy-core:
