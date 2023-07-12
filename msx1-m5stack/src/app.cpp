@@ -66,10 +66,10 @@ void ticker(void* arg)
         if (max < procTime) max = procTime;
         expect = interval[loopCount];
         if (procTime < expect) {
-            fps = 30;
+            fps = 60;
             vTaskDelay(expect - procTime);
         } else {
-            fps = 1000 / (procTime + 1);
+            fps = 2000 / (procTime + 1);
             vTaskDelay(1);
         }
         loopCount++;
@@ -102,7 +102,7 @@ void renderer(void* arg)
             gfx.fillRect(288, 24, 32, 192, backdropPrev);
         }
         gfx.setCursor(0, 0);
-        sprintf(buf, "%dfps", fps);
+        sprintf(buf, "%d/60fps (%d/30fps)", fps, fps / 2);
         gfx.print(buf);
         canvas.pushSprite(32, 24);
         gfx.endWrite();
