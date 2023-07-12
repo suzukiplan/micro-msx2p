@@ -29,19 +29,16 @@ static MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](v
     }
 });
 
-static void putlog(const char* format, ...)
+static void displayMessage(const char* format, ...)
 {
     char buf[256];
     va_list args;
     va_start(args, format);
     vsnprintf(buf, sizeof(buf), format, args);
     va_end(args);
-    Serial.println(buf);
-    if (!booted) {
-        gfx.startWrite();
-        gfx.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
-        gfx.endWrite();
-    }
+    gfx.startWrite();
+    gfx.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
+    gfx.endWrite();
 }
 
 void ticker(void* arg)
@@ -125,18 +122,17 @@ void setup() {
     gfx.fillScreen(TFT_BLACK);
     canvas.setColorDepth(16);
     canvas.createSprite(256, 192);
-    Serial.begin(115200);
-    putlog("Checking memory usage before launch MSX...");
-    putlog("- HEAP: %d", esp_get_free_heap_size());
-    putlog("- MALLOC_CAP_EXEC: %d", heap_caps_get_free_size(MALLOC_CAP_EXEC));
-    putlog("- MALLOC_CAP_DMA-L: %d", heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
-    putlog("- MALLOC_CAP_INTERNAL: %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
-    putlog("Loading micro MSX2+ (MSX1-core) for M5Stack...");
+    displayMessage("Checking memory usage before launch MSX...");
+    displayMessage("- HEAP: %d", esp_get_free_heap_size());
+    displayMessage("- MALLOC_CAP_EXEC: %d", heap_caps_get_free_size(MALLOC_CAP_EXEC));
+    displayMessage("- MALLOC_CAP_DMA-L: %d", heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
+    displayMessage("- MALLOC_CAP_INTERNAL: %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+    displayMessage("Loading micro MSX2+ (MSX1-core) for M5Stack...");
     msx1.vdp.useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
     msx1.setup(0, 0, (void*)rom_cbios_main_msx1, sizeof(rom_cbios_main_msx1), "MAIN");
     msx1.setup(0, 4, (void*)rom_cbios_logo_msx1, sizeof(rom_cbios_logo_msx1), "LOGO");
     msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL);
-    putlog("Setup finished.");
+    displayMessage("Setup finished.");
     booted = true;
     usleep(1000000);
     gfx.clear();
