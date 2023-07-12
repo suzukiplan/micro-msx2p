@@ -286,22 +286,46 @@ class TMS9918A
 
     inline void renderScanline(int lineNumber)
     {
+#ifdef TMS9918A_SKIP_ODD_FRAME_RENDERING
+        bool isEvenFrame = 0 == (this->ctx->frame & 1);
+#endif
         // TODO: Several modes (1, 3, undocumented) are not implemented
         if (this->isEnabledScreen()) {
             switch (this->getVideoMode()) {
+#ifdef TMS9918A_SKIP_ODD_FRAME_RENDERING
+                case 0: this->renderScanlineMode0(lineNumber, isEvenFrame); break;
+                case 2: this->renderScanlineMode2(lineNumber, isEvenFrame); break;
+#else
                 case 0: this->renderScanlineMode0(lineNumber); break;
                 case 2: this->renderScanlineMode2(lineNumber); break;
+#endif
             }
         } else {
+#ifdef TMS9918A_SKIP_ODD_FRAME_RENDERING
+            if (isEvenFrame) {
+                int dcur = this->getDisplayPtr(lineNumber);
+                unsigned short bd = this->getBackdropColor();
+                for (int i = 0; i < 256; i++) {
+                    this->display[dcur++] = bd;
+                }
+            }
+#else
             int dcur = this->getDisplayPtr(lineNumber);
             unsigned short bd = this->getBackdropColor();
             for (int i = 0; i < 256; i++) {
                 this->display[dcur++] = bd;
             }
+#endif
         }
+#ifdef TMS9918A_SKIP_ODD_FRAME_RENDERING
+        if (this->displayCallback && isEvenFrame) {
+            this->displayCallback(this->arg, this->ctx->frame, lineNumber, this->display);
+        }
+#else
         if (this->displayCallback) {
             this->displayCallback(this->arg, this->ctx->frame, lineNumber, this->display);
         }
+#endif
     }
 
     inline void updateAddress()
@@ -332,78 +356,82 @@ class TMS9918A
         return this->displayCallback ? 0 : lineNumber * 256;
     }
 
-    inline void renderScanlineMode0(int lineNumber)
+    inline void renderScanlineMode0(int lineNumber, bool rendering = true)
     {
-        int pn = (this->ctx->reg[2] & 0b00001111) << 10;
-        int ct = this->ctx->reg[3] << 6;
-        int pg = (this->ctx->reg[4] & 0b00000111) << 11;
-        int bd = this->ctx->reg[7] & 0b00001111;
-        int pixelLine = lineNumber % 8;
-        unsigned char* nam = &this->ctx->ram[pn + lineNumber / 8 * 32];
         int dcur = this->getDisplayPtr(lineNumber);
         int dcur0 = dcur;
-        int ptn;
-        int c;
-        int cc[2];
-        for (int i = 0; i < 32; i++) {
-            ptn = this->ctx->ram[pg + nam[i] * 8 + pixelLine];
-            c = this->ctx->ram[ct + nam[i] / 8];
-            cc[1] = (c & 0xF0) >> 4;
-            cc[1] = this->palette[cc[1] ? cc[1] : bd];
-            cc[0] = c & 0x0F;
-            cc[0] = this->palette[cc[0] ? cc[0] : bd];
-            this->display[dcur++] = cc[(ptn & 0b10000000) >> 7];
-            this->display[dcur++] = cc[(ptn & 0b01000000) >> 6];
-            this->display[dcur++] = cc[(ptn & 0b00100000) >> 5];
-            this->display[dcur++] = cc[(ptn & 0b00010000) >> 4];
-            this->display[dcur++] = cc[(ptn & 0b00001000) >> 3];
-            this->display[dcur++] = cc[(ptn & 0b00000100) >> 2];
-            this->display[dcur++] = cc[(ptn & 0b00000010) >> 1];
-            this->display[dcur++] = cc[ptn & 0b00000001];
+        if (rendering) {
+            int pn = (this->ctx->reg[2] & 0b00001111) << 10;
+            int ct = this->ctx->reg[3] << 6;
+            int pg = (this->ctx->reg[4] & 0b00000111) << 11;
+            int bd = this->ctx->reg[7] & 0b00001111;
+            int pixelLine = lineNumber % 8;
+            unsigned char* nam = &this->ctx->ram[pn + lineNumber / 8 * 32];
+            int ptn;
+            int c;
+            int cc[2];
+            for (int i = 0; i < 32; i++) {
+                ptn = this->ctx->ram[pg + nam[i] * 8 + pixelLine];
+                c = this->ctx->ram[ct + nam[i] / 8];
+                cc[1] = (c & 0xF0) >> 4;
+                cc[1] = this->palette[cc[1] ? cc[1] : bd];
+                cc[0] = c & 0x0F;
+                cc[0] = this->palette[cc[0] ? cc[0] : bd];
+                this->display[dcur++] = cc[(ptn & 0b10000000) >> 7];
+                this->display[dcur++] = cc[(ptn & 0b01000000) >> 6];
+                this->display[dcur++] = cc[(ptn & 0b00100000) >> 5];
+                this->display[dcur++] = cc[(ptn & 0b00010000) >> 4];
+                this->display[dcur++] = cc[(ptn & 0b00001000) >> 3];
+                this->display[dcur++] = cc[(ptn & 0b00000100) >> 2];
+                this->display[dcur++] = cc[(ptn & 0b00000010) >> 1];
+                this->display[dcur++] = cc[ptn & 0b00000001];
+            }
         }
-        renderSprites(lineNumber, &display[dcur0]);
+        renderSprites(lineNumber, &display[dcur0], rendering);
     }
 
-    inline void renderScanlineMode2(int lineNumber)
+    inline void renderScanlineMode2(int lineNumber, bool rendering = true)
     {
-        int pn = (this->ctx->reg[2] & 0b00001111) << 10;
-        int ct = (this->ctx->reg[3] & 0b10000000) << 6;
-        int cmask = this->ctx->reg[3] & 0b01111111;
-        cmask <<= 3;
-        cmask |= 0x07;
-        int pg = (this->ctx->reg[4] & 0b00000100) << 11;
-        int pmask = this->ctx->reg[4] & 0b00000011;
-        pmask <<= 8;
-        pmask |= 0xFF;
-        int bd = this->ctx->reg[7] & 0b00001111;
-        int pixelLine = lineNumber % 8;
-        unsigned char* nam = &this->ctx->ram[pn + lineNumber / 8 * 32];
         int dcur = this->getDisplayPtr(lineNumber);
         int dcur0 = dcur;
-        int ci = (lineNumber / 64) * 256;
-        int ptn;
-        int c;
-        int cc[2];
-        for (int i = 0; i < 32; i++) {
-            ptn = this->ctx->ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
-            c = this->ctx->ram[ct + ((nam[i] + ci) & cmask) * 8 + pixelLine];
-            cc[1] = (c & 0xF0) >> 4;
-            cc[1] = this->palette[cc[1] ? cc[1] : bd];
-            cc[0] = c & 0x0F;
-            cc[0] = this->palette[cc[0] ? cc[0] : bd];
-            this->display[dcur++] = cc[(ptn & 0b10000000) >> 7];
-            this->display[dcur++] = cc[(ptn & 0b01000000) >> 6];
-            this->display[dcur++] = cc[(ptn & 0b00100000) >> 5];
-            this->display[dcur++] = cc[(ptn & 0b00010000) >> 4];
-            this->display[dcur++] = cc[(ptn & 0b00001000) >> 3];
-            this->display[dcur++] = cc[(ptn & 0b00000100) >> 2];
-            this->display[dcur++] = cc[(ptn & 0b00000010) >> 1];
-            this->display[dcur++] = cc[ptn & 0b00000001];
+        if (rendering) {
+            int pn = (this->ctx->reg[2] & 0b00001111) << 10;
+            int ct = (this->ctx->reg[3] & 0b10000000) << 6;
+            int cmask = this->ctx->reg[3] & 0b01111111;
+            cmask <<= 3;
+            cmask |= 0x07;
+            int pg = (this->ctx->reg[4] & 0b00000100) << 11;
+            int pmask = this->ctx->reg[4] & 0b00000011;
+            pmask <<= 8;
+            pmask |= 0xFF;
+            int bd = this->ctx->reg[7] & 0b00001111;
+            int pixelLine = lineNumber % 8;
+            unsigned char* nam = &this->ctx->ram[pn + lineNumber / 8 * 32];
+            int ci = (lineNumber / 64) * 256;
+            int ptn;
+            int c;
+            int cc[2];
+            for (int i = 0; i < 32; i++) {
+                ptn = this->ctx->ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
+                c = this->ctx->ram[ct + ((nam[i] + ci) & cmask) * 8 + pixelLine];
+                cc[1] = (c & 0xF0) >> 4;
+                cc[1] = this->palette[cc[1] ? cc[1] : bd];
+                cc[0] = c & 0x0F;
+                cc[0] = this->palette[cc[0] ? cc[0] : bd];
+                this->display[dcur++] = cc[(ptn & 0b10000000) >> 7];
+                this->display[dcur++] = cc[(ptn & 0b01000000) >> 6];
+                this->display[dcur++] = cc[(ptn & 0b00100000) >> 5];
+                this->display[dcur++] = cc[(ptn & 0b00010000) >> 4];
+                this->display[dcur++] = cc[(ptn & 0b00001000) >> 3];
+                this->display[dcur++] = cc[(ptn & 0b00000100) >> 2];
+                this->display[dcur++] = cc[(ptn & 0b00000010) >> 1];
+                this->display[dcur++] = cc[ptn & 0b00000001];
+            }
         }
-        renderSprites(lineNumber, &display[dcur0]);
+        renderSprites(lineNumber, &display[dcur0], rendering);
     }
 
-    inline void renderSprites(int lineNumber, unsigned short* renderPosition)
+    inline void renderSprites(int lineNumber, unsigned short* renderPosition, bool rendering = true)
     {
         static const unsigned char bit[8] = {
             0b10000000,
@@ -463,7 +491,7 @@ class TMS9918A
                     }
                     if (0 == dlog[x]) {
                         if (this->ctx->ram[cur] & bit[j / mag]) {
-                            renderPosition[x] = this->palette[col];
+                            if (rendering) renderPosition[x] = this->palette[col];
                             dlog[x] = col;
                             wlog[x] = 1;
                         }
@@ -478,7 +506,7 @@ class TMS9918A
                         }
                         if (0 == dlog[x]) {
                             if (this->ctx->ram[cur] & bit[j / mag]) {
-                                renderPosition[x] = this->palette[col];
+                                if (rendering) renderPosition[x] = this->palette[col];
                                 dlog[x] = col;
                                 wlog[x] = 1;
                             }

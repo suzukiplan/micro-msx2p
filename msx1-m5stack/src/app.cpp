@@ -20,12 +20,10 @@ static bool pauseRenderer;
 static unsigned short backdropColor;
 static int fps;
 static MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
-    if (0 == (frame & 1)) {
-        canvas.pushImage(0, lineNumber, 256, 1, display);
-        if (191 == lineNumber) {
-            backdropColor = ((MSX1*)arg)->getBackdropColor(true);
-            pauseRenderer = false;
-        }
+    canvas.pushImage(0, lineNumber, 256, 1, display);
+    if (191 == lineNumber) {
+        backdropColor = ((MSX1*)arg)->getBackdropColor(true);
+        pauseRenderer = false;
     }
 });
 
