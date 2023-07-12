@@ -85,12 +85,19 @@ class MSX1MMU
     {
         this->ram = ram;
         this->ramSize = ramSize;
+        int si = 0;
         switch (ramSize) {
-            case 0x2000: break;
-            case 0x4000: break;
-            case 0x8000: break;
-            case 0x10000: break;
+            case 0x2000: si = 6; break;
+            case 0x4000: si = 6; break;
+            case 0x8000: si = 4; break;
+            case 0x10000: si = 0; break;
             default: exit(-1); // invalid RAM size
+        }
+        for (int i = si; i < 8; i++) {
+            strcpy(this->slots[3].data[i].label, "RAM");
+            this->slots[3].data[i].isRAM = true;
+            this->slots[3].data[i].isCartridge = false;
+            this->slots[3].data[i].ptr = &this->ram[(i * 0x2000) & (this->ramSize - 1)];
         }
     }
 
@@ -102,13 +109,6 @@ class MSX1MMU
             for (int j = 0; j < 4; j++) {
                 this->ctx.cpos[i][j] = j;
             }
-        }
-        // RAM: Slot 3 $0000 ~ $FFFF (16KB mirror)
-        for (int i = 0; i < 8; i++) {
-            strcpy(this->slots[3].data[i].label, "RAM");
-            this->slots[3].data[i].isRAM = true;
-            this->slots[3].data[i].isCartridge = false;
-            this->slots[3].data[i].ptr = &this->ram[(i * 0x2000) & (this->ramSize - 1)];
         }
     }
 
