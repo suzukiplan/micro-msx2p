@@ -39,6 +39,7 @@ static void displayMessage(const char* format, ...)
     gfx.startWrite();
     gfx.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
     gfx.endWrite();
+    vTaskDelay(100);
 }
 
 void ticker(void* arg)
