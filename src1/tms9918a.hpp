@@ -149,6 +149,7 @@ class TMS9918A
             default:
                 memset(this->palette, 0, sizeof(this->palette));
         }
+        this->initRedneringLineTable();
         this->reset();
     }
 
@@ -185,37 +186,32 @@ class TMS9918A
     inline unsigned short getBackdropColor() { return palette[ctx->reg[7] & 0b00001111]; }
     inline unsigned short getBackdropColor(bool swap) { return swap ? this->swap16(palette[ctx->reg[7] & 0b00001111]) : palette[ctx->reg[7] & 0b00001111]; }
 
-    inline void tick()
+    inline void tick(int tickCount)
     {
-        this->ctx->countH++;
-        // render backdrop border
-        if (this->ctx->isRenderingLine) {
-            if (24 + TMS9918A_SCREEN_WIDTH == this->ctx->countH) {
-                this->renderScanline(this->ctx->countV - 27);
+        for (int i = 0; i < tickCount; i++) {
+            this->ctx->countH++;
+            // render backdrop border
+            if (this->ctx->isRenderingLine) {
+                if (24 + TMS9918A_SCREEN_WIDTH == this->ctx->countH) {
+                    this->renderScanline(this->ctx->countV - 27);
+                }
             }
-        }
-        // sync blank or end-of-frame
-        if (342 == this->ctx->countH) {
-            this->ctx->countH = 0;
-            switch (++this->ctx->countV) {
-                case 27:
-                    this->ctx->isRenderingLine = 1;
-                    break;
-                case 27 + 192:
-                    this->ctx->isRenderingLine = 0;
-                    break;
-                case 238:
+            // sync blank or end-of-frame
+            if (342 == this->ctx->countH) {
+                this->ctx->countH = 0;
+                this->ctx->countV++;
+                this->ctx->isRenderingLine = this->renderingLineTable[this->ctx->countV];
+                if (238 == this->ctx->countV) {
                     this->ctx->stat |= 0x80;
                     if (this->isEnabledInterrupt()) {
                         this->detectBlank(this->arg);
                     }
-                    break;
-                case 262:
+                } else if (262 == this->ctx->countV) {
                     this->ctx->countV = 0;
                     this->detectBreak(this->arg);
                     this->ctx->frame++;
                     this->ctx->frame &= 0xFFFF;
-                    break;
+                }
             }
         }
     }
@@ -265,6 +261,18 @@ class TMS9918A
     }
 
   private:
+    int renderingLineTable[263];
+    void initRedneringLineTable()
+    {
+        for (int i = 0; i < 263; i++) {
+            if (27 <= i && i < 27 + 192) {
+                this->renderingLineTable[i] = 1;
+            } else {
+                this->renderingLineTable[i] = 0;
+            }
+        }
+    }
+
     void releaseDisplayBuffer()
     {
         if (this->displayNeedFree) {

@@ -364,10 +364,9 @@ class MSX1
         }
         // Asynchronous with VDP
         this->vdp.ctx->bobo += cpuClocks * VDP_CLOCK;
-        while (0 < this->vdp.ctx->bobo) {
-            this->vdp.ctx->bobo -= CPU_CLOCK;
-            this->vdp.tick();
-        }
+        int tickCount = (this->vdp.ctx->bobo / CPU_CLOCK) + 1;
+        this->vdp.tick(tickCount);
+        this->vdp.ctx->bobo -= tickCount * CPU_CLOCK;
     }
 
     unsigned char (*inPortTable[0x100])(MSX1*);
