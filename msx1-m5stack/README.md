@@ -11,6 +11,7 @@
   - 現状: tick 2 frames = 41ms (min:34, max:52)
 - 音声未実装
   - 現状、音が鳴りません
+- 入力未対応 (M5Stack Faces GamePad panel に対応予定)
 - ホットキー未実装
   - 再開
   - リセット
