@@ -67,8 +67,7 @@ void ticker(void* arg)
             fps = 60;
             vTaskDelay(expect - procTime);
         } else {
-            fps = 2000 / (procTime + 1);
-            vTaskDelay(1);
+            fps = 2000 / procTime;
         }
         loopCount++;
         loopCount %= 3;
@@ -137,8 +136,9 @@ void setup() {
     booted = true;
     usleep(1000000);
     gfx.clear();
-    xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 1);
-    xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 0);
+    disableCore0WDT();
+    xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 0);
+    xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 1);
 }
 
 void loop() {
