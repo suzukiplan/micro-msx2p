@@ -6,13 +6,14 @@
 
 ## WIP status
 
-- 性能目標が未達成
+- 性能目標が未達成: https://github.com/suzukiplan/micro-msx2p/issues/17
   - 目標: tick 2 frames < 33ms
   - 現状: tick 2 frames = 41ms (min:34, max:52)
-- 音声未実装
+- 音声未実装: https://github.com/suzukiplan/micro-msx2p/issues/18
   - 現状、音が鳴りません
-- 入力未対応 (M5Stack Faces GamePad panel に対応予定)
-- ホットキー未実装
+- 入力未対応:  https://github.com/suzukiplan/micro-msx2p/issues/19
+  - M5Stack Faces GamePad panel に対応予定
+- ホットキー未実装: https://github.com/suzukiplan/micro-msx2p/issues/20
   - 再開
   - リセット
   - 音量調整 (無音, 小, 中, 大)
@@ -20,7 +21,7 @@
   - セーブスロット選択 (#1, #2, #3)
   - セーブ (ショートカット1と等価)
   - ロード (ショートカット2と等価)
-- ショートカットキー未実装
+- ショートカットキー未実装: https://github.com/suzukiplan/micro-msx2p/issues/21
 
 補足事項:
 
