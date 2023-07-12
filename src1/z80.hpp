@@ -129,22 +129,20 @@ class Z80
     inline bool isFlagC() { return reg.pair.F & flagC(); }
 
     enum class Condition {
-        Z = 0b0000000001000000,
-        C = 0b0000000000000001,
-        PV = 0b0000000000000100,
-        S = 0b0000000010000000,
-        NZ = 0b1111111101000000,
-        NC = 0b1111111100000001,
-        NPV = 0b1111111100000100,
-        NS = 0b1111111110000000,
+        Z = 0x40,
+        C = 0x01,
+        PV = 0x04,
+        S = 0x80,
+        NZ = 0x4040,
+        NC = 0x0101,
+        NPV = 0x0404,
+        NS = 0x8080,
     };
 
     inline bool checkConditionFlag(Condition c)
     {
         int ic = (int)c;
-        int n = ic & 0xFF00;
-        int bit = ic & reg.pair.F;
-        return n ? 0 == bit : 0 != bit;
+        return (ic & reg.pair.F) ^ ((ic & 0xFF00) >> 8);
     }
 
     inline unsigned char IFF1() { return 0b00000001; }
@@ -491,7 +489,13 @@ class Z80
     inline void consumeClock(int hz)
     {
         reg.consumeClockCounter += hz;
+#ifndef Z80_CALLBACK_PER_INSTRUCTION
+#ifdef Z80_CALLBACK_WITHOUT_CHECK
+        CB.consumeClock(CB.arg, hz);
+#else
         if (CB.consumeClockEnabled && hz) CB.consumeClock(CB.arg, hz);
+#endif
+#endif
     }
 
     inline unsigned short getPort16WithB(unsigned char c) { return make16BitsFromLE(c, reg.pair.B); }
@@ -6376,8 +6380,18 @@ class Z80
             }
             executed += reg.consumeClockCounter;
             clock -= reg.consumeClockCounter;
+#ifdef Z80_CALLBACK_PER_INSTRUCTION
+            checkInterrupt();
+#ifdef Z80_CALLBACK_WITHOUT_CHECK
+            CB.consumeClock(CB.arg, reg.consumeClockCounter);
+#else
+            if (CB.consumeClockEnabled) CB.consumeClock(CB.arg, reg.consumeClockCounter);
+#endif
+            reg.consumeClockCounter = 0;
+#else
             reg.consumeClockCounter = 0;
             checkInterrupt();
+#endif
         }
         return executed;
     }
@@ -6386,6 +6400,9 @@ class Z80
     {
         requestBreakFlag = false;
         while (!requestBreakFlag) {
+#ifdef Z80_CALLBACK_PER_INSTRUCTION
+            reg.consumeClockCounter = 0;
+#endif
             // execute NOP while halt
             if (reg.IFF & IFF_HALT()) {
                 reg.execEI = 0;
@@ -6403,6 +6420,13 @@ class Z80
                 opSet1[operandNumber](this);
             }
             checkInterrupt();
+#ifdef Z80_CALLBACK_PER_INSTRUCTION
+#ifdef Z80_CALLBACK_WITHOUT_CHECK
+            CB.consumeClock(CB.arg, reg.consumeClockCounter);
+#else
+            if (CB.consumeClockEnabled) CB.consumeClock(CB.arg, reg.consumeClockCounter);
+#endif
+#endif
         }
     }
 
