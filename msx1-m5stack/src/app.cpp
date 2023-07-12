@@ -22,8 +22,7 @@ static MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](v
     if (0 == (frame & 1)) {
         canvas.pushImage(0, lineNumber, 256, 1, display);
         if (191 == lineNumber) {
-            auto a = (MSX1*)arg;
-            backdropColor = a->vdp.swap16(a->getBackdropColor());
+            backdropColor = ((MSX1*)arg)->getBackdropColor(true);
             pauseRenderer = false;
         }
     }

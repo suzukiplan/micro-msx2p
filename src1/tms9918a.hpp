@@ -183,6 +183,7 @@ class TMS9918A
     inline bool isEnabledScreen() { return ctx->reg[1] & 0b01000000 ? true : false; }
     inline bool isEnabledInterrupt() { return ctx->reg[1] & 0b00100000 ? true : false; }
     inline unsigned short getBackdropColor() { return palette[ctx->reg[7] & 0b00001111]; }
+    inline unsigned short getBackdropColor(bool swap) { return swap ? this->swap16(palette[ctx->reg[7] & 0b00001111]) : palette[ctx->reg[7] & 0b00001111]; }
 
     inline void tick()
     {

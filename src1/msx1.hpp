@@ -559,9 +559,9 @@ class MSX1
         }
     }
 
-    unsigned short getBackdropColor()
+    unsigned short getBackdropColor(bool swap = false)
     {
-        return this->vdp.getBackdropColor();
+        return this->vdp.getBackdropColor(swap);
     }
 
   private:
