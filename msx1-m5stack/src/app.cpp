@@ -18,6 +18,7 @@ static CustomCanvas canvas(&gfx);
 static uint16_t displayBuffer[256];
 static bool pauseRenderer;
 static unsigned short backdropColor;
+static int fps;
 static MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
     if (0 == (frame & 1)) {
         canvas.pushImage(0, lineNumber, 256, 1, display);
@@ -47,19 +48,32 @@ void ticker(void* arg)
 {
     void* soundData;
     size_t soundSize;
-    int min = 0x7FFFFFFF;
-    int max = -1;
+    static long int min = 0x7FFFFFFF;
+    static long int max = -1;
+    static long start;
+    static long procTime = 0;
+    static const long interval[3] = { 33, 33, 34 };
+    static int loopCount = 0;
+    static long expect;
     while (1) {
-        auto start = millis();
+        start = millis();
         msx1.tick(0, 0, 0); // even frame (rendering)
         soundData = msx1.getSound(&soundSize);
         msx1.tick(0, 0, 0); // odd frame (skip rendering)
         soundData = msx1.getSound(&soundSize);
-        auto procTime = (int)(millis() - start);
+        procTime = millis() - start;
         if (procTime < min) min = procTime;
         if (max < procTime) max = procTime;
-        putlog("%d min:%d, max:%d", procTime, min, max);
-        vTaskDelay(16);
+        expect = interval[loopCount];
+        if (procTime < expect) {
+            fps = 30;
+            vTaskDelay(expect - procTime);
+        } else {
+            fps = 1000 / (procTime + 1);
+            vTaskDelay(1);
+        }
+        loopCount++;
+        loopCount %= 3;
     }
 }
 
@@ -67,10 +81,17 @@ void renderer(void* arg)
 {
     uint16_t backdropPrev = 0;
     pauseRenderer = true;
+    static long start;
+    static long renderTime = 0;
+    static const long interval[3] = { 33, 33, 34 };
+    static int loopCount = 0;
+    static long expect;
+    static char buf[80];
     while (1) {
         while (pauseRenderer) {
-            vTaskDelay(33);
+            vTaskDelay(1);
         }
+        start = millis();
         pauseRenderer = true;
         gfx.startWrite();
         if (backdropColor != backdropPrev) {
@@ -80,8 +101,20 @@ void renderer(void* arg)
             gfx.fillRect(0, 24, 32, 192, backdropPrev);
             gfx.fillRect(288, 24, 32, 192, backdropPrev);
         }
+        gfx.setCursor(0, 0);
+        sprintf(buf, "%dfps", fps);
+        gfx.print(buf);
         canvas.pushSprite(32, 24);
         gfx.endWrite();
+        renderTime = millis() - start;
+        expect = interval[loopCount];
+        if (renderTime < expect) {
+            vTaskDelay(expect - renderTime);
+        } else {
+            vTaskDelay(1);
+        }
+        loopCount++;
+        loopCount %= 3;
     }
 }
 
