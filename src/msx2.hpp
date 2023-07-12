@@ -27,7 +27,9 @@
 #ifndef INCLUDE_MSX2_HPP
 #define INCLUDE_MSX2_HPP
 #include "ay8910.hpp"
+#ifndef MSX2_REMOVE_OPLL
 #include "emu2413.h"
+#endif
 #include "lz4.h"
 #include "msx2clock.hpp"
 #include "msx2def.h"
@@ -47,12 +49,61 @@ class MSX2
     class InternalBuffer
     {
       public:
-        short soundBuffer[65536];
+        short soundBuffer[16384];
         unsigned short soundBufferCursor;
-        char quickSaveBuffer[1024 * 1024 * 4];
-        char quickSaveBufferCompressed[1024 * 1024 * 4];
-        size_t quickSaveBufferSize;
+        char* quickSaveBuffer;
+        char* quickSaveBufferCompressed;
+        size_t quickSaveBufferPtr;
+        size_t quickSaveBufferHeapSize;
+
+        InternalBuffer()
+        {
+            memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
+            this->soundBufferCursor = 0;
+            this->quickSaveBuffer = nullptr;
+            this->quickSaveBufferCompressed = nullptr;
+            this->quickSaveBufferPtr = 0;
+            this->quickSaveBufferHeapSize = 0;
+        }
+
+        ~InternalBuffer()
+        {
+            this->safeReleaseQuickSaveBuffer();
+        }
+
+        void safeReleaseQuickSaveBuffer()
+        {
+            if (this->quickSaveBuffer) {
+                free(this->quickSaveBuffer);
+                this->quickSaveBuffer = nullptr;
+            }
+            if (this->quickSaveBufferCompressed) {
+                free(this->quickSaveBufferCompressed);
+                this->quickSaveBufferCompressed = nullptr;
+            }
+            this->quickSaveBufferHeapSize = 0;
+        }
+
+        bool allocateQuickSaveBuffer(size_t size)
+        {
+            if (size == this->quickSaveBufferHeapSize) {
+                return true;
+            }
+            this->safeReleaseQuickSaveBuffer();
+            this->quickSaveBuffer = (char*)malloc(size);
+            if (!this->quickSaveBuffer) {
+                return false;
+            }
+            this->quickSaveBufferCompressed = (char*)malloc(size);
+            if (!this->quickSaveBufferCompressed) {
+                this->safeReleaseQuickSaveBuffer();
+                return false;
+            }
+            this->quickSaveBufferHeapSize = size;
+            return true;
+        }
     };
+
     InternalBuffer* ib;
     bool debug;
 
@@ -98,7 +149,9 @@ class MSX2
     MSX2Kanji* kanji;
     SCC* scc;
     TC8566AF* fdc;
+#ifndef MSX2_REMOVE_OPLL
     OPLL* ym2413;
+#endif
 
     struct Context {
         unsigned char io[256];
@@ -113,7 +166,9 @@ class MSX2
     {
         if (this->fdc) delete fdc;
         if (this->scc) delete scc;
+#ifndef MSX2_REMOVE_OPLL
         if (this->ym2413) OPLL_delete(this->ym2413);
+#endif
         delete this->cpu;
         delete this->vdp;
         delete this->mmu;
@@ -140,12 +195,14 @@ class MSX2
         this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX2*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX2*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX2*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;
         this->scc = nullptr;
+#ifndef MSX2_REMOVE_OPLL
         if (ym2413Enabled) {
             this->putlog("create YM2413 instance");
             this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
         } else {
             this->ym2413 = nullptr;
         }
+#endif
         this->vdp->initialize(
             colorMode, this, [](void* arg, int ie) {
             //((MSX2*)arg)->putlog("Detect IE%d (vf:%d, hf:%d)", ie, ((MSX2*)arg)->vdp->ctx.stat[0] & 0x80 ? 1 : 0,((MSX2*)arg)->vdp->ctx.stat[1] & 0x01);
@@ -165,8 +222,10 @@ class MSX2
                 case 0x3FFB: ((MSX2*)arg)->fdc->write(5, value); break;
             } }, [](void* arg, unsigned short addr, unsigned char value) {
             switch (addr) {
+#ifndef MSX2_REMOVE_OPLL
                 case 0x3FF4: OPLL_writeIO(((MSX2*)arg)->ym2413, 0, value); break;
                 case 0x3FF5: OPLL_writeIO(((MSX2*)arg)->ym2413, 1, value); break;
+#endif
             } });
         this->fdc = nullptr;
 #if 0
@@ -341,7 +400,9 @@ class MSX2
         this->kanji->reset();
         if (this->scc) this->scc->reset();
         if (this->fdc) this->fdc->reset();
+#ifndef MSX2_REMOVE_OPLL
         if (this->ym2413) OPLL_reset(this->ym2413);
+#endif
     }
 
     void putlog(const char* fmt, ...)
@@ -388,10 +449,12 @@ class MSX2
     void setup(int pri, int sec, int idx, void* data, int size, const char* label = NULL)
     {
         if (0 == strcmp(label, "FM")) {
+#ifndef MSX2_REMOVE_OPLL
             if (!this->ym2413) {
                 this->putlog("create YM2413 instance");
                 this->ym2413 = OPLL_new(CPU_CLOCK, 44100);
             }
+#endif
         } else if (0 == strcmp(label, "DISK")) {
             if (!this->fdc) {
                 this->putlog("create FDC instance");
@@ -487,7 +550,7 @@ class MSX2
     }
 
     inline unsigned short* getDisplay() { return this->vdp->display; }
-    inline int getDisplayWidth() { return 568; }
+    inline int getDisplayWidth() { return vdp->displayWidth(); }
     inline int getDisplayHeight() { return 240; }
 
     inline void consumeClock(int cpuClocks)
@@ -500,6 +563,7 @@ class MSX2
             if (this->scc) {
                 this->scc->tick(&this->ib->soundBuffer[this->ib->soundBufferCursor], &this->ib->soundBuffer[this->ib->soundBufferCursor + 1], 81);
             }
+#ifndef MSX2_REMOVE_OPLL
             if (this->ym2413) {
                 auto opllWav = OPLL_calc(this->ym2413);
                 int l = this->ib->soundBuffer[this->ib->soundBufferCursor];
@@ -517,7 +581,9 @@ class MSX2
                 this->ib->soundBuffer[this->ib->soundBufferCursor] = (short)l;
                 this->ib->soundBuffer[this->ib->soundBufferCursor + 1] = (short)r;
             }
+#endif
             this->ib->soundBufferCursor += 2;
+            this->ib->soundBufferCursor &= sizeof(this->ib->soundBuffer) - 1;
         }
         // Asynchronous with VDP
         this->vdp->ctx.bobo += cpuClocks * VDP_CLOCK;
@@ -629,12 +695,17 @@ class MSX2
     {
         this->ctx.io[port] = value;
         switch (port) {
+#ifdef MSX2_REMOVE_OPLL
+            case 0x7C: break;
+            case 0x7D: break;
+#else
             case 0x7C:
                 if (this->ym2413) OPLL_writeIO(this->ym2413, 0, value);
                 break;
             case 0x7D:
                 if (this->ym2413) OPLL_writeIO(this->ym2413, 1, value);
                 break;
+#endif
             case 0x81: break; // 8251 status command
             case 0x88: this->vdp->outPort98(value); break;
             case 0x89: this->vdp->outPort99(value); break;
@@ -742,7 +813,10 @@ class MSX2
 
     const void* quickSave(size_t* size)
     {
-        this->ib->quickSaveBufferSize = 0;
+        if (!this->ib->allocateQuickSaveBuffer(this->calcQuickSaveSize())) {
+            return nullptr;
+        }
+        this->ib->quickSaveBufferPtr = 0;
         this->writeSaveChunk("BRD", &this->ctx, (int)sizeof(this->ctx));
         this->writeSaveChunk("Z80", &this->cpu->reg, (int)sizeof(this->cpu->reg));
         this->writeSaveChunk("MMU", &this->mmu->ctx, (int)sizeof(this->mmu->ctx));
@@ -763,23 +837,28 @@ class MSX2
             this->writeSaveChunk("JCT", &this->fdc->journalCount, (int)sizeof(this->fdc->journalCount));
             this->writeSaveChunk("JDT", &this->fdc->journal, (int)sizeof(this->fdc->journal[0]) * this->fdc->journalCount);
         }
+#ifndef MSX2_REMOVE_OPLL
         if (this->ym2413) {
             this->writeSaveChunk("OPL", this->ym2413, (int)sizeof(OPLL));
         }
+#endif
         *size = LZ4_compress_default(this->ib->quickSaveBuffer,
                                      this->ib->quickSaveBufferCompressed,
-                                     (int)this->ib->quickSaveBufferSize,
-                                     sizeof(this->ib->quickSaveBufferCompressed));
+                                     (int)this->ib->quickSaveBufferPtr,
+                                     (int)this->ib->quickSaveBufferHeapSize);
         return this->ib->quickSaveBufferCompressed;
     }
 
     void quickLoad(const void* buffer, size_t bufferSize)
     {
+        if (!this->ib->allocateQuickSaveBuffer(this->calcQuickSaveSize())) {
+            return;
+        }
         this->reset();
         int size = LZ4_decompress_safe((const char*)buffer,
                                        this->ib->quickSaveBuffer,
                                        (int)bufferSize,
-                                       sizeof(this->ib->quickSaveBuffer));
+                                       (int)this->ib->quickSaveBufferHeapSize);
         const char* ptr = this->ib->quickSaveBuffer;
         while (8 <= size) {
             char chunk[4];
@@ -853,6 +932,7 @@ class MSX2
                 } else {
                     putlog("ignored JDT (%d bytes)", chunkSize);
                 }
+#ifndef MSX2_REMOVE_OPLL
             } else if (0 == strcmp(chunk, "OPL")) {
                 if (this->ym2413) {
                     putlog("extract OPL (%d bytes)", chunkSize);
@@ -860,21 +940,54 @@ class MSX2
                 } else {
                     putlog("ignored OPL (%d bytes)", chunkSize);
                 }
+#endif
             }
             ptr += chunkSize;
             size -= chunkSize;
         }
     }
 
+    unsigned short getBackdropColor()
+    {
+        return this->vdp ? this->vdp->getBackdropColor() : 0;
+    }
+
   private:
     void writeSaveChunk(const char* name, const void* data, int size)
     {
-        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferSize], name, 4);
-        this->ib->quickSaveBufferSize += 4;
-        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferSize], &size, 4);
-        this->ib->quickSaveBufferSize += 4;
-        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferSize], data, size);
-        this->ib->quickSaveBufferSize += size;
+        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferPtr], name, 4);
+        this->ib->quickSaveBufferPtr += 4;
+        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferPtr], &size, 4);
+        this->ib->quickSaveBufferPtr += 4;
+        memcpy(&this->ib->quickSaveBuffer[this->ib->quickSaveBufferPtr], data, size);
+        this->ib->quickSaveBufferPtr += size;
+    }
+
+    size_t calcQuickSaveSize()
+    {
+        size_t size = 0;
+        size += sizeof(this->ctx) + 8;                                               // BRD
+        size += sizeof(this->cpu->reg) + 8;                                          // Z80
+        size += sizeof(this->mmu->ctx) + 8;                                          // MMU
+        size += sizeof(this->mmu->pac) + 8;                                          // PAC
+        size += sizeof(this->mmu->ram) + 8;                                          // R:0
+        size += this->mmu->sramEnabled ? sizeof(this->mmu->sram) + 8 : 0;            // SRM
+        size += this->mmu->sccEnabled && this->scc ? sizeof(this->scc->ctx) + 8 : 0; // SCC
+        size += sizeof(this->psg->ctx) + 8;                                          // PSG
+        size += sizeof(this->clock->ctx) + 8;                                        // RTC
+        size += sizeof(this->kanji->ctx) + 8;                                        // KNJ
+        size += sizeof(this->vdp->ctx) + 8;                                          // VDP
+        if (this->fdc) {
+            size += sizeof(this->fdc->ctx) + 8;                                  // FDC
+            size += sizeof(sizeof(this->fdc->journalCount)) + 8;                 // JCT
+            size += sizeof(this->fdc->journal[0]) * this->fdc->journalCount + 8; // JDT
+        }
+#ifndef MSX2_REMOVE_OPLL
+        if (this->ym2413) {
+            size += sizeof(OPLL) + 8; // OPL
+        }
+#endif
+        return size;
     }
 };
 
