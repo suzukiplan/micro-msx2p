@@ -42,8 +42,8 @@ class MSX1
     class InternalBuffer
     {
       public:
-        short soundBuffer[1024]; // minimum: 735 (1frame)
-        unsigned short soundBufferCursor;
+        short soundBuffer[0x1000];
+        int soundBufferCursor;
         char* quickSaveBuffer;
         size_t quickSaveBufferPtr;
         size_t quickSaveBufferHeapSize;
@@ -334,7 +334,7 @@ class MSX1
 
     size_t getMaxSoundSize()
     {
-        return sizeof(this->ib.soundBuffer);
+        return 0x1000;
     }
 
     size_t getCurrentSoundSize()
@@ -360,7 +360,7 @@ class MSX1
         while (0 < this->psg.ctx.bobo) {
             this->psg.ctx.bobo -= this->CPU_CLOCK;
             this->ib.soundBuffer[this->ib.soundBufferCursor++] = this->psg.tick(81);
-            this->ib.soundBufferCursor &= sizeof(this->ib.soundBuffer) - 1;
+            this->ib.soundBufferCursor &= 0x0FFF;
         }
         // Asynchronous with VDP
         this->vdp.ctx->bobo += cpuClocks * VDP_CLOCK;

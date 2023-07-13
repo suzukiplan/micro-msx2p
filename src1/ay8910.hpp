@@ -205,7 +205,7 @@ class AY8910
         } else {
             this->ctx.mix[ch] >>= 1;
         }
-        return (mix + this->ctx.mix[ch]) >> 1;
+        return (mix + this->ctx.mix[ch]) >> 4;
     }
 };
 

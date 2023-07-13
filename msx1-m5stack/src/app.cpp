@@ -19,14 +19,11 @@ static uint16_t displayBuffer[256];
 static xSemaphoreHandle displayMutex;
 static unsigned short backdropColor;
 static int fps;
+
 static MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
-    if (0 == lineNumber) {
-        xSemaphoreTake(displayMutex, portMAX_DELAY);
-    }
     canvas.pushImage(0, lineNumber, 256, 1, display);
     if (191 == lineNumber) {
         backdropColor = ((MSX1*)arg)->getBackdropColor(true);
-        xSemaphoreGive(displayMutex);
     }
 });
 
@@ -45,33 +42,28 @@ static void displayMessage(const char* format, ...)
 
 void ticker(void* arg)
 {
-    void* soundData;
-    size_t soundSize;
-    static long int min = 0x7FFFFFFF;
-    static long int max = -1;
+    static void* soundData;
+    static size_t soundSize;
     static long start;
     static long procTime = 0;
     static const long interval[3] = { 33, 33, 34 };
     static int loopCount = 0;
-    static long expect;
     while (1) {
         start = millis();
+        xSemaphoreTake(displayMutex, portMAX_DELAY);
         msx1.tick(0, 0, 0); // even frame (rendering)
-        soundData = msx1.getSound(&soundSize);
+        xSemaphoreGive(displayMutex);
         msx1.tick(0, 0, 0); // odd frame (skip rendering)
         soundData = msx1.getSound(&soundSize);
+        i2s_write(I2S_NUM_0, soundData, soundSize, &soundSize, portMAX_DELAY);
         procTime = millis() - start;
-        if (procTime < min) min = procTime;
-        if (max < procTime) max = procTime;
-        expect = interval[loopCount];
-        if (procTime < expect) {
-            fps = 60;
-            delay(expect - procTime);
-        } else {
-            fps = 2000 / procTime;
+        fps = 2000 / procTime;
+        if (procTime < interval[loopCount]) {
+            ets_delay_us((interval[loopCount] - procTime) * 1000);
         }
         loopCount++;
         loopCount %= 3;
+        fps = 2000 / (millis() - start);
     }
 }
 
@@ -84,6 +76,7 @@ void renderer(void* arg)
     static int renderFps;
     while (1) {
         start = millis();
+        vTaskDelay(3);
         gfx.startWrite();
         if (backdropColor != backdropPrev) {
             backdropPrev = backdropColor;
@@ -93,7 +86,7 @@ void renderer(void* arg)
             gfx.fillRect(288, 24, 32, 192, backdropPrev);
         }
         gfx.setCursor(0, 0);
-        sprintf(buf, "Emu: %d/60fps, Lcd: %d/30fps", fps, renderFps);
+        sprintf(buf, "EMU:%d/60fps  LCD:%d/30fps ", fps, renderFps);
         gfx.print(buf);
         xSemaphoreTake(displayMutex, portMAX_DELAY);
         canvas.pushSprite(32, 24);
@@ -101,15 +94,30 @@ void renderer(void* arg)
         gfx.endWrite();
         procTime = millis() - start;
         if (procTime < 33) {
-            delay(33 - procTime);
-            renderFps = 1000 / 33;
-        } else {
-            renderFps = 1000 / procTime;
+            ets_delay_us((33 - procTime) * 1000);
         }
+        renderFps = 1000 / (millis() - start);
     }
 }
 
 void setup() {
+    i2s_config_t audioConfig = {
+        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_DAC_BUILT_IN),
+        .sample_rate = 44100,
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
+        .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
+        .communication_format = I2S_COMM_FORMAT_STAND_MSB,
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+        .dma_buf_count = 2,
+        .dma_buf_len = 1024,
+        .use_apll = false,
+        .tx_desc_auto_clear = true
+    };
+    i2s_driver_install(I2S_NUM_0, &audioConfig, 0, nullptr);
+    //i2s_set_pin(I2S_NUM_0, nullptr);
+    i2s_set_dac_mode(I2S_DAC_CHANNEL_RIGHT_EN);
+    i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO);
+    i2s_zero_dma_buffer(I2S_NUM_0);
     M5.begin();
     gfx.begin();
     gfx.setColorDepth(16);
