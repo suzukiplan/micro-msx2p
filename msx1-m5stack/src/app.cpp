@@ -16,14 +16,17 @@ static bool booted;
 static M5GFX gfx;
 static CustomCanvas canvas(&gfx);
 static uint16_t displayBuffer[256];
-static bool pauseRenderer;
+static xSemaphoreHandle displayMutex;
 static unsigned short backdropColor;
 static int fps;
 static MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
+    if (0 == lineNumber) {
+        xSemaphoreTake(displayMutex, portMAX_DELAY);
+    }
     canvas.pushImage(0, lineNumber, 256, 1, display);
     if (191 == lineNumber) {
         backdropColor = ((MSX1*)arg)->getBackdropColor(true);
-        pauseRenderer = false;
+        xSemaphoreGive(displayMutex);
     }
 });
 
@@ -63,7 +66,7 @@ void ticker(void* arg)
         expect = interval[loopCount];
         if (procTime < expect) {
             fps = 60;
-            vTaskDelay(expect - procTime);
+            delay(expect - procTime);
         } else {
             fps = 2000 / procTime;
         }
@@ -74,20 +77,13 @@ void ticker(void* arg)
 
 void renderer(void* arg)
 {
-    uint16_t backdropPrev = 0;
-    pauseRenderer = true;
-    static long start;
-    static long renderTime = 0;
-    static const long interval[3] = { 33, 33, 34 };
-    static int loopCount = 0;
-    static long expect;
+    static uint16_t backdropPrev = 0;
     static char buf[80];
+    static long start;
+    static long procTime;
+    static int renderFps;
     while (1) {
-        while (pauseRenderer) {
-            vTaskDelay(1);
-        }
         start = millis();
-        pauseRenderer = true;
         gfx.startWrite();
         if (backdropColor != backdropPrev) {
             backdropPrev = backdropColor;
@@ -97,19 +93,19 @@ void renderer(void* arg)
             gfx.fillRect(288, 24, 32, 192, backdropPrev);
         }
         gfx.setCursor(0, 0);
-        sprintf(buf, "%d/60fps (%d/30fps)", fps, fps / 2);
+        sprintf(buf, "Emu: %d/60fps, Lcd: %d/30fps", fps, renderFps);
         gfx.print(buf);
+        xSemaphoreTake(displayMutex, portMAX_DELAY);
         canvas.pushSprite(32, 24);
+        xSemaphoreGive(displayMutex);
         gfx.endWrite();
-        renderTime = millis() - start;
-        expect = interval[loopCount];
-        if (renderTime < expect) {
-            vTaskDelay(expect - renderTime);
+        procTime = millis() - start;
+        if (procTime < 33) {
+            delay(33 - procTime);
+            renderFps = 1000 / 33;
         } else {
-            vTaskDelay(1);
+            renderFps = 1000 / procTime;
         }
-        loopCount++;
-        loopCount %= 3;
     }
 }
 
@@ -120,6 +116,7 @@ void setup() {
     gfx.fillScreen(TFT_BLACK);
     canvas.setColorDepth(16);
     canvas.createSprite(256, 192);
+    displayMutex = xSemaphoreCreateMutex();
     displayMessage("Checking memory usage before launch MSX...");
     displayMessage("- HEAP: %d", esp_get_free_heap_size());
     displayMessage("- MALLOC_CAP_EXEC: %d", heap_caps_get_free_size(MALLOC_CAP_EXEC));
