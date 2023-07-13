@@ -36,7 +36,7 @@ class MSX1
 {
   private:
     const int CPU_CLOCK = 3584160;
-    const int VDP_CLOCK = 21504960;
+    const int VDP_CLOCK = 5376240;
     const int PSG_CLOCK = 44100;
 
     class InternalBuffer
@@ -360,7 +360,7 @@ class MSX1
         while (0 < this->psg.ctx.bobo) {
             this->psg.ctx.bobo -= this->CPU_CLOCK;
             this->ib.soundBuffer[this->ib.soundBufferCursor++] = this->psg.tick(81);
-            this->ib.soundBufferCursor &= 0x0FFF;
+            this->ib.soundBufferCursor &= sizeof(this->ib.soundBuffer) - 1;
         }
         // Asynchronous with VDP
         this->vdp.ctx->bobo += cpuClocks * VDP_CLOCK;
