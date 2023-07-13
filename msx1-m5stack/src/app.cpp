@@ -46,24 +46,50 @@ void ticker(void* arg)
     static size_t soundSize;
     static long start;
     static long procTime = 0;
-    static const long interval[3] = { 33, 33, 34 };
+    static const long interval[3] = { 16, 17, 17 };
     static int loopCount = 0;
+    static int fpsCounter;
+    static long sec = 0;
     while (1) {
         start = millis();
+        // calc fps
+        if (sec != start / 1000) {
+            sec = start / 1000;
+            fps = fpsCounter;
+            fpsCounter = 0;
+        }
+
+        // execute even frame (rendering display buffer)
         xSemaphoreTake(displayMutex, portMAX_DELAY);
-        msx1.tick(0, 0, 0); // even frame (rendering)
+        msx1.tick(0, 0, 0);
         xSemaphoreGive(displayMutex);
-        msx1.tick(0, 0, 0); // odd frame (skip rendering)
-        soundData = msx1.getSound(&soundSize);
-        i2s_write(I2S_NUM_0, soundData, soundSize, &soundSize, portMAX_DELAY);
+        fpsCounter++;
+
+        // wait
         procTime = millis() - start;
-        fps = 2000 / procTime;
         if (procTime < interval[loopCount]) {
             ets_delay_us((interval[loopCount] - procTime) * 1000);
         }
         loopCount++;
         loopCount %= 3;
-        fps = 2000 / (millis() - start);
+
+        // execute odd frame (skip rendering)
+        start = millis();
+        msx1.tick(0, 0, 0); 
+        fpsCounter++;
+
+        // write sound data
+        soundData = msx1.getSound(&soundSize);
+        i2s_write(I2S_NUM_0, soundData, soundSize, &soundSize, portMAX_DELAY);
+
+        // wait
+        procTime = millis() - start;
+        if (procTime < interval[loopCount]) {
+            ets_delay_us((interval[loopCount] - procTime) * 1000);
+        }
+        loopCount++;
+        loopCount %= 3;
+
     }
 }
 
