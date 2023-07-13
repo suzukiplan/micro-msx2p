@@ -25,6 +25,8 @@ static MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](v
     if (191 == lineNumber) {
         backdropColor = ((MSX1*)arg)->getBackdropColor(true);
     }
+}, [](void* arg, void* buffer, size_t size) {
+    i2s_write(I2S_NUM_0, buffer, size, &size, portMAX_DELAY);
 });
 
 static void displayMessage(const char* format, ...)
@@ -78,10 +80,6 @@ void ticker(void* arg)
         msx1.tick(0, 0, 0); 
         fpsCounter++;
 
-        // write sound data
-        soundData = msx1.getSound(&soundSize);
-        i2s_write(I2S_NUM_0, soundData, soundSize, &soundSize, portMAX_DELAY);
-
         // wait
         procTime = millis() - start;
         if (procTime < interval[loopCount]) {
@@ -134,13 +132,12 @@ void setup() {
         .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
         .communication_format = I2S_COMM_FORMAT_STAND_MSB,
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-        .dma_buf_count = 2,
+        .dma_buf_count = 8,
         .dma_buf_len = 1024,
         .use_apll = false,
         .tx_desc_auto_clear = true
     };
     i2s_driver_install(I2S_NUM_0, &audioConfig, 0, nullptr);
-    //i2s_set_pin(I2S_NUM_0, nullptr);
     i2s_set_dac_mode(I2S_DAC_CHANNEL_RIGHT_EN);
     i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO);
     i2s_zero_dma_buffer(I2S_NUM_0);

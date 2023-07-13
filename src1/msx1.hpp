@@ -38,11 +38,12 @@ class MSX1
     const int CPU_CLOCK = 3584160;
     const int VDP_CLOCK = 5376240;
     const int PSG_CLOCK = 44100;
+    void (*audioCallback)(void* arg, void* buffer, size_t size);
 
     class InternalBuffer
     {
       public:
-        short soundBuffer[0x1000];
+        short soundBuffer[512];
         int soundBufferCursor;
         char* quickSaveBuffer;
         size_t quickSaveBufferPtr;
@@ -139,9 +140,10 @@ class MSX1
     {
     }
 
-    MSX1(TMS9918A::ColorMode colorMode, unsigned char* ram, size_t ramSize, TMS9918A::Context* vram, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
+    MSX1(TMS9918A::ColorMode colorMode, unsigned char* ram, size_t ramSize, TMS9918A::Context* vram, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr, void (*audioCallback)(void*, void*, size_t) = nullptr)
     {
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
+        this->audioCallback = audioCallback;
         this->mmu.setupRAM(ram, ramSize);
         this->vdp.initialize(
             colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
@@ -361,6 +363,9 @@ class MSX1
             this->psg.ctx.bobo -= this->CPU_CLOCK;
             this->ib.soundBuffer[this->ib.soundBufferCursor++] = this->psg.tick(81);
             this->ib.soundBufferCursor &= sizeof(this->ib.soundBuffer) - 1;
+            if (0 == this->ib.soundBufferCursor && this->audioCallback) {
+                this->audioCallback(this, ib.soundBuffer, sizeof(ib.soundBuffer));
+            }
         }
         // Asynchronous with VDP
         this->vdp.ctx->bobo += cpuClocks * VDP_CLOCK;
