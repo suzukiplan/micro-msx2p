@@ -105,14 +105,30 @@ class Z80
     // bit table
     const unsigned char bits[8] = {0b00000001, 0b00000010, 0b00000100, 0b00001000, 0b00010000, 0b00100000, 0b01000000, 0b10000000};
     // flag setter
-    inline void setFlagS(bool on) { on ? reg.pair.F |= flagS() : reg.pair.F &= ~flagS(); }
-    inline void setFlagZ(bool on) { on ? reg.pair.F |= flagZ() : reg.pair.F &= ~flagZ(); }
-    inline void setFlagY(bool on) { on ? reg.pair.F |= flagY() : reg.pair.F &= ~flagY(); }
-    inline void setFlagH(bool on) { on ? reg.pair.F |= flagH() : reg.pair.F &= ~flagH(); }
-    inline void setFlagX(bool on) { on ? reg.pair.F |= flagX() : reg.pair.F &= ~flagX(); }
-    inline void setFlagPV(bool on) { on ? reg.pair.F |= flagPV() : reg.pair.F &= ~flagPV(); }
-    inline void setFlagN(bool on) { on ? reg.pair.F |= flagN() : reg.pair.F &= ~flagN(); }
-    inline void setFlagC(bool on) { on ? reg.pair.F |= flagC() : reg.pair.F &= ~flagC(); }
+    inline void setFlagS() { reg.pair.F |= flagS(); }
+    inline void setFlagZ() { reg.pair.F |= flagZ(); }
+    inline void setFlagY() { reg.pair.F |= flagY(); }
+    inline void setFlagH() { reg.pair.F |= flagH(); }
+    inline void setFlagX() { reg.pair.F |= flagX(); }
+    inline void setFlagPV() { reg.pair.F |= flagPV(); }
+    inline void setFlagN() { reg.pair.F |= flagN(); }
+    inline void setFlagC() { reg.pair.F |= flagC(); }
+    inline void resetFlagS() { reg.pair.F &= ~flagS(); }
+    inline void resetFlagZ() { reg.pair.F &= ~flagZ(); }
+    inline void resetFlagY() { reg.pair.F &= ~flagY(); }
+    inline void resetFlagH() { reg.pair.F &= ~flagH(); }
+    inline void resetFlagX() { reg.pair.F &= ~flagX(); }
+    inline void resetFlagPV() { reg.pair.F &= ~flagPV(); }
+    inline void resetFlagN() { reg.pair.F &= ~flagN(); }
+    inline void resetFlagC() { reg.pair.F &= ~flagC(); }
+    inline void setFlagS(bool on) { on ? setFlagS() : resetFlagS(); }
+    inline void setFlagZ(bool on) { on ? setFlagZ() : resetFlagZ(); }
+    inline void setFlagY(bool on) { on ? setFlagY() : resetFlagY(); }
+    inline void setFlagH(bool on) { on ? setFlagH() : resetFlagH(); }
+    inline void setFlagX(bool on) { on ? setFlagX() : resetFlagX(); }
+    inline void setFlagPV(bool on) { on ? setFlagPV() : resetFlagPV(); }
+    inline void setFlagN(bool on) { on ? setFlagN() : resetFlagN(); }
+    inline void setFlagC(bool on) { on ? setFlagC() : resetFlagC(); }
 
     inline void setFlagXY(unsigned char value)
     {
@@ -129,22 +145,20 @@ class Z80
     inline bool isFlagC() { return reg.pair.F & flagC(); }
 
     enum class Condition {
-        Z = 0b0000000001000000,
-        C = 0b0000000000000001,
-        PV = 0b0000000000000100,
-        S = 0b0000000010000000,
-        NZ = 0b1111111101000000,
-        NC = 0b1111111100000001,
-        NPV = 0b1111111100000100,
-        NS = 0b1111111110000000,
+        Z = 0x40,
+        C = 0x01,
+        PV = 0x04,
+        S = 0x80,
+        NZ = 0x4040,
+        NC = 0x0101,
+        NPV = 0x0404,
+        NS = 0x8080,
     };
 
     inline bool checkConditionFlag(Condition c)
     {
         int ic = (int)c;
-        int n = ic & 0xFF00;
-        int bit = ic & reg.pair.F;
-        return n ? 0 == bit : 0 != bit;
+        return (ic & reg.pair.F) ^ ((ic & 0xFF00) >> 8);
     }
 
     inline unsigned char IFF1() { return 0b00000001; }
@@ -271,7 +285,9 @@ class Z80
     struct Callback {
         CoExistenceCallback<unsigned char(void*, unsigned short)> read;
         CoExistenceCallback<void(void*, unsigned short, unsigned char)> write;
+#ifndef Z80_UNSUPPORT_16BIT_PORT
         bool returnPortAs16Bits;
+#endif
         CoExistenceCallback<unsigned char(void*, unsigned short)> in;
         CoExistenceCallback<void(void*, unsigned short, unsigned char)> out;
 #ifndef Z80_DISABLE_DEBUG
@@ -491,7 +507,13 @@ class Z80
     inline void consumeClock(int hz)
     {
         reg.consumeClockCounter += hz;
+#ifndef Z80_CALLBACK_PER_INSTRUCTION
+#ifdef Z80_CALLBACK_WITHOUT_CHECK
+        CB.consumeClock(CB.arg, hz);
+#else
         if (CB.consumeClockEnabled && hz) CB.consumeClock(CB.arg, hz);
+#endif
+#endif
     }
 
     inline unsigned short getPort16WithB(unsigned char c) { return make16BitsFromLE(c, reg.pair.B); }
@@ -499,27 +521,43 @@ class Z80
 
     inline unsigned char inPortWithB(unsigned char port, int clock = 4)
     {
+#ifdef Z80_UNSUPPORT_16BIT_PORT
+        unsigned char byte = CB.in(CB.arg, port);
+#else
         unsigned char byte = CB.in(CB.arg, CB.returnPortAs16Bits ? getPort16WithB(port) : port);
+#endif
         consumeClock(clock);
         return byte;
     }
 
     inline unsigned char inPortWithA(unsigned char port, int clock = 4)
     {
+#ifdef Z80_UNSUPPORT_16BIT_PORT
+        unsigned char byte = CB.in(CB.arg, port);
+#else
         unsigned char byte = CB.in(CB.arg, CB.returnPortAs16Bits ? getPort16WithA(port) : port);
+#endif
         consumeClock(clock);
         return byte;
     }
 
     inline void outPortWithB(unsigned char port, unsigned char value, int clock = 4)
     {
+#ifdef Z80_UNSUPPORT_16BIT_PORT
+        CB.out(CB.arg, port, value);
+#else
         CB.out(CB.arg, CB.returnPortAs16Bits ? getPort16WithB(port) : port, value);
+#endif
         consumeClock(clock);
     }
 
     inline void outPortWithA(unsigned char port, unsigned char value, int clock = 4)
     {
+#ifdef Z80_UNSUPPORT_16BIT_PORT
+        CB.out(CB.arg, port, value);
+#else
         CB.out(CB.arg, CB.returnPortAs16Bits ? getPort16WithA(port) : port, value);
+#endif
         consumeClock(clock);
     }
 
@@ -1793,9 +1831,9 @@ class Z80
         setBC(bc);
         setDE(de);
         setHL(hl);
-        setFlagH(false);
+        resetFlagH();
         setFlagPV(bc != 0);
-        setFlagN(false);
+        resetFlagN();
         unsigned char an = reg.pair.A + n;
         setFlagY(an & 0b00000010);
         setFlagX(an & 0b00001000);
@@ -1973,8 +2011,8 @@ class Z80
     inline void setFlagByRotate(unsigned char n, bool carry, bool isA = false)
     {
         setFlagC(carry);
-        setFlagH(false);
-        setFlagN(false);
+        resetFlagH();
+        resetFlagN();
         setFlagXY(n);
         if (!isA) {
             setFlagS(n & 0x80);
@@ -1995,7 +2033,7 @@ class Z80
 
     inline unsigned char SLA(unsigned char n)
     {
-        unsigned char c = n & 0x80 ? 1 : 0;
+        unsigned char c = (n & 0x80) >> 7;
         n &= 0b01111111;
         n <<= 1;
         setFlagByRotate(n, c);
@@ -2024,7 +2062,7 @@ class Z80
 
     inline unsigned char RLC(unsigned char n, bool isA = false)
     {
-        unsigned char c = n & 0x80 ? 1 : 0;
+        unsigned char c = (n & 0x80) >> 7;
         n &= 0b01111111;
         n <<= 1;
         n |= c; // differ with RL
@@ -2034,7 +2072,7 @@ class Z80
 
     inline unsigned char RL(unsigned char n, bool isA = false)
     {
-        unsigned char c = n & 0x80 ? 1 : 0;
+        unsigned char c = (n & 0x80) >> 7;
         n &= 0b01111111;
         n <<= 1;
         n |= isFlagC() ? 1 : 0; // differ with RLC
@@ -2044,7 +2082,7 @@ class Z80
 
     inline unsigned char RRC(unsigned char n, bool isA = false)
     {
-        unsigned char c = n & 1 ? 0x80 : 0;
+        unsigned char c = (n & 1) << 7;
         n &= 0b11111110;
         n >>= 1;
         n |= c; // differ with RR
@@ -2054,7 +2092,7 @@ class Z80
 
     inline unsigned char RR(unsigned char n, bool isA = false)
     {
-        unsigned char c = n & 1 ? 0x80 : 0;
+        unsigned char c = (n & 1) << 7;
         n &= 0b11111110;
         n >>= 1;
         n |= isFlagC() ? 0x80 : 0; // differ with RR
@@ -2961,7 +2999,7 @@ class Z80
     inline void setFlagByIncrement(unsigned char before)
     {
         unsigned char finalResult = before + 1;
-        setFlagN(false);
+        resetFlagN();
         setFlagZ(0 == finalResult);
         setFlagS(0x80 & finalResult);
         setFlagH((finalResult & 0x0F) == 0x00);
@@ -2972,7 +3010,7 @@ class Z80
     inline void setFlagByDecrement(unsigned char before)
     {
         unsigned char finalResult = before - 1;
-        setFlagN(true);
+        setFlagN();
         setFlagZ(0 == finalResult);
         setFlagS(0x80 & finalResult);
         setFlagH((finalResult & 0x0F) == 0x0F);
@@ -3659,7 +3697,7 @@ class Z80
     {
         int result = before + addition;
         int carrybits = before ^ addition ^ result;
-        setFlagN(false);
+        resetFlagN();
         setFlagXY((result & 0xFF00) >> 8);
         setFlagC((carrybits & 0x10000) != 0);
         setFlagH((carrybits & 0x1000) != 0);
@@ -3671,7 +3709,7 @@ class Z80
         int carrybits = before ^ addition ^ result;
         unsigned short finalResult = (unsigned short)(result);
         // same as ADD
-        setFlagN(false);
+        resetFlagN();
         setFlagXY((finalResult & 0xFF00) >> 8);
         setFlagC((carrybits & 0x10000) != 0);
         setFlagH((carrybits & 0x1000) != 0);
@@ -3827,7 +3865,7 @@ class Z80
         int result = before - subtract;
         int carrybits = before ^ subtract ^ result;
         unsigned short finalResult = (unsigned short)result;
-        setFlagN(true);
+        setFlagN();
         setFlagXY((finalResult & 0xFF00) >> 8);
         setFlagC((carrybits & 0x10000) != 0);
         setFlagH((carrybits & 0x1000) != 0);
@@ -3855,33 +3893,35 @@ class Z80
         consumeClock(7);
     }
 
-    inline void setFlagByLogical(bool h)
+    inline void setFlagByLogical()
     {
         setFlagS(reg.pair.A & 0x80);
         setFlagZ(reg.pair.A == 0);
         setFlagXY(reg.pair.A);
-        setFlagH(h);
         setFlagPV(isEvenNumberBits(reg.pair.A));
-        setFlagN(false);
-        setFlagC(false);
+        resetFlagN();
+        resetFlagC();
     }
 
     inline void and8(unsigned char n)
     {
         reg.pair.A &= n;
-        setFlagByLogical(true);
+        setFlagByLogical();
+        setFlagH();
     }
 
     inline void or8(unsigned char n)
     {
         reg.pair.A |= n;
-        setFlagByLogical(false);
+        setFlagByLogical();
+        resetFlagH();
     }
 
     inline void xor8(unsigned char n)
     {
         reg.pair.A ^= n;
-        setFlagByLogical(false);
+        setFlagByLogical();
+        resetFlagH();
     }
 
     // AND Register
@@ -4213,8 +4253,8 @@ class Z80
         if (ctx->isDebug()) ctx->log("[%04X] CPL %s", ctx->reg.PC - 1, ctx->registerDump(0b111));
 #endif
         ctx->reg.pair.A = ~ctx->reg.pair.A;
-        ctx->setFlagH(true);
-        ctx->setFlagN(true);
+        ctx->setFlagH();
+        ctx->setFlagN();
         ctx->setFlagXY(ctx->reg.pair.A);
     }
 
@@ -4237,7 +4277,7 @@ class Z80
         if (ctx->isDebug()) ctx->log("[%04X] CCF <C:%s -> %s>", ctx->reg.PC - 1, ctx->isFlagC() ? "ON" : "OFF", !ctx->isFlagC() ? "ON" : "OFF");
 #endif
         ctx->setFlagH(ctx->isFlagC());
-        ctx->setFlagN(false);
+        ctx->resetFlagN();
         ctx->setFlagC(!ctx->isFlagC());
         ctx->setFlagXY(ctx->reg.pair.A);
     }
@@ -4248,9 +4288,9 @@ class Z80
 #ifndef Z80_DISABLE_DEBUG
         if (ctx->isDebug()) ctx->log("[%04X] SCF <C:%s -> ON>", ctx->reg.PC - 1, ctx->isFlagC() ? "ON" : "OFF");
 #endif
-        ctx->setFlagH(false);
-        ctx->setFlagN(false);
-        ctx->setFlagC(true);
+        ctx->resetFlagH();
+        ctx->resetFlagN();
+        ctx->setFlagC();
         ctx->setFlagXY(ctx->reg.pair.A);
     }
 
@@ -4322,8 +4362,8 @@ class Z80
         setFlagZ(n ? false : true);
         setFlagPV(isFlagZ());
         setFlagS(!isFlagZ() && 7 == bit);
-        setFlagH(true);
-        setFlagN(false);
+        setFlagH();
+        resetFlagN();
         setFlagXY(*rp);
     }
 
@@ -4346,8 +4386,8 @@ class Z80
         setFlagZ(!n);
         setFlagPV(isFlagZ());
         setFlagS(!isFlagZ() && 7 == bit);
-        setFlagH(true);
-        setFlagN(false);
+        setFlagH();
+        resetFlagN();
         setFlagXY((reg.WZ & 0xFF00) >> 8);
     }
 
@@ -4370,8 +4410,8 @@ class Z80
         setFlagZ(!n);
         setFlagPV(isFlagZ());
         setFlagS(!isFlagZ() && 7 == bit);
-        setFlagH(true);
-        setFlagN(false);
+        setFlagH();
+        resetFlagN();
         setFlagXY((reg.WZ & 0xFF00) >> 8);
     }
 
@@ -4394,8 +4434,8 @@ class Z80
         setFlagZ(!n);
         setFlagPV(isFlagZ());
         setFlagS(!isFlagZ() && 7 == bit);
-        setFlagH(true);
-        setFlagN(false);
+        setFlagH();
+        resetFlagN();
         setFlagXY((reg.WZ & 0xFF00) >> 8);
     }
 
@@ -5443,9 +5483,9 @@ class Z80
 #endif
         setFlagS(i & 0x80);
         setFlagZ(i == 0);
-        setFlagH(false);
+        resetFlagH();
         setFlagPV(isEvenNumberBits(i));
-        setFlagN(false);
+        resetFlagN();
         setFlagXY(i);
     }
 
@@ -5454,7 +5494,7 @@ class Z80
         reg.pair.B--;
         reg.pair.F = 0;
         setFlagC(isFlagC());
-        setFlagN(true);
+        setFlagN();
         setFlagZ(reg.pair.B == 0);
         setFlagXY(reg.pair.B);
         setFlagS(reg.pair.B & 0x80);
@@ -5607,9 +5647,9 @@ class Z80
         setFlagS(reg.pair.A & 0x80);
         setFlagXY(reg.pair.A);
         setFlagZ(reg.pair.A == 0);
-        setFlagH(false);
+        resetFlagH();
         setFlagPV(isEvenNumberBits(reg.pair.A));
-        setFlagN(false);
+        resetFlagN();
         consumeClock(2);
     }
 
@@ -5636,9 +5676,9 @@ class Z80
         setFlagS(reg.pair.A & 0x80);
         setFlagXY(reg.pair.A);
         setFlagZ(reg.pair.A == 0);
-        setFlagH(false);
+        resetFlagH();
         setFlagPV(isEvenNumberBits(reg.pair.A));
-        setFlagN(false);
+        resetFlagN();
         consumeClock(2);
     }
 
@@ -6039,7 +6079,9 @@ class Z80
     {
         CB.in.setupAsFunctionObject(in);
         CB.out.setupAsFunctionObject(out);
+#ifndef Z80_UNSUPPORT_16BIT_PORT
         CB.returnPortAs16Bits = returnPortAs16Bits;
+#endif
     }
 
     void setupCallbackFP(unsigned char (*read)(void* arg, unsigned short addr),
@@ -6076,7 +6118,9 @@ class Z80
     {
         CB.in.setupAsFunctionPointer(in);
         CB.out.setupAsFunctionPointer(out);
+#ifndef Z80_UNSUPPORT_16BIT_PORT
         CB.returnPortAs16Bits = returnPortAs16Bits;
+#endif
     }
 
     void initialize()
@@ -6376,8 +6420,18 @@ class Z80
             }
             executed += reg.consumeClockCounter;
             clock -= reg.consumeClockCounter;
+#ifdef Z80_CALLBACK_PER_INSTRUCTION
+            checkInterrupt();
+#ifdef Z80_CALLBACK_WITHOUT_CHECK
+            CB.consumeClock(CB.arg, reg.consumeClockCounter);
+#else
+            if (CB.consumeClockEnabled) CB.consumeClock(CB.arg, reg.consumeClockCounter);
+#endif
+            reg.consumeClockCounter = 0;
+#else
             reg.consumeClockCounter = 0;
             checkInterrupt();
+#endif
         }
         return executed;
     }
@@ -6386,6 +6440,9 @@ class Z80
     {
         requestBreakFlag = false;
         while (!requestBreakFlag) {
+#ifdef Z80_CALLBACK_PER_INSTRUCTION
+            reg.consumeClockCounter = 0;
+#endif
             // execute NOP while halt
             if (reg.IFF & IFF_HALT()) {
                 reg.execEI = 0;
@@ -6403,6 +6460,13 @@ class Z80
                 opSet1[operandNumber](this);
             }
             checkInterrupt();
+#ifdef Z80_CALLBACK_PER_INSTRUCTION
+#ifdef Z80_CALLBACK_WITHOUT_CHECK
+            CB.consumeClock(CB.arg, reg.consumeClockCounter);
+#else
+            if (CB.consumeClockEnabled) CB.consumeClock(CB.arg, reg.consumeClockCounter);
+#endif
+#endif
         }
     }
 
