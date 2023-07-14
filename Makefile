@@ -1,4 +1,5 @@
 all:
+	git submodule update --init --recursive
 	cd test/performance && make
 	cd test/performance1 && make
 	cd msx2-dotnet && make clean all
