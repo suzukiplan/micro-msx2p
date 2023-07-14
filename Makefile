@@ -2,6 +2,7 @@ all:
 	cd test/performance && make
 	cd test/performance1 && make
 	cd msx2-dotnet && make clean all
+	cd test/google-benchmark && make
 
 format:
 	make execute-format FILENAME=./src/ay8910.hpp
