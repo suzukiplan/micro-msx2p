@@ -557,6 +557,7 @@ class MSX1
                 memcpy(&this->psg.ctx, ptr, chunkSize);
             } else if (0 == strcmp(chunk, "VDP")) {
                 memcpy(this->vdp.ctx, ptr, chunkSize);
+                this->vdp.refresh();
             }
             ptr += chunkSize;
             size -= chunkSize;

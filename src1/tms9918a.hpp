@@ -170,21 +170,14 @@ class TMS9918A
     {
         memset(this->display, 0, this->displaySize);
         memset(this->ctx, 0, sizeof(Context));
+        this->refresh();
     }
 
-    inline int getVideoMode()
-    {
-        // NOTE: undocumented mode is not support
-        if (ctx->reg[1] & 0b00010000) return 1; // Mode 1
-        if (ctx->reg[0] & 0b00000010) return 2; // Mode 2
-        if (ctx->reg[1] & 0b00001000) return 3; // Mode 3
-        return 0;                               // Mode 0
-    }
-
-    inline bool isEnabledScreen() { return ctx->reg[1] & 0b01000000 ? true : false; }
-    inline bool isEnabledInterrupt() { return ctx->reg[1] & 0b00100000 ? true : false; }
-    inline unsigned short getBackdropColor() { return palette[ctx->reg[7] & 0b00001111]; }
-    inline unsigned short getBackdropColor(bool swap) { return swap ? this->swap16(palette[ctx->reg[7] & 0b00001111]) : palette[ctx->reg[7] & 0b00001111]; }
+    void refresh() { this->acUpdate(); }
+    inline bool isEnabledScreen() { return ac.isEnabledScreen; }
+    inline bool isEnabledInterrupt() { return ac.isEnabledInterrupt; }
+    inline unsigned short getBackdropColor() { return ac.backdropColor; }
+    inline unsigned short getBackdropColor(bool swap) { return swap ? this->swap16(this->ac.backdropColor) : this->ac.backdropColor; }
 
     inline void tick(int tickCount)
     {
@@ -261,6 +254,102 @@ class TMS9918A
     }
 
   private:
+    struct AddressCache {
+        int mode;
+        bool isEnabledScreen;
+        bool isEnabledInterrupt;
+        unsigned short backdropColor;
+        int si;
+        int mag;
+        int mag8;
+        int mag16;
+        int pn;
+        int ct0;
+        int ct2;
+        int pg0;
+        int pg2;
+        int pmask;
+        int cmask;
+        int sa;
+        int sg;
+        int bd;
+    } ac;
+
+    inline void acUpdateMode()
+    {
+        if (this->ctx->reg[1] & 0b00010000) {
+            this->ac.mode = 1;
+        } else if (this->ctx->reg[0] & 0b00000010) {
+            this->ac.mode = 2;
+        } else if (this->ctx->reg[1] & 0b00001000) {
+            this->ac.mode = 3;
+        } else {
+            this->ac.mode = 0;
+        }
+    }
+
+    static inline void acUpdate0(TMS9918A* tms)
+    {
+        tms->acUpdateMode();
+    }
+
+    static inline void acUpdate1(TMS9918A* tms)
+    {
+        tms->ac.si = tms->ctx->reg[1] & 0b00000010 ? 16 : 8;
+        tms->ac.mag = tms->ctx->reg[1] & 0b00000001 ? 2 : 1;
+        tms->ac.mag8 = tms->ac.mag * 8;
+        tms->ac.mag16 = tms->ac.mag * 16;
+        tms->ac.isEnabledScreen = tms->ctx->reg[1] & 0b01000000 ? true : false;
+        tms->ac.isEnabledInterrupt = tms->ctx->reg[1] & 0b00100000 ? true : false;
+        tms->acUpdateMode();
+    }
+
+    static inline void acUpdate2(TMS9918A* tms)
+    {
+        tms->ac.pn = (tms->ctx->reg[2] & 0b00001111) << 10;
+    }
+
+    static inline void acUpdate3(TMS9918A* tms)
+    {
+        tms->ac.ct0 = tms->ctx->reg[3] << 6;
+        tms->ac.ct2 = (tms->ctx->reg[3] & 0b10000000) << 6;
+        tms->ac.cmask = tms->ctx->reg[3] & 0b01111111;
+        tms->ac.cmask <<= 3;
+        tms->ac.cmask |= 0x07;
+    }
+
+    static inline void acUpdate4(TMS9918A* tms)
+    {
+        tms->ac.pg0 = (tms->ctx->reg[4] & 0b00000111) << 11;
+        tms->ac.pg2 = (tms->ctx->reg[4] & 0b00000100) << 11;
+        tms->ac.pmask = tms->ctx->reg[4] & 0b00000011;
+        tms->ac.pmask <<= 8;
+        tms->ac.pmask |= 0xFF;
+    }
+
+    static inline void acUpdate5(TMS9918A* tms)
+    {
+        tms->ac.sa = (tms->ctx->reg[5] & 0b01111111) << 7;
+    }
+
+    static inline void acUpdate6(TMS9918A* tms)
+    {
+        tms->ac.sg = (tms->ctx->reg[6] & 0b00000111) << 11;
+    }
+
+    static inline void acUpdate7(TMS9918A* tms)
+    {
+        tms->ac.bd = tms->ctx->reg[7] & 0b00001111;
+        tms->ac.backdropColor = tms->palette[tms->ac.bd];
+    }
+
+    void (*updateTable[8])(TMS9918A*) = {acUpdate0, acUpdate1, acUpdate2, acUpdate3, acUpdate4, acUpdate5, acUpdate6, acUpdate7};
+    inline void acUpdate(int n) { updateTable[n & 7](this); }
+    inline void acUpdate()
+    {
+        for (int i = 0; i < 8; i++) acUpdate(i);
+    }
+
     int renderingLineTable[263];
     void initRedneringLineTable()
     {
@@ -299,7 +388,7 @@ class TMS9918A
 #endif
         // TODO: Several modes (1, 3, undocumented) are not implemented
         if (this->isEnabledScreen()) {
-            switch (this->getVideoMode()) {
+            switch (this->ac.mode) {
 #ifdef TMS9918A_SKIP_ODD_FRAME_RENDERING
                 case 0: this->renderScanlineMode0(lineNumber, isEvenFrame); break;
                 case 2: this->renderScanlineMode2(lineNumber, isEvenFrame); break;
@@ -312,16 +401,14 @@ class TMS9918A
 #ifdef TMS9918A_SKIP_ODD_FRAME_RENDERING
             if (isEvenFrame) {
                 int dcur = this->getDisplayPtr(lineNumber);
-                unsigned short bd = this->getBackdropColor();
                 for (int i = 0; i < 256; i++) {
-                    this->display[dcur++] = bd;
+                    this->display[dcur++] = this->ac.backdropColor;
                 }
             }
 #else
             int dcur = this->getDisplayPtr(lineNumber);
-            unsigned short bd = this->getBackdropColor();
             for (int i = 0; i < 256; i++) {
-                this->display[dcur++] = bd;
+                this->display[dcur++] = this->ac.backdropColor;
             }
 #endif
         }
@@ -353,10 +440,12 @@ class TMS9918A
     inline void updateRegister()
     {
         bool previousInterrupt = this->isEnabledInterrupt();
-        this->ctx->reg[this->ctx->tmpAddr[1] & 0b00001111] = this->ctx->tmpAddr[0];
+        int r = this->ctx->tmpAddr[1] & 0b00001111;
+        this->ctx->reg[r] = this->ctx->tmpAddr[0];
         if (!previousInterrupt && this->isEnabledInterrupt() && this->ctx->stat & 0x80) {
             this->detectBlank(this->arg);
         }
+        this->acUpdate(r);
     }
 
     inline int getDisplayPtr(int lineNumber)
@@ -369,22 +458,18 @@ class TMS9918A
         int dcur = this->getDisplayPtr(lineNumber);
         int dcur0 = dcur;
         if (rendering) {
-            int pn = (this->ctx->reg[2] & 0b00001111) << 10;
-            int ct = this->ctx->reg[3] << 6;
-            int pg = (this->ctx->reg[4] & 0b00000111) << 11;
-            int bd = this->ctx->reg[7] & 0b00001111;
             int pixelLine = lineNumber % 8;
-            unsigned char* nam = &this->ctx->ram[pn + lineNumber / 8 * 32];
+            unsigned char* nam = &this->ctx->ram[ac.pn + lineNumber / 8 * 32];
             int ptn;
             int c;
             int cc[2];
             for (int i = 0; i < 32; i++) {
-                ptn = this->ctx->ram[pg + nam[i] * 8 + pixelLine];
-                c = this->ctx->ram[ct + nam[i] / 8];
+                ptn = this->ctx->ram[ac.pg0 + nam[i] * 8 + pixelLine];
+                c = this->ctx->ram[ac.ct0 + nam[i] / 8];
                 cc[1] = (c & 0xF0) >> 4;
-                cc[1] = this->palette[cc[1] ? cc[1] : bd];
+                cc[1] = this->palette[cc[1] ? cc[1] : ac.bd];
                 cc[0] = c & 0x0F;
-                cc[0] = this->palette[cc[0] ? cc[0] : bd];
+                cc[0] = this->palette[cc[0] ? cc[0] : ac.bd];
                 this->display[dcur++] = cc[(ptn & 0b10000000) >> 7];
                 this->display[dcur++] = cc[(ptn & 0b01000000) >> 6];
                 this->display[dcur++] = cc[(ptn & 0b00100000) >> 5];
@@ -403,29 +488,19 @@ class TMS9918A
         int dcur = this->getDisplayPtr(lineNumber);
         int dcur0 = dcur;
         if (rendering) {
-            int pn = (this->ctx->reg[2] & 0b00001111) << 10;
-            int ct = (this->ctx->reg[3] & 0b10000000) << 6;
-            int cmask = this->ctx->reg[3] & 0b01111111;
-            cmask <<= 3;
-            cmask |= 0x07;
-            int pg = (this->ctx->reg[4] & 0b00000100) << 11;
-            int pmask = this->ctx->reg[4] & 0b00000011;
-            pmask <<= 8;
-            pmask |= 0xFF;
-            int bd = this->ctx->reg[7] & 0b00001111;
             int pixelLine = lineNumber % 8;
-            unsigned char* nam = &this->ctx->ram[pn + lineNumber / 8 * 32];
+            unsigned char* nam = &this->ctx->ram[ac.pn + lineNumber / 8 * 32];
             int ci = (lineNumber / 64) * 256;
             int ptn;
             int c;
             int cc[2];
             for (int i = 0; i < 32; i++) {
-                ptn = this->ctx->ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
-                c = this->ctx->ram[ct + ((nam[i] + ci) & cmask) * 8 + pixelLine];
+                ptn = this->ctx->ram[ac.pg2 + ((nam[i] + ci) & ac.pmask) * 8 + pixelLine];
+                c = this->ctx->ram[ac.ct2 + ((nam[i] + ci) & ac.cmask) * 8 + pixelLine];
                 cc[1] = (c & 0xF0) >> 4;
-                cc[1] = this->palette[cc[1] ? cc[1] : bd];
+                cc[1] = this->palette[cc[1] ? cc[1] : ac.bd];
                 cc[0] = c & 0x0F;
-                cc[0] = this->palette[cc[0] ? cc[0] : bd];
+                cc[0] = this->palette[cc[0] ? cc[0] : ac.bd];
                 this->display[dcur++] = cc[(ptn & 0b10000000) >> 7];
                 this->display[dcur++] = cc[(ptn & 0b01000000) >> 6];
                 this->display[dcur++] = cc[(ptn & 0b00100000) >> 5];
@@ -450,10 +525,6 @@ class TMS9918A
             0b00000100,
             0b00000010,
             0b00000001};
-        int si = this->ctx->reg[1] & 0b00000010 ? 16 : 8;
-        int mag = this->ctx->reg[1] & 0b00000001 ? 2 : 1;
-        int sa = (this->ctx->reg[5] & 0b01111111) << 7;
-        int sg = (this->ctx->reg[6] & 0b00000111) << 11;
         int sn = 0;
         int tsn = 0;
         unsigned char dlog[256];
@@ -467,7 +538,7 @@ class TMS9918A
         int ptn;
         int col;
         for (int i = 0; i < 32; i++) {
-            cur = sa + i * 4;
+            cur = ac.sa + i * 4;
             y = this->ctx->ram[cur++];
             if (208 == y) break;
             x = this->ctx->ram[cur++];
@@ -476,7 +547,7 @@ class TMS9918A
             if (col & 0x80) x -= 32;
             col &= 0b00001111;
             y += 1;
-            if (y <= lineNumber && lineNumber < y + si * mag) {
+            if (y <= lineNumber && lineNumber < y + ac.si * ac.mag) {
                 sn++;
                 if (!col) tsn++;
                 if (5 == sn) {
@@ -487,33 +558,33 @@ class TMS9918A
                     this->set5S(false, i);
                 }
                 int pixelLine = lineNumber - y;
-                if (16 == si) {
-                    cur = sg + (ptn & 252) * 8 + pixelLine % (8 * mag) / mag + (pixelLine < 8 * mag ? 0 : 8);
+                if (16 == ac.si) {
+                    cur = ac.sg + (ptn & 252) * 8 + pixelLine % ac.mag8 / ac.mag + (pixelLine < ac.mag8 ? 0 : 8);
                 } else {
-                    cur = sg + ptn * 8 + lineNumber % (8 * mag) / mag;
+                    cur = ac.sg + ptn * 8 + lineNumber % ac.mag8 / ac.mag;
                 }
-                for (int j = 0; x < 256 && j < 8 * mag; j++, x++) {
+                for (int j = 0; x < 256 && j < ac.mag8; j++, x++) {
                     if (x < 0) continue;
                     if (wlog[x] && !limitOver) {
                         this->setCollision();
                     }
                     if (0 == dlog[x]) {
-                        if (this->ctx->ram[cur] & bit[j / mag]) {
+                        if (this->ctx->ram[cur] & bit[j / ac.mag]) {
                             if (rendering) renderPosition[x] = this->palette[col];
                             dlog[x] = col;
                             wlog[x] = 1;
                         }
                     }
                 }
-                if (16 == si) {
-                    cur += 16 * mag;
-                    for (int j = 0; x < 256 && j < 8 * mag; j++, x++) {
+                if (16 == ac.si) {
+                    cur += ac.mag16;
+                    for (int j = 0; x < 256 && j < ac.mag8; j++, x++) {
                         if (x < 0) continue;
                         if (wlog[x] && !limitOver) {
                             this->setCollision();
                         }
                         if (0 == dlog[x]) {
-                            if (this->ctx->ram[cur] & bit[j / mag]) {
+                            if (this->ctx->ram[cur] & bit[j / ac.mag]) {
                                 if (rendering) renderPosition[x] = this->palette[col];
                                 dlog[x] = col;
                                 wlog[x] = 1;
