@@ -34,25 +34,47 @@
 
 class MSX1
 {
+#ifdef MSX1_REMOVE_PSG
+  public:
+    struct PsgDelegate {
+        void (*reset)();
+        void (*setPads)(unsigned char pad1, unsigned char pad2);
+        unsigned char (*read)(void);
+        unsigned char (*getPad1)(void);
+        unsigned char (*getPad2)(void);
+        void (*latch)(unsigned char value);
+        void (*write)(unsigned char value);
+        const void* (*getContext)(void);
+        int (*getContextSize)(void);
+        void (*setContext)(const void* context, int size);
+    } psgDelegate;
+#endif
   private:
     const int CPU_CLOCK = 3584160;
     const int VDP_CLOCK = 5376240;
+
+#ifndef MSX1_REMOVE_PSG
     const int PSG_CLOCK = 44100;
     void (*audioCallback)(void* arg, void* buffer, size_t size);
+#endif
 
     class InternalBuffer
     {
       public:
+#ifndef MSX1_REMOVE_PSG
         signed char soundBuffer[1024];
         int soundBufferCursor;
+#endif
         char* quickSaveBuffer;
         size_t quickSaveBufferPtr;
         size_t quickSaveBufferHeapSize;
 
         InternalBuffer()
         {
+#ifndef MSX1_REMOVE_PSG
             memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
             this->soundBufferCursor = 0;
+#endif
             this->quickSaveBuffer = nullptr;
             this->quickSaveBufferPtr = 0;
             this->quickSaveBufferHeapSize = 0;
@@ -126,7 +148,9 @@ class MSX1
     Z80 cpu;
     MSX1MMU mmu;
     TMS9918A vdp;
+#ifndef MSX1_REMOVE_PSG
     AY8910 psg;
+#endif
 
     struct Context {
         unsigned char key;
@@ -140,10 +164,16 @@ class MSX1
     {
     }
 
+#ifndef MSX1_REMOVE_PSG
     MSX1(TMS9918A::ColorMode colorMode, unsigned char* ram, size_t ramSize, TMS9918A::Context* vram, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr, void (*audioCallback)(void*, void*, size_t) = nullptr)
+#else
+    MSX1(TMS9918A::ColorMode colorMode, unsigned char* ram, size_t ramSize, TMS9918A::Context* vram, void (*displayCallback)(void*, int, int, unsigned short*) = nullptr)
+#endif
     {
         memset(&this->keyAssign, 0, sizeof(this->keyAssign));
+#ifndef MSX1_REMOVE_PSG
         this->audioCallback = audioCallback;
+#endif
         this->mmu.setupRAM(ram, ramSize);
         this->vdp.initialize(
             colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
@@ -285,8 +315,6 @@ class MSX1
 
     void reset()
     {
-        memset(this->ib.soundBuffer, 0, sizeof(this->ib.soundBuffer));
-        this->ib.soundBufferCursor = 0;
         memset(&this->cpu.reg, 0, sizeof(this->cpu.reg));
         memset(&this->cpu.reg.pair, 0xFF, sizeof(this->cpu.reg.pair));
         memset(&this->cpu.reg.back, 0xFF, sizeof(this->cpu.reg.back));
@@ -298,7 +326,15 @@ class MSX1
         this->cpu.reg.IY = 0xFFFF;
         this->mmu.reset();
         this->vdp.reset();
+#ifndef MSX1_REMOVE_PSG
+        memset(this->ib.soundBuffer, 0, sizeof(this->ib.soundBuffer));
+        this->ib.soundBufferCursor = 0;
         this->psg.reset(27);
+#else
+        if (this->psgDelegate.reset) {
+            this->psgDelegate.reset();
+        }
+#endif
     }
 
     void setup(int pri, int idx, void* data, int size, const char* label = NULL)
@@ -320,7 +356,11 @@ class MSX1
 
     void tick(unsigned char pad1, unsigned char pad2, unsigned char key)
     {
+#ifndef MSX1_REMOVE_PSG
         this->psg.setPads(pad1, pad2);
+#else
+        this->psgDelegate.setPads(pad1, pad2);
+#endif
         this->ctx.key = key;
         this->keyCodeMap = nullptr;
         this->cpu.execute();
@@ -328,12 +368,17 @@ class MSX1
 
     void tickWithKeyCodeMap(unsigned char pad1, unsigned char pad2, unsigned char* keyCodeMap)
     {
+#ifndef MSX1_REMOVE_PSG
         this->psg.setPads(pad1, pad2);
+#else
+        this->psgDelegate.setPads(pad1, pad2);
+#endif
         this->ctx.key = 0;
         this->keyCodeMap = keyCodeMap;
         this->cpu.execute();
     }
 
+#ifndef MSX1_REMOVE_PSG
     size_t getMaxSoundSize()
     {
         return 0x1000;
@@ -350,13 +395,18 @@ class MSX1
         this->ib.soundBufferCursor = 0;
         return this->ib.soundBuffer;
     }
+#endif
 
-    inline unsigned short* getDisplay() { return this->vdp.display; }
+    inline unsigned short* getDisplay()
+    {
+        return this->vdp.display;
+    }
     inline int getDisplayWidth() { return 256; }
     inline int getDisplayHeight() { return 192; }
 
     inline void consumeClock(int cpuClocks)
     {
+#ifndef MSX1_REMOVE_PSG
         // Asynchronous with PSG
         this->psg.ctx.bobo += cpuClocks * this->PSG_CLOCK;
         while (0 < this->psg.ctx.bobo) {
@@ -367,6 +417,7 @@ class MSX1
                 this->audioCallback(this, ib.soundBuffer, sizeof(ib.soundBuffer));
             }
         }
+#endif
         // Asynchronous with VDP
         this->vdp.ctx->bobo += cpuClocks * VDP_CLOCK;
         int tickCount = (this->vdp.ctx->bobo / CPU_CLOCK) + 1;
@@ -411,10 +462,14 @@ class MSX1
 
     static inline unsigned char inPortA2(MSX1* this_)
     {
+#ifndef MSX1_REMOVE_PSG
         unsigned char result = this_->psg.read();
         if (14 == this_->psg.ctx.latch || 15 == this_->psg.ctx.latch) {
             result |= 0b11000000; // unpush S1/S2
         }
+#else
+        unsigned char result = this_->psgDelegate.read();
+#endif
         return result;
     }
 
@@ -448,6 +503,7 @@ class MSX1
                 }
             }
         }
+#ifndef MSX1_REMOVE_PSG
         if (this_->keyAssign[0].s1 && 0 == (this_->psg.getPad1() & MSX1_JOY_S1)) {
             if (this_->ctx.selectedKeyRow == this_->keyAssign[0].s1->y[0]) {
                 result |= bit[this_->keyAssign[0].s1->x[0]];
@@ -468,6 +524,28 @@ class MSX1
                 result |= bit[this_->keyAssign[1].s2->x[0]];
             }
         }
+#else
+        if (this_->keyAssign[0].s1 && 0 == (this_->psgDelegate.getPad1() & MSX1_JOY_S1)) {
+            if (this_->ctx.selectedKeyRow == this_->keyAssign[0].s1->y[0]) {
+                result |= bit[this_->keyAssign[0].s1->x[0]];
+            }
+        }
+        if (this_->keyAssign[0].s2 && 0 == (this_->psgDelegate.getPad1() & MSX1_JOY_S2)) {
+            if (this_->ctx.selectedKeyRow == this_->keyAssign[0].s2->y[0]) {
+                result |= bit[this_->keyAssign[0].s2->x[0]];
+            }
+        }
+        if (this_->keyAssign[1].s1 && 0 == (this_->psgDelegate.getPad2() & MSX1_JOY_S1)) {
+            if (this_->ctx.selectedKeyRow == this_->keyAssign[1].s1->y[0]) {
+                result |= bit[this_->keyAssign[1].s1->x[0]];
+            }
+        }
+        if (this_->keyAssign[1].s2 && 0 == (this_->psgDelegate.getPad2() & MSX1_JOY_S2)) {
+            if (this_->ctx.selectedKeyRow == this_->keyAssign[1].s2->y[0]) {
+                result |= bit[this_->keyAssign[1].s2->x[0]];
+            }
+        }
+#endif
         return ~result;
     }
 
@@ -475,9 +553,23 @@ class MSX1
     static inline void outPortNotAvailable(MSX1* this_, unsigned char value) {}
     static inline void outPort98(MSX1* this_, unsigned char value) { this_->vdp.writeData(value); }
     static inline void outPort99(MSX1* this_, unsigned char value) { this_->vdp.writeAddress(value); }
-    static inline void outPortA0(MSX1* this_, unsigned char value) { this_->psg.latch(value); }
+#ifndef MSX1_REMOVE_PSG
+    static inline void outPortA0(MSX1* this_, unsigned char value)
+    {
+        this_->psg.latch(value);
+    }
     static inline void outPortA1(MSX1* this_, unsigned char value) { this_->psg.write(value); }
-    static inline void outPortA8(MSX1* this_, unsigned char value) { this_->mmu.updatePrimary(value); }
+#else
+    static inline void outPortA0(MSX1* this_, unsigned char value)
+    {
+        this_->psgDelegate.latch(value);
+    }
+    static inline void outPortA1(MSX1* this_, unsigned char value) { this_->psgDelegate.write(value); }
+#endif
+    static inline void outPortA8(MSX1* this_, unsigned char value)
+    {
+        this_->mmu.updatePrimary(value);
+    }
 
     static inline void outPortAA(MSX1* this_, unsigned char value)
     {
@@ -518,7 +610,11 @@ class MSX1
         if (0 < this->mmu.sramSize) {
             this->writeSaveChunk("SRM", this->mmu.sram, (int)this->mmu.sramSize);
         }
+#ifndef MSX1_REMOVE_PSG
         this->writeSaveChunk("PSG", &this->psg.ctx, (int)sizeof(this->psg.ctx));
+#else
+        this->writeSaveChunk("PSG", this->psgDelegate.getContext(), this->psgDelegate.getContextSize());
+#endif
         this->writeSaveChunk("VDP", this->vdp.ctx, (int)sizeof(TMS9918A::Context));
         *size = this->ib.quickSaveBufferPtr;
         return this->ib.quickSaveBuffer;
@@ -554,7 +650,11 @@ class MSX1
             } else if (0 == strcmp(chunk, "SRM") && this->mmu.sram) {
                 memcpy(this->mmu.sram, ptr, chunkSize <= this->mmu.sramSize ? chunkSize : this->mmu.sramSize);
             } else if (0 == strcmp(chunk, "PSG")) {
+#ifndef MSX1_REMOVE_PSG
                 memcpy(&this->psg.ctx, ptr, chunkSize);
+#else
+                this->psgDelegate.setContext(ptr, chunkSize);
+#endif
             } else if (0 == strcmp(chunk, "VDP")) {
                 memcpy(this->vdp.ctx, ptr, chunkSize);
                 this->vdp.refresh();
@@ -588,8 +688,12 @@ class MSX1
         size += sizeof(this->mmu.ctx) + 8;                   // MMU
         size += this->mmu.ramSize + 8;                       // RAM
         size += this->mmu.sram ? this->mmu.sramSize + 8 : 0; // SRM
-        size += sizeof(this->psg.ctx) + 8;                   // PSG
-        size += sizeof(TMS9918A::Context) + 8;               // VDP
+#ifndef MSX1_REMOVE_PSG
+        size += sizeof(this->psg.ctx) + 8; // PSG
+#else
+        size += psgDelegate.getContextSize() + 8; // PSG
+#endif
+        size += sizeof(TMS9918A::Context) + 8; // VDP
         return size;
     }
 };

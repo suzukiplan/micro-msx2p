@@ -1,4 +1,5 @@
 #include "msx1.hpp"
+#include "ay8910.hpp"
 #include <M5Core2.h>
 #include <M5GFX.h>
 #include "roms.hpp"
@@ -32,6 +33,7 @@ static int cpu0;
 static int cpu1;
 static uint64_t idle0 = 0;
 static uint64_t idle1 = 0;
+static AY8910 psg;
 
 static IRAM_ATTR bool idleTask0()
 {
@@ -50,8 +52,6 @@ static DRAM_ATTR MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &
     if (191 == lineNumber) {
         backdropColor = ((MSX1*)arg)->getBackdropColor(true);
     }
-}, [](void* arg, void* buffer, size_t size) {
-    i2s_write(I2S_NUM_0, buffer, size, &size, portMAX_DELAY);
 });
 
 static void displayMessage(const char* format, ...)
@@ -65,6 +65,16 @@ static void displayMessage(const char* format, ...)
     gfx.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
     gfx.endWrite();
     vTaskDelay(100);
+}
+
+static void log(const char* format, ...)
+{
+    char buf[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buf, sizeof(buf), format, args);
+    va_end(args);
+    Serial.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
 }
 
 void IRAM_ATTR ticker(void* arg)
@@ -113,6 +123,20 @@ void IRAM_ATTR ticker(void* arg)
         loopCount++;
         loopCount %= 3;
 
+    }
+}
+
+void IRAM_ATTR psgTicker(void* arg)
+{
+    static uint8_t buf[1024];
+    static size_t size;
+    static int i;
+    while (1) {
+        for (i = 0; i < 1024; i++) {
+            buf[i] = psg.tick(81);
+        }
+        i2s_write(I2S_NUM_0, buf, sizeof(buf), &size, portMAX_DELAY);
+        vTaskDelay(2);
     }
 }
 
@@ -208,6 +232,17 @@ void setup() {
     msx1.setup(0, 0, (void*)rom_cbios_main_msx1, sizeof(rom_cbios_main_msx1), "MAIN");
     msx1.setup(0, 4, (void*)rom_cbios_logo_msx1, sizeof(rom_cbios_logo_msx1), "LOGO");
     msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL);
+    msx1.psgDelegate.reset = []() { psg.reset(27); };
+    msx1.psgDelegate.setPads = [](unsigned char pad1, unsigned char pad2) { psg.setPads(pad1, pad2); };
+    msx1.psgDelegate.read = []() -> unsigned char { return psg.read(); };
+    msx1.psgDelegate.getPad1 = []() -> unsigned char { return psg.getPad1(); };
+    msx1.psgDelegate.getPad2 = []() -> unsigned char { return psg.getPad2(); };
+    msx1.psgDelegate.latch = [](unsigned char value) { return psg.latch(value); };
+    msx1.psgDelegate.write = [](unsigned char value) { return psg.write(value); };
+    msx1.psgDelegate.getContext = []() -> const void* { return &psg.ctx; };
+    msx1.psgDelegate.getContextSize = []() -> int { return (int)sizeof(psg.ctx); };
+    msx1.psgDelegate.setContext = [](const void* context, int size) { memcpy(&psg.ctx, context, size); };
+    psg.reset(27);
     displayMessage("Setup finished.");
     booted = true;
     usleep(1000000);
@@ -216,6 +251,7 @@ void setup() {
 	esp_register_freertos_idle_hook_for_cpu(idleTask0, 0);
 	esp_register_freertos_idle_hook_for_cpu(idleTask1, 1);
     xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 0);
+    xTaskCreatePinnedToCore(psgTicker, "psgTicker", 4096, nullptr, 25, nullptr, 1);
     xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 1);
     xTaskCreatePinnedToCore(cpuMonitor, "cpuMonitor", 1024, nullptr, 1, nullptr, 1);
 }
