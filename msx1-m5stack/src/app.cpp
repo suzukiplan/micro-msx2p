@@ -2,6 +2,15 @@
 #include <M5Core2.h>
 #include <M5GFX.h>
 #include "roms.hpp"
+#include "esp_freertos_hooks.h"
+
+#if defined(CONFIG_ESP32_DEFAULT_CPU_FREQ_240)
+static const uint64_t MaxIdleCalls = 1855000;
+#elif defined(CONFIG_ESP32_DEFAULT_CPU_FREQ_160)
+static const uint64_t MaxIdleCalls = 1233100;
+#else
+#error "Unsupported CPU frequency"
+#endif
 
 class CustomCanvas : public lgfx::LGFX_Sprite {
   public:
@@ -19,8 +28,24 @@ static uint16_t displayBuffer[256];
 static xSemaphoreHandle displayMutex;
 static unsigned short backdropColor;
 static int fps;
+static int cpu0;
+static int cpu1;
+static uint64_t idle0 = 0;
+static uint64_t idle1 = 0;
 
-static MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
+static IRAM_ATTR bool idleTask0()
+{
+	idle0++;
+	return false;
+}
+
+static IRAM_ATTR bool idleTask1()
+{
+	idle1++;
+	return false;
+}
+
+static DRAM_ATTR MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
     canvas.pushImage(0, lineNumber, 256, 1, display);
     if (191 == lineNumber) {
         backdropColor = ((MSX1*)arg)->getBackdropColor(true);
@@ -42,7 +67,7 @@ static void displayMessage(const char* format, ...)
     vTaskDelay(100);
 }
 
-void ticker(void* arg)
+void IRAM_ATTR ticker(void* arg)
 {
     static void* soundData;
     static size_t soundSize;
@@ -110,14 +135,20 @@ void renderer(void* arg)
         gfx.startWrite();
         if (backdropColor != backdropPrev) {
             backdropPrev = backdropColor;
-            gfx.fillRect(0, 0, 320, 24, backdropPrev);
-            gfx.fillRect(0, 216, 320, 24, backdropPrev);
+            gfx.fillRect(0, 8, 320, 16, backdropPrev);
+            gfx.fillRect(0, 216, 320, 14, backdropPrev);
             gfx.fillRect(0, 24, 32, 192, backdropPrev);
             gfx.fillRect(288, 24, 32, 192, backdropPrev);
         }
         gfx.setCursor(0, 0);
-        sprintf(buf, "EMU:%d/60fps  LCD:%d/30fps ", fps, renderFps);
+        sprintf(buf, "EMU:%d/60fps  LCD:%d/30fps  C0:%d%%  C1:%d%% ", fps, renderFps, cpu0, cpu1);
         gfx.print(buf);
+        gfx.setCursor(43, 232);
+        gfx.print("MENU");
+        gfx.setCursor(149, 232);
+        gfx.print("SAVE");
+        gfx.setCursor(320 - 24 - 43, 232);
+        gfx.print("LOAD");
         xSemaphoreTake(displayMutex, portMAX_DELAY);
         canvas.pushSprite(32, 24);
         xSemaphoreGive(displayMutex);
@@ -128,6 +159,19 @@ void renderer(void* arg)
             ets_delay_us((33 - procTime) * 1000);
         }
     }
+}
+
+void cpuMonitor(void* arg)
+{
+	while (1) {
+		float f0 = idle0;
+		float f1 = idle1;
+		idle0 = 0;
+		idle1 = 0;
+		cpu0 = (int)(100.f - f0 / MaxIdleCalls * 100.f);
+		cpu1 = (int)(100.f - f1 / MaxIdleCalls * 100.f);
+		vTaskDelay(1000);
+	}
 }
 
 void setup() {
@@ -169,8 +213,11 @@ void setup() {
     usleep(1000000);
     gfx.clear();
     disableCore0WDT();
+	esp_register_freertos_idle_hook_for_cpu(idleTask0, 0);
+	esp_register_freertos_idle_hook_for_cpu(idleTask1, 1);
     xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 0);
     xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 1);
+    xTaskCreatePinnedToCore(cpuMonitor, "cpuMonitor", 1024, nullptr, 1, nullptr, 1);
 }
 
 void loop() {
