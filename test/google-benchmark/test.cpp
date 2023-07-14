@@ -28,7 +28,10 @@
 #include "msx1.hpp"
 
 static unsigned char ram[0x2000];
-static MSX1 msx1(TMS9918A::ColorMode::RGB555, ram, sizeof(ram), nullptr);
+static MSX1* msx1;
+static void* mainRom;
+static void* logoRom;
+static void* gameRom;
 
 void* loadFile(const char* path, size_t* size)
 {
@@ -61,9 +64,9 @@ void* init(int pri, int idx, const char* path, const char* label)
     size_t size;
     void* data = loadFile(path, &size);
     if (0 == strcmp(label, "CART")) {
-        msx1.loadRom(data, size, MSX1_ROM_TYPE_NORMAL);
+        msx1->loadRom(data, size, MSX1_ROM_TYPE_NORMAL);
     } else {
-        msx1.setup(pri, idx, data, size, label);
+        msx1->setup(pri, idx, data, size, label);
     }
     return data;
 }
@@ -71,16 +74,19 @@ void* init(int pri, int idx, const char* path, const char* label)
 static void MSX1Init(benchmark::State& state)
 {
     for (auto _ : state) {
-        init(0, 0, "cbios_main_msx1.rom", "MAIN");
-        init(0, 4, "cbios_logo_msx1.rom", "LOGO");
-        init(0, 4, "game.rom", "CART");
+        if (!msx1) {
+            msx1 = new MSX1(TMS9918A::ColorMode::RGB555, ram, sizeof(ram), nullptr);
+            mainRom = init(0, 0, "cbios_main_msx1.rom", "MAIN");
+            logoRom = init(0, 4, "cbios_logo_msx1.rom", "LOGO");
+            gameRom = init(0, 4, "game.rom", "CART");
+        }
     }
 }
 
 static void MSX1Execute1Tick(benchmark::State& state)
 {
     for (auto _ : state) {
-        msx1.tick(0, 0, 0);
+        msx1->tick(0, 0, 0);
     }
 }
 
@@ -88,7 +94,20 @@ static void MSX1Execute60Ticks(benchmark::State& state)
 {
     for (auto _ : state) {
         for (int i = 0; i < 60; i++) {
-            msx1.tick(0, 0, 0);
+            msx1->tick(0, 0, 0);
+        }
+    }
+}
+
+static void MSX1Term(benchmark::State& state)
+{
+    for (auto _ : state) {
+        if (msx1) {
+            delete msx1;
+            msx1 = nullptr;
+            free(gameRom);
+            free(logoRom);
+            free(mainRom);
         }
     }
 }
@@ -96,4 +115,5 @@ static void MSX1Execute60Ticks(benchmark::State& state)
 BENCHMARK(MSX1Init);
 BENCHMARK(MSX1Execute1Tick);
 BENCHMARK(MSX1Execute60Ticks);
+BENCHMARK(MSX1Term);
 BENCHMARK_MAIN();
