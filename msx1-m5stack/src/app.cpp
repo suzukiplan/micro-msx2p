@@ -98,9 +98,15 @@ void renderer(void* arg)
     static long start;
     static long procTime;
     static int renderFps;
+    static int renderFpsCounter;
+    static long sec;
     while (1) {
         start = millis();
-        vTaskDelay(3);
+        if (sec != start / 1000) {
+            sec = start / 1000;
+            renderFps = renderFpsCounter;
+            renderFpsCounter = 0;
+        }
         gfx.startWrite();
         if (backdropColor != backdropPrev) {
             backdropPrev = backdropColor;
@@ -116,11 +122,11 @@ void renderer(void* arg)
         canvas.pushSprite(32, 24);
         xSemaphoreGive(displayMutex);
         gfx.endWrite();
+        renderFpsCounter++;
         procTime = millis() - start;
         if (procTime < 33) {
             ets_delay_us((33 - procTime) * 1000);
         }
-        renderFps = 1000 / (millis() - start);
     }
 }
 
