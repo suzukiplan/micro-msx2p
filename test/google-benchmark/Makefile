@@ -14,8 +14,7 @@ CXXFLAGS=-g -O2 \
 	-L ./benchmark/build/src
 
 all: ./benchmark/build/src
-	@git submodule init benchmark
-	@git submodule update benchmark
+	git submodule update --init --recursive
 	g++ $(CXXFLAGS) test.cpp -o test -lbenchmark -lpthread
 	@echo ===== First Execution =====
 	./test >result1.txt 2>&1
