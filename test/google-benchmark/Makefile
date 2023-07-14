@@ -15,15 +15,7 @@ CXXFLAGS=-g -O2 \
 
 all: ./benchmark/build/src
 	g++ $(CXXFLAGS) test.cpp -o test -lbenchmark -lpthread
-	@echo ===== First Execution =====
-	./test >result1.txt 2>&1
-	cat result1.txt
-	@echo ===== Second Execution =====
-	./test >result2.txt 2>&1
-	cat result2.txt
-	@echo ===== Third Execution =====
-	./test >result3.txt 2>&1
-	cat result3.txt
+	./test
 
 ./benchmark/build/src:
 	cd benchmark && cmake -DBENCHMARK_DOWNLOAD_DEPENDENCIES=on -DCMAKE_BUILD_TYPE=Release -S . -B "build"

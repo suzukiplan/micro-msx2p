@@ -15,8 +15,6 @@ make
 
 ## Result
 
-実行が成功すれば result1〜3.txt に結果が記録されています。
-
 ```
 2023-07-14T09:16:50+09:00
 Running ./test
@@ -34,8 +32,6 @@ MSX1Init               123164 ns       122503 ns         5875
 MSX1Execute1Tick       703478 ns       700244 ns          921
 MSX1Execute60Ticks   43171058 ns     43118875 ns           16
 ```
-
-実行の都度結果が変わるので、念のため3回実行するようにしています。
 
 ## License
 
