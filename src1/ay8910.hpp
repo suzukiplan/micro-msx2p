@@ -116,7 +116,7 @@ class AY8910
         }
     }
 
-    inline short tick(unsigned int cycles)
+    inline signed char tick(unsigned int cycles)
     {
         if (this->ctx.eHolding) {
             this->ctx.eCounter += cycles;
@@ -171,7 +171,7 @@ class AY8910
             mix = 32767;
         else if (mix < -32768)
             mix = -32768;
-        return (short)mix;
+        return (signed char)(mix / 256);
     }
 
   private:
@@ -205,7 +205,7 @@ class AY8910
         } else {
             this->ctx.mix[ch] >>= 1;
         }
-        return (mix + this->ctx.mix[ch]) >> 1;
+        return (mix + this->ctx.mix[ch]) >> 4;
     }
 };
 

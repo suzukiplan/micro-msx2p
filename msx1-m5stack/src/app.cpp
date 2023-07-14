@@ -1,7 +1,17 @@
 #include "msx1.hpp"
+#include "ay8910.hpp"
 #include <M5Core2.h>
 #include <M5GFX.h>
 #include "roms.hpp"
+#include "esp_freertos_hooks.h"
+
+#if defined(CONFIG_ESP32_DEFAULT_CPU_FREQ_240)
+static const uint64_t MaxIdleCalls = 1855000;
+#elif defined(CONFIG_ESP32_DEFAULT_CPU_FREQ_160)
+static const uint64_t MaxIdleCalls = 1233100;
+#else
+#error "Unsupported CPU frequency"
+#endif
 
 class CustomCanvas : public lgfx::LGFX_Sprite {
   public:
@@ -19,14 +29,28 @@ static uint16_t displayBuffer[256];
 static xSemaphoreHandle displayMutex;
 static unsigned short backdropColor;
 static int fps;
-static MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
-    if (0 == lineNumber) {
-        xSemaphoreTake(displayMutex, portMAX_DELAY);
-    }
+static int cpu0;
+static int cpu1;
+static uint64_t idle0 = 0;
+static uint64_t idle1 = 0;
+static AY8910 psg;
+
+static IRAM_ATTR bool idleTask0()
+{
+	idle0++;
+	return false;
+}
+
+static IRAM_ATTR bool idleTask1()
+{
+	idle1++;
+	return false;
+}
+
+static DRAM_ATTR MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
     canvas.pushImage(0, lineNumber, 256, 1, display);
     if (191 == lineNumber) {
         backdropColor = ((MSX1*)arg)->getBackdropColor(true);
-        xSemaphoreGive(displayMutex);
     }
 });
 
@@ -43,35 +67,76 @@ static void displayMessage(const char* format, ...)
     vTaskDelay(100);
 }
 
-void ticker(void* arg)
+static void log(const char* format, ...)
 {
-    void* soundData;
-    size_t soundSize;
-    static long int min = 0x7FFFFFFF;
-    static long int max = -1;
+    char buf[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buf, sizeof(buf), format, args);
+    va_end(args);
+    Serial.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
+}
+
+void IRAM_ATTR ticker(void* arg)
+{
+    static void* soundData;
+    static size_t soundSize;
     static long start;
     static long procTime = 0;
-    static const long interval[3] = { 33, 33, 34 };
+    static const long interval[3] = { 16, 17, 17 };
     static int loopCount = 0;
-    static long expect;
+    static int fpsCounter;
+    static long sec = 0;
     while (1) {
         start = millis();
-        msx1.tick(0, 0, 0); // even frame (rendering)
-        soundData = msx1.getSound(&soundSize);
-        msx1.tick(0, 0, 0); // odd frame (skip rendering)
-        soundData = msx1.getSound(&soundSize);
+        // calc fps
+        if (sec != start / 1000) {
+            sec = start / 1000;
+            fps = fpsCounter;
+            fpsCounter = 0;
+        }
+
+        // execute even frame (rendering display buffer)
+        xSemaphoreTake(displayMutex, portMAX_DELAY);
+        msx1.tick(0, 0, 0);
+        xSemaphoreGive(displayMutex);
+        fpsCounter++;
+
+        // wait
         procTime = millis() - start;
-        if (procTime < min) min = procTime;
-        if (max < procTime) max = procTime;
-        expect = interval[loopCount];
-        if (procTime < expect) {
-            fps = 60;
-            delay(expect - procTime);
-        } else {
-            fps = 2000 / procTime;
+        if (procTime < interval[loopCount]) {
+            ets_delay_us((interval[loopCount] - procTime) * 1000);
         }
         loopCount++;
         loopCount %= 3;
+
+        // execute odd frame (skip rendering)
+        start = millis();
+        msx1.tick(0, 0, 0); 
+        fpsCounter++;
+
+        // wait
+        procTime = millis() - start;
+        if (procTime < interval[loopCount]) {
+            ets_delay_us((interval[loopCount] - procTime) * 1000);
+        }
+        loopCount++;
+        loopCount %= 3;
+
+    }
+}
+
+void IRAM_ATTR psgTicker(void* arg)
+{
+    static uint8_t buf[1024];
+    static size_t size;
+    static int i;
+    while (1) {
+        for (i = 0; i < 1024; i++) {
+            buf[i] = psg.tick(81);
+        }
+        i2s_write(I2S_NUM_0, buf, sizeof(buf), &size, portMAX_DELAY);
+        vTaskDelay(2);
     }
 }
 
@@ -82,34 +147,74 @@ void renderer(void* arg)
     static long start;
     static long procTime;
     static int renderFps;
+    static int renderFpsCounter;
+    static long sec;
     while (1) {
         start = millis();
+        if (sec != start / 1000) {
+            sec = start / 1000;
+            renderFps = renderFpsCounter;
+            renderFpsCounter = 0;
+        }
         gfx.startWrite();
         if (backdropColor != backdropPrev) {
             backdropPrev = backdropColor;
-            gfx.fillRect(0, 0, 320, 24, backdropPrev);
-            gfx.fillRect(0, 216, 320, 24, backdropPrev);
+            gfx.fillRect(0, 8, 320, 16, backdropPrev);
+            gfx.fillRect(0, 216, 320, 14, backdropPrev);
             gfx.fillRect(0, 24, 32, 192, backdropPrev);
             gfx.fillRect(288, 24, 32, 192, backdropPrev);
         }
         gfx.setCursor(0, 0);
-        sprintf(buf, "Emu: %d/60fps, Lcd: %d/30fps", fps, renderFps);
+        sprintf(buf, "EMU:%d/60fps  LCD:%d/30fps  C0:%d%%  C1:%d%% ", fps, renderFps, cpu0, cpu1);
         gfx.print(buf);
+        gfx.setCursor(43, 232);
+        gfx.print("MENU");
+        gfx.setCursor(149, 232);
+        gfx.print("SAVE");
+        gfx.setCursor(320 - 24 - 43, 232);
+        gfx.print("LOAD");
         xSemaphoreTake(displayMutex, portMAX_DELAY);
         canvas.pushSprite(32, 24);
         xSemaphoreGive(displayMutex);
         gfx.endWrite();
+        renderFpsCounter++;
         procTime = millis() - start;
         if (procTime < 33) {
-            delay(33 - procTime);
-            renderFps = 1000 / 33;
-        } else {
-            renderFps = 1000 / procTime;
+            ets_delay_us((33 - procTime) * 1000);
         }
     }
 }
 
+void cpuMonitor(void* arg)
+{
+	while (1) {
+		float f0 = idle0;
+		float f1 = idle1;
+		idle0 = 0;
+		idle1 = 0;
+		cpu0 = (int)(100.f - f0 / MaxIdleCalls * 100.f);
+		cpu1 = (int)(100.f - f1 / MaxIdleCalls * 100.f);
+		vTaskDelay(1000);
+	}
+}
+
 void setup() {
+    i2s_config_t audioConfig = {
+        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_DAC_BUILT_IN),
+        .sample_rate = 44100,
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_8BIT,
+        .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
+        .communication_format = I2S_COMM_FORMAT_STAND_MSB,
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+        .dma_buf_count = 4,
+        .dma_buf_len = 1024,
+        .use_apll = false,
+        .tx_desc_auto_clear = true
+    };
+    i2s_driver_install(I2S_NUM_0, &audioConfig, 0, nullptr);
+    i2s_set_dac_mode(I2S_DAC_CHANNEL_RIGHT_EN);
+    i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_8BIT, I2S_CHANNEL_MONO);
+    i2s_zero_dma_buffer(I2S_NUM_0);
     M5.begin();
     gfx.begin();
     gfx.setColorDepth(16);
@@ -127,13 +232,28 @@ void setup() {
     msx1.setup(0, 0, (void*)rom_cbios_main_msx1, sizeof(rom_cbios_main_msx1), "MAIN");
     msx1.setup(0, 4, (void*)rom_cbios_logo_msx1, sizeof(rom_cbios_logo_msx1), "LOGO");
     msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL);
+    msx1.psgDelegate.reset = []() { psg.reset(27); };
+    msx1.psgDelegate.setPads = [](unsigned char pad1, unsigned char pad2) { psg.setPads(pad1, pad2); };
+    msx1.psgDelegate.read = []() -> unsigned char { return psg.read(); };
+    msx1.psgDelegate.getPad1 = []() -> unsigned char { return psg.getPad1(); };
+    msx1.psgDelegate.getPad2 = []() -> unsigned char { return psg.getPad2(); };
+    msx1.psgDelegate.latch = [](unsigned char value) { return psg.latch(value); };
+    msx1.psgDelegate.write = [](unsigned char value) { return psg.write(value); };
+    msx1.psgDelegate.getContext = []() -> const void* { return &psg.ctx; };
+    msx1.psgDelegate.getContextSize = []() -> int { return (int)sizeof(psg.ctx); };
+    msx1.psgDelegate.setContext = [](const void* context, int size) { memcpy(&psg.ctx, context, size); };
+    psg.reset(27);
     displayMessage("Setup finished.");
     booted = true;
     usleep(1000000);
     gfx.clear();
     disableCore0WDT();
+	esp_register_freertos_idle_hook_for_cpu(idleTask0, 0);
+	esp_register_freertos_idle_hook_for_cpu(idleTask1, 1);
     xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 0);
+    xTaskCreatePinnedToCore(psgTicker, "psgTicker", 4096, nullptr, 25, nullptr, 1);
     xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 1);
+    xTaskCreatePinnedToCore(cpuMonitor, "cpuMonitor", 1024, nullptr, 1, nullptr, 1);
 }
 
 void loop() {
