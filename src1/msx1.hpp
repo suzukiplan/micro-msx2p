@@ -43,7 +43,7 @@ class MSX1
     class InternalBuffer
     {
       public:
-        short soundBuffer[512];
+        signed char soundBuffer[1024];
         int soundBufferCursor;
         char* quickSaveBuffer;
         size_t quickSaveBufferPtr;
