@@ -9,6 +9,7 @@
 #include "esp_freertos_hooks.h"
 
 #define APP_PREFRENCE_FILE "/suzukiplan_micro-msx1.prf"
+#define SAVE_SLOT_FORMAT "/game_slot%d.dat"
 
 #if defined(CONFIG_ESP32_DEFAULT_CPU_FREQ_240)
 static const uint64_t MaxIdleCalls = 1855000;
@@ -399,6 +400,56 @@ void resetRotation()
     }
 }
 
+void printCenter(int y, const char* format, ...)
+{
+    char buf[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buf, sizeof(buf), format, args);
+    va_end(args);
+    gfx.setCursor((M5.Lcd.width() - strlen(buf) * 7) / 2, y);
+    gfx.print(buf);
+}
+
+void quickSave()
+{
+    pauseAllTasks();
+    gfx.startWrite();
+    gfx.fillRect(0, 96, 320, 48, TFT_BLACK);
+    gfx.drawRect(0, 98, 320, 2, WHITE);
+    gfx.drawRect(0, 140, 320, 2, WHITE);
+    printCenter(108, "SAVING TO SLOT #%d", pref.slot + 1);
+    printCenter(124, "Please wait...");
+    gfx.endWrite();
+    char path[256];
+    sprintf(path, SAVE_SLOT_FORMAT, pref.slot + 1);
+    File fd = SPIFFS.open(path, "w");
+    if (!fd) {
+        vTaskDelay(2000);
+        gfx.startWrite();
+        gfx.fillRect(0, 96, 320, 48, TFT_BLACK);
+        gfx.drawRect(0, 98, 320, 2, WHITE);
+        gfx.drawRect(0, 140, 320, 2, WHITE);
+        printCenter(116, "Save failed!");
+        gfx.endWrite();
+        vTaskDelay(2000);
+    } else {
+        size_t size;
+        const uint8_t* save = (const uint8_t*)msx1.quickSave(&size);
+        for (int i = 0; i < (int)save; i++) {
+            fd.write(save[i]);
+        }
+        fd.close();
+        vTaskDelay(1500);
+    }
+    resumeToPlay();
+}
+
+void quickLoad()
+{
+    pauseAllTasks();
+}
+
 void setup() {
     i2s_config_t audioConfig = {
         .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_DAC_BUILT_IN),
@@ -526,7 +577,8 @@ inline void menuLoop()
                 renderMenu();
                 break;
             case MenuItem::Save:
-                // TODO
+                pref.save();
+                quickSave();
                 break;
             case MenuItem::Load:
                 // TODO
@@ -574,15 +626,13 @@ inline void menuLoop()
 inline void playingLoop()
 {
     if (buttons[ButtonPosition::Left]->wasPressed()) {
-        if (GameState::Playing == gameState) {
-            pauseAllTasks();
-            gameState = GameState::Menu;
-            menuCursor = 0;
-            menuDescIndex = -1;
-            renderMenu();
-        }
+        pauseAllTasks();
+        gameState = GameState::Menu;
+        menuCursor = 0;
+        menuDescIndex = -1;
+        renderMenu();
     } else if (buttons[ButtonPosition::Center]->wasPressed()) {
-        // TODO: Save
+        quickSave();
     } else if (buttons[ButtonPosition::Right]->wasPressed()) {
         // TODO: Load
     }
