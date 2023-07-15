@@ -8,6 +8,8 @@
 #include "roms.hpp"
 #include "esp_freertos_hooks.h"
 
+#define APP_PREFRENCE_FILE "/suzukiplan_micro-msx1.prf"
+
 #if defined(CONFIG_ESP32_DEFAULT_CPU_FREQ_240)
 static const uint64_t MaxIdleCalls = 1855000;
 #elif defined(CONFIG_ESP32_DEFAULT_CPU_FREQ_160)
@@ -23,12 +25,21 @@ class CustomCanvas : public lgfx::LGFX_Sprite {
     void* frameBuffer(uint8_t) { return getBuffer(); }
 };
 
+static void log(const char* format, ...)
+{
+    char buf[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buf, sizeof(buf), format, args);
+    va_end(args);
+    Serial.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
+}
+
 class Preferences {
   private:
-    bool isStartModify;
-    int sound_;
-    int slot_;
-    int rotate_;
+    const int DEFAULT_SOUND = 2;
+    const int DEFAULT_SLOT = 0;
+    const int DEFAULT_ROTATE = 0;
 
   public:
     int sound;
@@ -36,39 +47,56 @@ class Preferences {
     int rotate;
 
     Preferences() {
-        this->isStartModify = false;
         this->factoryReset();
     }
 
     void factoryReset() {
-        this->sound = 2;
-        this->slot = 0;
-        this->rotate = 0;
-    }
-
-    void startModify() {
-        this->isStartModify = true;
-        this->sound_ = this->sound;
-        this->slot_ = this->slot;
-        this->rotate_ = this->rotate;
-    }
-
-    void endModify() {
-        if (this->isStartModify) {
-            this->isStartModify = false;
-            if (this->sound_ != this->sound || this->slot_ != this->slot || this->rotate_ != this->rotate) {
-                save();
-            } 
-        }
+        this->sound = DEFAULT_SOUND;
+        this->slot = DEFAULT_SLOT;
+        this->rotate = DEFAULT_ROTATE;
     }
 
     void load() {
         this->factoryReset();
-        // TODO: Load from SPIFFS
+        File file = SPIFFS.open(APP_PREFRENCE_FILE, "r");
+        if (!file) {
+            log("SPIFFS: preference not found");
+            return;
+        }
+        if (file.available()) {
+            this->sound = file.read();
+            if (this->sound < 0 || 3 < this->sound) {
+                this->sound = DEFAULT_SOUND;
+            }
+            log("SPIFFS: Loaded sound=%d", this->sound);
+        }
+        if (file.available()) {
+            this->slot = file.read();
+            if (this->slot < 0 || 2 < this->slot) {
+                this->slot = DEFAULT_SLOT;
+            }
+            log("SPIFFS: Loaded slot=%d", this->sound);
+        }
+        if (file.available()) {
+            this->rotate = file.read();
+            if (this->rotate < 0 || 1 < this->rotate) {
+                this->rotate = DEFAULT_ROTATE;
+            }
+            log("SPIFFS: Loaded rotate=%d", this->rotate);
+        }
+        file.close();
     }
 
     void save() {
-        // TODO: Save to SPIFFS
+        File file = SPIFFS.open(APP_PREFRENCE_FILE, "w");
+        if (!file) {
+            log("SPIFFS: preference cannot write");
+            return;
+        }
+        file.write((uint8_t)this->sound);
+        file.write((uint8_t)this->slot);
+        file.write((uint8_t)this->rotate);
+        file.close();
     }
 };
 
@@ -191,16 +219,6 @@ static void displayMessage(const char* format, ...)
     gfx.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
     gfx.endWrite();
     vTaskDelay(100);
-}
-
-static void log(const char* format, ...)
-{
-    char buf[256];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buf, sizeof(buf), format, args);
-    va_end(args);
-    Serial.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
 }
 
 void IRAM_ATTR ticker(void* arg)
@@ -356,7 +374,6 @@ void pauseAllTasks()
 
 void resumeToPlay()
 {
-    pref.endModify();
     gfx.startWrite();
     gfx.clear();
     gfx.fillRect(0, 8, 320, 16, backdropColor);
@@ -400,12 +417,14 @@ void setup() {
     i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_8BIT, I2S_CHANNEL_MONO);
     i2s_zero_dma_buffer(I2S_NUM_0);
     M5.begin();
+    SPIFFS.begin();
     gfx.begin();
     gfx.setColorDepth(16);
     gfx.fillScreen(TFT_BLACK);
     canvas.setColorDepth(16);
     canvas.createSprite(256, 192);
     displayMutex = xSemaphoreCreateMutex();
+    pref.load();
     resetRotation();
     displayMessage("Checking memory usage before launch MSX...");
     displayMessage("- HEAP: %d", esp_get_free_heap_size());
@@ -474,7 +493,6 @@ inline void renderMenu()
         y += 16;
     }
     gfx.endWrite();
-    pref.startModify();
 }
 
 inline void menuLoop()
@@ -482,9 +500,11 @@ inline void menuLoop()
     if (buttons[ButtonPosition::Center]->wasPressed()) { // TODO: or gamepad B/A/START/SELECT
         switch (menuItems[menuCursor]) {
             case MenuItem::Resume:
+                pref.save();
                 resumeToPlay();
                 return;
             case MenuItem::Reset:
+                pref.save();
                 msx1.reset();
                 resumeToPlay();
                 return;
