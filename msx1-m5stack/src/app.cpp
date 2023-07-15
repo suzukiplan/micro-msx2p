@@ -73,8 +73,8 @@ enum class MenuItem {
 static std::map<MenuItem, std::string> menuName = {
     { MenuItem::Resume, "Resume" },
     { MenuItem::Reset, "Reset" },
-    { MenuItem::SoundVolume, "Sound Volume" },
-    { MenuItem::SelectSlot, "Select Slot" },
+    { MenuItem::SoundVolume, "Sound Volume  MUTE LOW  MID  HIGH" },
+    { MenuItem::SelectSlot,  "Select Slot    #1   #2   #3" },
     { MenuItem::Save, "Save" },
     { MenuItem::Load, "Load" },
     { MenuItem::Licenses, "Licenses" },
@@ -232,7 +232,6 @@ void renderer(void* arg)
     static int renderFps;
     static int renderFpsCounter;
     static long sec;
-    static GameState previousGameState = GameState::None;
     while (1) {
         start = millis();
         if (pauseRequest) {
@@ -258,18 +257,6 @@ void renderer(void* arg)
         gfx.setCursor(0, 0);
         sprintf(buf, "EMU:%d/60fps  LCD:%d/30fps  C0:%d%%  C1:%d%% ", fps, renderFps, cpu0, cpu1);
         gfx.print(buf);
-        previousGameState = gameState;
-        switch (gameState) {
-            case GameState::None:
-                gameState = GameState::Playing;
-                break;
-            case GameState::Playing:
-                gfx.pushImage(0, 232, 320, 8, rom_guide_normal);
-                break;
-            case GameState::Menu:
-                gfx.pushImage(0, 232, 320, 8, rom_guide_menu);
-                break;
-        }
         xSemaphoreTake(displayMutex, portMAX_DELAY);
         canvas.pushSprite(32, 24);
         xSemaphoreGive(displayMutex);
@@ -304,6 +291,20 @@ void pauseAllTasks()
     while (!tickerPaused || !psgTickerPaused || !rendererPaused) {
         vTaskDelay(5);
     }
+}
+
+void resumeToPlay()
+{
+    gfx.startWrite();
+    gfx.clear();
+    gfx.fillRect(0, 8, 320, 16, backdropColor);
+    gfx.fillRect(0, 216, 320, 16, backdropColor);
+    gfx.fillRect(0, 24, 32, 192, backdropColor);
+    gfx.fillRect(288, 24, 32, 192, backdropColor);
+    gfx.pushImage(0, 232, 320, 8, rom_guide_normal);
+    gfx.endWrite();
+    gameState = GameState::Playing;
+    pauseRequest = false;
 }
 
 void setup() {
@@ -385,13 +386,11 @@ inline void menuLoop()
     if (buttons[ButtonPosition::Center]->wasPressed()) { // TODO: or gamepad B/A/START/SELECT
         switch (menuItems[menuCursor]) {
             case MenuItem::Resume:
-                gameState = GameState::Playing;
-                pauseRequest = false;
+                resumeToPlay();
                 return;
             case MenuItem::Reset:
                 msx1.reset();
-                gameState = GameState::Playing;
-                pauseRequest = false;
+                resumeToPlay();
                 return;
             case MenuItem::SoundVolume:
                 // TODO
@@ -455,7 +454,7 @@ inline void playingLoop()
 void loop() {
     M5.update();
     switch (gameState) {
-        case GameState::None: break;
+        case GameState::None: resumeToPlay(); break;
         case GameState::Playing: playingLoop(); break;
         case GameState::Menu: menuLoop(); break;
     }
