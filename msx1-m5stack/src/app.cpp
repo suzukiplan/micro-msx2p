@@ -1,3 +1,6 @@
+#include <map>
+#include <vector>
+#include <string>
 #include "msx1.hpp"
 #include "ay8910.hpp"
 #include <M5Core2.h>
@@ -34,6 +37,10 @@ static int cpu1;
 static uint64_t idle0 = 0;
 static uint64_t idle1 = 0;
 static AY8910 psg;
+static bool pauseRequest;
+static bool tickerPaused;
+static bool psgTickerPaused;
+static bool rendererPaused;
 
 enum class GameState {
     None,
@@ -41,6 +48,60 @@ enum class GameState {
     Menu,
 };
 
+enum class ButtonPosition {
+    Left,
+    Center,
+    Right
+};
+
+static std::map<ButtonPosition, Button*> buttons = {
+    { ButtonPosition::Left, &M5.BtnA },
+    { ButtonPosition::Center, &M5.BtnB },
+    { ButtonPosition::Right, &M5.BtnC },
+};
+
+enum class MenuItem {
+    Resume,
+    Reset,
+    SoundVolume,
+    SelectSlot,
+    Save,
+    Load,
+    Licenses,
+};
+
+static std::map<MenuItem, std::string> menuName = {
+    { MenuItem::Resume, "Resume" },
+    { MenuItem::Reset, "Reset" },
+    { MenuItem::SoundVolume, "Sound Volume" },
+    { MenuItem::SelectSlot, "Select Slot" },
+    { MenuItem::Save, "Save" },
+    { MenuItem::Load, "Load" },
+    { MenuItem::Licenses, "Licenses" },
+};
+
+static std::map<MenuItem, std::string> menuDesc = {
+    { MenuItem::Resume, "Nothing to do, back in play." },
+    { MenuItem::Reset, "Reset the MSX." },
+    { MenuItem::SoundVolume, "Adjusts the volume level." },
+    { MenuItem::SelectSlot, "Select slot number to save and load." },
+    { MenuItem::Save, "Saves the state of play." },
+    { MenuItem::Load, "Loads the state of play." },
+    { MenuItem::Licenses, "Displays OSS license information in use." },
+};
+
+static const std::vector<MenuItem> menuItems = {
+    MenuItem::Resume,
+    MenuItem::Reset,
+    MenuItem::SoundVolume,
+    MenuItem::SelectSlot,
+    MenuItem::Save,
+    MenuItem::Load,
+    MenuItem::Licenses,
+};
+
+static int menuCursor = 0;
+static int menuDescIndex = 0;
 static GameState gameState = GameState::None;
 
 static IRAM_ATTR bool idleTask0()
@@ -97,6 +158,13 @@ void IRAM_ATTR ticker(void* arg)
     static long sec = 0;
     while (1) {
         start = millis();
+        if (pauseRequest) {
+            tickerPaused = true;
+            vTaskDelay(10);
+            continue;
+        } else {
+            tickerPaused = false;
+        }
         // calc fps
         if (sec != start / 1000) {
             sec = start / 1000;
@@ -140,6 +208,13 @@ void IRAM_ATTR psgTicker(void* arg)
     static size_t size;
     static int i;
     while (1) {
+        if (pauseRequest) {
+            psgTickerPaused = true;
+            vTaskDelay(10);
+            continue;
+        } else {
+            psgTickerPaused = false;
+        }
         for (i = 0; i < 1024; i++) {
             buf[i] = psg.tick(81);
         }
@@ -160,6 +235,13 @@ void renderer(void* arg)
     static GameState previousGameState = GameState::None;
     while (1) {
         start = millis();
+        if (pauseRequest) {
+            rendererPaused = true;
+            vTaskDelay(10);
+            continue;
+        } else {
+            rendererPaused = false;
+        }
         if (sec != start / 1000) {
             sec = start / 1000;
             renderFps = renderFpsCounter;
@@ -211,6 +293,17 @@ void cpuMonitor(void* arg)
 		cpu1 = (int)(100.f - f1 / MaxIdleCalls * 100.f);
 		vTaskDelay(1000);
 	}
+}
+
+void pauseAllTasks()
+{
+    if (pauseRequest) {
+        return;
+    }
+    pauseRequest = true;
+    while (!tickerPaused || !psgTickerPaused || !rendererPaused) {
+        vTaskDelay(5);
+    }
 }
 
 void setup() {
@@ -271,17 +364,100 @@ void setup() {
     xTaskCreatePinnedToCore(cpuMonitor, "cpuMonitor", 1024, nullptr, 1, nullptr, 1);
 }
 
+inline void renderMenu()
+{
+    gfx.startWrite();
+    gfx.fillRect(0, 0, 320, 8, TFT_BLACK);
+    gfx.fillRoundRect(32, 16, 256, 208, 4, TFT_BLACK);
+    gfx.drawRoundRect(34, 18, 252, 204, 4, WHITE);
+    int y = 32;
+    for (MenuItem item : menuItems) {
+        gfx.setCursor(64, y);
+        gfx.print(menuName[item].c_str());
+        y += 16;
+    }
+    gfx.pushImage(0, 232, 320, 8, rom_guide_menu);
+    gfx.endWrite();
+}
+
+inline void menuLoop()
+{
+    if (buttons[ButtonPosition::Center]->wasPressed()) { // TODO: or gamepad B/A/START/SELECT
+        switch (menuItems[menuCursor]) {
+            case MenuItem::Resume:
+                gameState = GameState::Playing;
+                pauseRequest = false;
+                return;
+            case MenuItem::Reset:
+                msx1.reset();
+                gameState = GameState::Playing;
+                pauseRequest = false;
+                return;
+            case MenuItem::SoundVolume:
+                // TODO
+                break;
+            case MenuItem::SelectSlot:
+                // TODO
+                break;
+            case MenuItem::Save:
+                // TODO
+                break;
+            case MenuItem::Load:
+                // TODO
+                break;
+            case MenuItem::Licenses:
+                // TODO
+                break;
+        }
+    } else if (buttons[ButtonPosition::Left]->wasPressed()) { // TODO: or gamepad dpad:down
+        menuCursor++;
+        menuCursor %= (int)menuItems.size();
+    } else if (buttons[ButtonPosition::Right]->wasPressed()) { // TODO: or gamepad dpad:up
+        menuCursor--;
+        if (menuCursor < 0) {
+            menuCursor = (int)menuItems.size() - 1;
+        }
+    }
+    gfx.startWrite();
+    for (int i = 0; i < menuItems.size(); i++) {
+        if (i == menuCursor) {
+            gfx.pushImage(52, 32 + i * 16, 8, 8, rom_menu_cursor);
+        } else {
+            gfx.fillRect(52, 32 + i * 16, 8, 8, TFT_BLACK);
+        }
+    }
+    if (menuDescIndex != menuCursor) {
+        menuDescIndex = menuCursor;
+        gfx.fillRect(0, 0, 320, 8, TFT_BLACK);
+        gfx.setCursor(0, 0);
+        gfx.print(menuDesc[menuItems[menuDescIndex]].c_str());
+    }
+    gfx.endWrite();
+}
+
+inline void playingLoop()
+{
+    if (buttons[ButtonPosition::Left]->wasPressed()) {
+        if (GameState::Playing == gameState) {
+            pauseAllTasks();
+            gameState = GameState::Menu;
+            menuCursor = 0;
+            menuDescIndex = -1;
+            renderMenu();
+        }
+    } else if (buttons[ButtonPosition::Center]->wasPressed()) {
+        // TODO: Save
+    } else if (buttons[ButtonPosition::Right]->wasPressed()) {
+        // TODO: Load
+    }
+}
+
 void loop() {
-    // ここでは、
-    // - システムボタンを使ってホットキー操作
-    //   - 左ボタン: ホットキーメニュー
-    //     - リセット
-    //     - 音量調整
-    //     - セーブスロット選択 (1, 2, 3)
-    //     - 中ボタンの割当変更 (Reset, Save, Load)
-    //     - 右ボタンの割当変更 (Reset, Save, Load)
-    //   - 中ボタン: クイックロード
-    //   - 右ボタン: クイックセーブ
-    // - ゲームパッドの入力をエミュレータに渡す
-    // あたりを実装予定
+    M5.update();
+    switch (gameState) {
+        case GameState::None: break;
+        case GameState::Playing: playingLoop(); break;
+        case GameState::Menu: menuLoop(); break;
+    }
+    vTaskDelay(10);
 }
