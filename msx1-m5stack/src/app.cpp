@@ -35,6 +35,14 @@ static uint64_t idle0 = 0;
 static uint64_t idle1 = 0;
 static AY8910 psg;
 
+enum class GameState {
+    None,
+    Playing,
+    Menu,
+};
+
+static GameState gameState = GameState::None;
+
 static IRAM_ATTR bool idleTask0()
 {
 	idle0++;
@@ -149,6 +157,7 @@ void renderer(void* arg)
     static int renderFps;
     static int renderFpsCounter;
     static long sec;
+    static GameState previousGameState = GameState::None;
     while (1) {
         start = millis();
         if (sec != start / 1000) {
@@ -160,19 +169,25 @@ void renderer(void* arg)
         if (backdropColor != backdropPrev) {
             backdropPrev = backdropColor;
             gfx.fillRect(0, 8, 320, 16, backdropPrev);
-            gfx.fillRect(0, 216, 320, 14, backdropPrev);
+            gfx.fillRect(0, 216, 320, 16, backdropPrev);
             gfx.fillRect(0, 24, 32, 192, backdropPrev);
             gfx.fillRect(288, 24, 32, 192, backdropPrev);
         }
         gfx.setCursor(0, 0);
         sprintf(buf, "EMU:%d/60fps  LCD:%d/30fps  C0:%d%%  C1:%d%% ", fps, renderFps, cpu0, cpu1);
         gfx.print(buf);
-        gfx.setCursor(43, 232);
-        gfx.print("MENU");
-        gfx.setCursor(149, 232);
-        gfx.print("SAVE");
-        gfx.setCursor(320 - 24 - 43, 232);
-        gfx.print("LOAD");
+        previousGameState = gameState;
+        switch (gameState) {
+            case GameState::None:
+                gameState = GameState::Playing;
+                break;
+            case GameState::Playing:
+                gfx.pushImage(0, 232, 320, 8, rom_guide_normal);
+                break;
+            case GameState::Menu:
+                gfx.pushImage(0, 232, 320, 8, rom_guide_menu);
+                break;
+        }
         xSemaphoreTake(displayMutex, portMAX_DELAY);
         canvas.pushSprite(32, 24);
         xSemaphoreGive(displayMutex);
