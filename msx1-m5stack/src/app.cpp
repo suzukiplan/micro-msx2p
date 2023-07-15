@@ -28,10 +28,12 @@ class Preferences {
     bool isStartModify;
     int sound_;
     int slot_;
+    int rotate_;
 
   public:
     int sound;
     int slot;
+    int rotate;
 
     Preferences() {
         this->isStartModify = false;
@@ -41,24 +43,27 @@ class Preferences {
     void factoryReset() {
         this->sound = 2;
         this->slot = 0;
+        this->rotate = 0;
     }
 
     void startModify() {
         this->isStartModify = true;
         this->sound_ = this->sound;
         this->slot_ = this->slot;
+        this->rotate_ = this->rotate;
     }
 
     void endModify() {
         if (this->isStartModify) {
             this->isStartModify = false;
-            if (this->sound_ != this->sound || this->slot_ != this->slot) {
+            if (this->sound_ != this->sound || this->slot_ != this->slot || this->rotate_ != this->rotate) {
                 save();
             } 
         }
     }
 
     void load() {
+        this->factoryReset();
         // TODO: Load from SPIFFS
     }
 
@@ -110,6 +115,7 @@ enum class MenuItem {
     Reset,
     SoundVolume,
     SelectSlot,
+    ScreenRotate,
     Save,
     Load,
     Licenses,
@@ -120,6 +126,7 @@ static std::map<MenuItem, std::string> menuName = {
     { MenuItem::Reset, "Reset" },
     { MenuItem::SoundVolume, "Sound Volume" },
     { MenuItem::SelectSlot,  "Select Slot" },
+    { MenuItem::ScreenRotate,  "Screen Rotate" },
     { MenuItem::Save, "Save" },
     { MenuItem::Load, "Load" },
     { MenuItem::Licenses, "Licenses" },
@@ -130,6 +137,7 @@ static std::map<MenuItem, std::string> menuDesc = {
     { MenuItem::Reset, "Reset the MSX." },
     { MenuItem::SoundVolume, "Adjusts the volume level." },
     { MenuItem::SelectSlot, "Select slot number to save and load." },
+    { MenuItem::ScreenRotate,  "Flip the screen up and down setting." },
     { MenuItem::Save, "Saves the state of play." },
     { MenuItem::Load, "Loads the state of play." },
     { MenuItem::Licenses, "Displays OSS license information in use." },
@@ -140,6 +148,7 @@ static const std::vector<MenuItem> menuItems = {
     MenuItem::Reset,
     MenuItem::SoundVolume,
     MenuItem::SelectSlot,
+    MenuItem::ScreenRotate,
     MenuItem::Save,
     MenuItem::Load,
     MenuItem::Licenses,
@@ -148,6 +157,7 @@ static const std::vector<MenuItem> menuItems = {
 static int menuCursor = 0;
 static int menuSoundY = 0;
 static int menuSlotY = 0;
+static int menuRotateY = 0;
 static int menuDescIndex = 0;
 static GameState gameState = GameState::None;
 
@@ -305,7 +315,7 @@ void renderer(void* arg)
             gfx.fillRect(0, 24, 32, 192, backdropPrev);
             gfx.fillRect(288, 24, 32, 192, backdropPrev);
         }
-        gfx.setCursor(0, 0);
+        gfx.setCursor(0, pref.rotate * 232);
         sprintf(buf, "EMU:%d/60fps  LCD:%d/30fps  C0:%d%%  C1:%d%% ", fps, renderFps, cpu0, cpu1);
         gfx.print(buf);
         xSemaphoreTake(displayMutex, portMAX_DELAY);
@@ -353,10 +363,23 @@ void resumeToPlay()
     gfx.fillRect(0, 216, 320, 16, backdropColor);
     gfx.fillRect(0, 24, 32, 192, backdropColor);
     gfx.fillRect(288, 24, 32, 192, backdropColor);
-    gfx.pushImage(0, 232, 320, 8, rom_guide_normal);
+    gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, rom_guide_normal);
     gfx.endWrite();
     gameState = GameState::Playing;
     pauseRequest = false;
+}
+
+void resetRotation()
+{
+    if (pref.rotate) {
+        gfx.setRotation(3);
+        buttons[ButtonPosition::Left] = &M5.BtnC;
+        buttons[ButtonPosition::Right] = &M5.BtnA;
+    } else {
+        gfx.setRotation(1);
+        buttons[ButtonPosition::Left] = &M5.BtnA;
+        buttons[ButtonPosition::Right] = &M5.BtnC;
+    }
 }
 
 void setup() {
@@ -383,6 +406,7 @@ void setup() {
     canvas.setColorDepth(16);
     canvas.createSprite(256, 192);
     displayMutex = xSemaphoreCreateMutex();
+    resetRotation();
     displayMessage("Checking memory usage before launch MSX...");
     displayMessage("- HEAP: %d", esp_get_free_heap_size());
     displayMessage("- MALLOC_CAP_EXEC: %d", heap_caps_get_free_size(MALLOC_CAP_EXEC));
@@ -440,10 +464,15 @@ inline void renderMenu()
             for (int i = 0; i < 3; i++) {
                 gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
             }
+        } else if (item == MenuItem::ScreenRotate) {
+            menuRotateY = y;
+            const unsigned short* roms[2] = { rom_normal, rom_reverse };
+            for (int i = 0; i < 2; i++) {
+                gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
+            }
         }
         y += 16;
     }
-    gfx.pushImage(0, 232, 320, 8, rom_guide_menu);
     gfx.endWrite();
     pref.startModify();
 }
@@ -467,6 +496,14 @@ inline void menuLoop()
             case MenuItem::SelectSlot:
                 pref.slot++;
                 pref.slot %= 3;
+                break;
+            case MenuItem::ScreenRotate:
+                pref.rotate++;
+                pref.rotate %= 2;
+                menuDescIndex = -1;
+                resetRotation();
+                gfx.clear();
+                renderMenu();
                 break;
             case MenuItem::Save:
                 // TODO
@@ -501,11 +538,15 @@ inline void menuLoop()
     for (int i = 0; i < 3; i++) {
         gfx.drawRect(152 + i * 32, menuSlotY - 2, 32, 12, i == pref.slot ? WHITE : TFT_BLACK);
     }
+    for (int i = 0; i < 2; i++) {
+        gfx.drawRect(152 + i * 32, menuRotateY - 2, 32, 12, i == pref.rotate ? WHITE : TFT_BLACK);
+    }
     if (menuDescIndex != menuCursor) {
         menuDescIndex = menuCursor;
-        gfx.fillRect(0, 0, 320, 8, TFT_BLACK);
-        gfx.setCursor(0, 0);
+        gfx.fillRect(0, pref.rotate ? 232 : 0, 320, 8, TFT_BLACK);
+        gfx.setCursor(0, pref.rotate ? 232 : 0);
         gfx.print(menuDesc[menuItems[menuDescIndex]].c_str());
+        gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, rom_guide_menu);
     }
     gfx.endWrite();
 }

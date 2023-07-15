@@ -10,6 +10,8 @@ ROMS = src/rom_cbios_main_msx1.c\
 	src/rom_slot1.c\
 	src/rom_slot2.c\
 	src/rom_slot3.c\
+	src/rom_normal.c\
+	src/rom_reverse.c\
 	src/rom_menu_cursor.c
 
 all: copy-core
@@ -64,6 +66,12 @@ src/rom_slot2.c: bios/slot2.bmp
 
 src/rom_slot3.c: bios/slot3.bmp
 	tools/bmp2img/bmp2img bios/slot3.bmp > src/rom_slot3.c
+
+src/rom_normal.c: bios/normal.bmp
+	tools/bmp2img/bmp2img bios/normal.bmp > src/rom_normal.c
+
+src/rom_reverse.c: bios/reverse.bmp
+	tools/bmp2img/bmp2img bios/reverse.bmp > src/rom_reverse.c
 
 include/roms.hpp: ${ROMS}
 	cd tools/varext && make
