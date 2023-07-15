@@ -23,6 +23,50 @@ class CustomCanvas : public lgfx::LGFX_Sprite {
     void* frameBuffer(uint8_t) { return getBuffer(); }
 };
 
+class Preferences {
+  private:
+    bool isStartModify;
+    int sound_;
+    int slot_;
+
+  public:
+    int sound;
+    int slot;
+
+    Preferences() {
+        this->isStartModify = false;
+        this->factoryReset();
+    }
+
+    void factoryReset() {
+        this->sound = 2;
+        this->slot = 0;
+    }
+
+    void startModify() {
+        this->isStartModify = true;
+        this->sound_ = this->sound;
+        this->slot_ = this->slot;
+    }
+
+    void endModify() {
+        if (this->isStartModify) {
+            this->isStartModify = false;
+            if (this->sound_ != this->sound || this->slot_ != this->slot) {
+                save();
+            } 
+        }
+    }
+
+    void load() {
+        // TODO: Load from SPIFFS
+    }
+
+    void save() {
+        // TODO: Save to SPIFFS
+    }
+};
+
 static uint8_t ram[0x4000];
 static TMS9918A::Context vram;
 static bool booted;
@@ -41,6 +85,7 @@ static bool pauseRequest;
 static bool tickerPaused;
 static bool psgTickerPaused;
 static bool rendererPaused;
+static Preferences pref;
 
 enum class GameState {
     None,
@@ -73,8 +118,8 @@ enum class MenuItem {
 static std::map<MenuItem, std::string> menuName = {
     { MenuItem::Resume, "Resume" },
     { MenuItem::Reset, "Reset" },
-    { MenuItem::SoundVolume, "Sound Volume  MUTE LOW  MID  HIGH" },
-    { MenuItem::SelectSlot,  "Select Slot    #1   #2   #3" },
+    { MenuItem::SoundVolume, "Sound Volume" },
+    { MenuItem::SelectSlot,  "Select Slot" },
     { MenuItem::Save, "Save" },
     { MenuItem::Load, "Load" },
     { MenuItem::Licenses, "Licenses" },
@@ -101,6 +146,8 @@ static const std::vector<MenuItem> menuItems = {
 };
 
 static int menuCursor = 0;
+static int menuSoundY = 0;
+static int menuSlotY = 0;
 static int menuDescIndex = 0;
 static GameState gameState = GameState::None;
 
@@ -215,11 +262,15 @@ void IRAM_ATTR psgTicker(void* arg)
         } else {
             psgTickerPaused = false;
         }
-        for (i = 0; i < 1024; i++) {
-            buf[i] = psg.tick(81);
+        if (0 < pref.sound) {
+            for (i = 0; i < 1024; i++) {
+                buf[i] = psg.tick(81);
+            }
+            i2s_write(I2S_NUM_0, buf, sizeof(buf), &size, portMAX_DELAY);
+            vTaskDelay(2);
+        } else {
+            vTaskDelay(10);
         }
-        i2s_write(I2S_NUM_0, buf, sizeof(buf), &size, portMAX_DELAY);
-        vTaskDelay(2);
     }
 }
 
@@ -295,6 +346,7 @@ void pauseAllTasks()
 
 void resumeToPlay()
 {
+    pref.endModify();
     gfx.startWrite();
     gfx.clear();
     gfx.fillRect(0, 8, 320, 16, backdropColor);
@@ -352,6 +404,7 @@ void setup() {
     msx1.psgDelegate.getContextSize = []() -> int { return (int)sizeof(psg.ctx); };
     msx1.psgDelegate.setContext = [](const void* context, int size) { memcpy(&psg.ctx, context, size); };
     psg.reset(27);
+    psg.setVolume(pref.sound);
     displayMessage("Setup finished.");
     booted = true;
     usleep(1000000);
@@ -375,10 +428,24 @@ inline void renderMenu()
     for (MenuItem item : menuItems) {
         gfx.setCursor(64, y);
         gfx.print(menuName[item].c_str());
+        if (item == MenuItem::SoundVolume) {
+            menuSoundY = y;
+            const unsigned short* roms[4] = { rom_sound_mute, rom_sound_low, rom_sound_mid, rom_sound_high };
+            for (int i = 0; i < 4; i++) {
+                gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
+            }
+        } else if (item == MenuItem::SelectSlot) {
+            menuSlotY = y;
+            const unsigned short* roms[3] = { rom_slot1, rom_slot2, rom_slot3 };
+            for (int i = 0; i < 3; i++) {
+                gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
+            }
+        }
         y += 16;
     }
     gfx.pushImage(0, 232, 320, 8, rom_guide_menu);
     gfx.endWrite();
+    pref.startModify();
 }
 
 inline void menuLoop()
@@ -393,10 +460,13 @@ inline void menuLoop()
                 resumeToPlay();
                 return;
             case MenuItem::SoundVolume:
-                // TODO
+                pref.sound++;
+                pref.sound %= 4;
+                psg.setVolume(pref.sound);
                 break;
             case MenuItem::SelectSlot:
-                // TODO
+                pref.slot++;
+                pref.slot %= 3;
                 break;
             case MenuItem::Save:
                 // TODO
@@ -424,6 +494,12 @@ inline void menuLoop()
         } else {
             gfx.fillRect(52, 32 + i * 16, 8, 8, TFT_BLACK);
         }
+    }
+    for (int i = 0; i < 4; i++) {
+        gfx.drawRect(152 + i * 32, menuSoundY - 2, 32, 12, i == pref.sound ? WHITE : TFT_BLACK);
+    }
+    for (int i = 0; i < 3; i++) {
+        gfx.drawRect(152 + i * 32, menuSlotY - 2, 32, 12, i == pref.slot ? WHITE : TFT_BLACK);
     }
     if (menuDescIndex != menuCursor) {
         menuDescIndex = menuCursor;
