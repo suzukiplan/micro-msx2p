@@ -8,6 +8,7 @@
 #include "roms.hpp"
 #include "esp_freertos_hooks.h"
 
+#define APP_COPYRIGHT "Copyright (c) 20xx Team HogeHoge"
 #define APP_PREFRENCE_FILE "/suzukiplan_micro-msx1.prf"
 #define SAVE_SLOT_FORMAT "/game_slot%d.dat"
 
@@ -132,10 +133,25 @@ static bool psgTickerPaused;
 static bool rendererPaused;
 static Preferences pref;
 
+typedef struct OssInfo_ {
+    std::string name;
+    std::string license;
+    std::string copyright;
+} OssInfo;
+
+static std::vector<OssInfo> ossLicensesList = {
+    { "C-BIOS", "2-clause BSD", "Copyright (c) 2002 C-BIOS Association"},
+    { "M5Core2 Library", "MIT", "Copyright (c) 2020 M5Stack" },
+    { "M5GFX", "MIT", "Copyright (c) 2021 M5Stack" },
+    { "micro MSX2+", "MIT", "Copyright (c) 2023 Yoji Suzuki"},
+    { "SUZUKIPLAN - Z80 Emulator", "MIT", "Copyright (c) 2019 Yoji Suzuki"},
+};
+
 enum class GameState {
     None,
     Playing,
     Menu,
+    OssLicenses,
 };
 
 enum class ButtonPosition {
@@ -170,7 +186,7 @@ static std::map<MenuItem, std::string> menuName = {
     { MenuItem::ScreenRotate,  "Screen Rotate" },
     { MenuItem::Save, "Save" },
     { MenuItem::Load, "Load" },
-    { MenuItem::Licenses, "Licenses" },
+    { MenuItem::Licenses, "Using OSS Licenses" },
     { MenuItem::SlotLocation, "Slot Location" },
 };
 
@@ -628,6 +644,30 @@ inline void renderMenu()
         }
         y += 16;
     }
+    gfx.setCursor(64, 200);
+    gfx.print(APP_COPYRIGHT);
+    gfx.endWrite();
+}
+
+inline void renderOssLicenses()
+{
+    gfx.startWrite();
+    gfx.fillRect(0, 0, 320, 8, TFT_BLACK);
+    gfx.fillRoundRect(32, 16, 256, 208, 4, TFT_BLACK);
+    gfx.drawRoundRect(34, 18, 252, 204, 4, WHITE);
+    int y = 28;
+    for (OssInfo oss : ossLicensesList) {
+        gfx.setCursor(44, y);
+        gfx.print(oss.name.c_str());
+        y += 10;
+        gfx.setCursor(52, y);
+        gfx.print(("License: "  + oss.license).c_str());
+        y += 8;
+        gfx.setCursor(52, y);
+        gfx.print(oss.copyright.c_str());
+        y += 16;
+    }
+    printCenter(200, "Press Any Button");
     gfx.endWrite();
 }
 
@@ -674,8 +714,9 @@ inline void menuLoop()
                 quickLoad();
                 break;
             case MenuItem::Licenses:
-                // TODO
-                break;
+                gameState = GameState::OssLicenses;
+                renderOssLicenses();
+                return;
         }
     } else if (buttons[ButtonPosition::Left]->wasPressed()) { // TODO: or gamepad dpad:down
         menuCursor++;
@@ -716,6 +757,23 @@ inline void menuLoop()
     gfx.endWrite();
 }
 
+bool checkPressedAnyButton() 
+{
+    if (buttons[ButtonPosition::Left]->wasPressed()) return true;
+    if (buttons[ButtonPosition::Center]->wasPressed()) return true;
+    if (buttons[ButtonPosition::Right]->wasPressed()) return true;
+    return false;
+}
+
+inline void ossLicensesLoop()
+{
+    if (checkPressedAnyButton()) {
+        gameState = GameState::Menu;
+        menuDescIndex = -1;
+        renderMenu();
+    }
+}
+
 inline void playingLoop()
 {
     if (buttons[ButtonPosition::Left]->wasPressed()) {
@@ -737,6 +795,7 @@ void loop() {
         case GameState::None: resumeToPlay(); break;
         case GameState::Playing: playingLoop(); break;
         case GameState::Menu: menuLoop(); break;
+        case GameState::OssLicenses: ossLicensesLoop(); break;
     }
     vTaskDelay(10);
 }
