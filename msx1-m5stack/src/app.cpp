@@ -41,11 +41,13 @@ class Preferences {
     const int DEFAULT_SOUND = 2;
     const int DEFAULT_SLOT = 0;
     const int DEFAULT_ROTATE = 0;
+    const int DEFAULT_SLOT_LOCATION = 0;
 
   public:
     int sound;
     int slot;
     int rotate;
+    int slotLocation;
 
     Preferences() {
         this->factoryReset();
@@ -55,6 +57,7 @@ class Preferences {
         this->sound = DEFAULT_SOUND;
         this->slot = DEFAULT_SLOT;
         this->rotate = DEFAULT_ROTATE;
+        this->slotLocation = DEFAULT_SLOT_LOCATION;
     }
 
     void load() {
@@ -85,6 +88,13 @@ class Preferences {
             }
             log("SPIFFS: Loaded rotate=%d", this->rotate);
         }
+        if (file.available()) {
+            this->slotLocation = file.read();
+            if (this->slotLocation < 0 || 1 < this->slotLocation) {
+                this->slotLocation = DEFAULT_SLOT_LOCATION;
+            }
+            log("SPIFFS: Loaded slotLocation=%d", this->slotLocation);
+        }
         file.close();
     }
 
@@ -97,6 +107,7 @@ class Preferences {
         file.write((uint8_t)this->sound);
         file.write((uint8_t)this->slot);
         file.write((uint8_t)this->rotate);
+        file.write((uint8_t)this->slotLocation);
         file.close();
     }
 };
@@ -148,6 +159,7 @@ enum class MenuItem {
     Save,
     Load,
     Licenses,
+    SlotLocation,
 };
 
 static std::map<MenuItem, std::string> menuName = {
@@ -159,6 +171,7 @@ static std::map<MenuItem, std::string> menuName = {
     { MenuItem::Save, "Save" },
     { MenuItem::Load, "Load" },
     { MenuItem::Licenses, "Licenses" },
+    { MenuItem::SlotLocation, "Slot Location" },
 };
 
 static std::map<MenuItem, std::string> menuDesc = {
@@ -170,6 +183,7 @@ static std::map<MenuItem, std::string> menuDesc = {
     { MenuItem::Save, "Saves the state of play." },
     { MenuItem::Load, "Loads the state of play." },
     { MenuItem::Licenses, "Displays OSS license information in use." },
+    { MenuItem::SlotLocation, "Choice of storage for savedata slots." },
 };
 
 static const std::vector<MenuItem> menuItems = {
@@ -177,6 +191,7 @@ static const std::vector<MenuItem> menuItems = {
     MenuItem::Reset,
     MenuItem::SoundVolume,
     MenuItem::SelectSlot,
+    MenuItem::SlotLocation,
     MenuItem::ScreenRotate,
     MenuItem::Save,
     MenuItem::Load,
@@ -187,6 +202,7 @@ static int menuCursor = 0;
 static int menuSoundY = 0;
 static int menuSlotY = 0;
 static int menuRotateY = 0;
+static int menuSlotLocationY = 0;
 static int menuDescIndex = 0;
 static GameState gameState = GameState::None;
 
@@ -423,7 +439,12 @@ void quickSave()
     gfx.endWrite();
     char path[256];
     sprintf(path, SAVE_SLOT_FORMAT, pref.slot + 1);
-    File fd = SPIFFS.open(path, "w");
+    File fd;
+    if (pref.slotLocation) {
+        fd = SD.open(path, FILE_WRITE);
+     } else {
+        fd = SPIFFS.open(path, "w");
+    }
     if (!fd) {
         vTaskDelay(2000);
         gfx.startWrite();
@@ -457,7 +478,12 @@ void quickLoad()
     gfx.endWrite();
     char path[256];
     sprintf(path, SAVE_SLOT_FORMAT, pref.slot + 1);
-    File fd = SPIFFS.open(path, "r");
+    File fd;
+    if (pref.slotLocation) {
+        fd = SD.open(path, FILE_READ);
+     } else {
+        fd = SPIFFS.open(path, "r");
+    }
     if (!fd) {
         vTaskDelay(2000);
         gfx.startWrite();
@@ -474,7 +500,7 @@ void quickLoad()
             gfx.fillRect(0, 96, 320, 48, TFT_BLACK);
             gfx.drawRect(0, 98, 320, 2, WHITE);
             gfx.drawRect(0, 140, 320, 2, WHITE);
-            printCenter(116, "INVALID DATA SIZE! (%d)", (int)fd.size());
+            printCenter(116, "NO DATA!");
             gfx.endWrite();
             vTaskDelay(2000);
         } else {
@@ -521,6 +547,7 @@ void setup() {
     i2s_zero_dma_buffer(I2S_NUM_0);
     M5.begin();
     SPIFFS.begin();
+    SD.begin();
     gfx.begin();
     gfx.setColorDepth(16);
     gfx.fillScreen(TFT_BLACK);
@@ -592,6 +619,12 @@ inline void renderMenu()
             for (int i = 0; i < 2; i++) {
                 gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
             }
+        } else if (item == MenuItem::SlotLocation) {
+            menuSlotLocationY = y;
+            const unsigned short* roms[2] = { rom_spiffs, rom_sdcard };
+            for (int i = 0; i < 2; i++) {
+                gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
+            }
         }
         y += 16;
     }
@@ -619,6 +652,10 @@ inline void menuLoop()
             case MenuItem::SelectSlot:
                 pref.slot++;
                 pref.slot %= 3;
+                break;
+            case MenuItem::SlotLocation:
+                pref.slotLocation++;
+                pref.slotLocation %= 2;
                 break;
             case MenuItem::ScreenRotate:
                 pref.rotate++;
@@ -665,6 +702,9 @@ inline void menuLoop()
     }
     for (int i = 0; i < 2; i++) {
         gfx.drawRect(152 + i * 32, menuRotateY - 2, 32, 12, i == pref.rotate ? WHITE : TFT_BLACK);
+    }
+    for (int i = 0; i < 2; i++) {
+        gfx.drawRect(152 + i * 32, menuSlotLocationY - 2, 32, 12, i == pref.slotLocation ? WHITE : TFT_BLACK);
     }
     if (menuDescIndex != menuCursor) {
         menuDescIndex = menuCursor;

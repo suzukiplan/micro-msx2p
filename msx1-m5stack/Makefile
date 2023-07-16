@@ -12,6 +12,8 @@ ROMS = src/rom_cbios_main_msx1.c\
 	src/rom_slot3.c\
 	src/rom_normal.c\
 	src/rom_reverse.c\
+	src/rom_spiffs.c\
+	src/rom_sdcard.c\
 	src/rom_menu_cursor.c
 
 all: copy-core
@@ -72,6 +74,12 @@ src/rom_normal.c: bios/normal.bmp
 
 src/rom_reverse.c: bios/reverse.bmp
 	tools/bmp2img/bmp2img bios/reverse.bmp > src/rom_reverse.c
+
+src/rom_spiffs.c: bios/spiffs.bmp
+	tools/bmp2img/bmp2img bios/spiffs.bmp > src/rom_spiffs.c
+
+src/rom_sdcard.c: bios/sdcard.bmp
+	tools/bmp2img/bmp2img bios/sdcard.bmp > src/rom_sdcard.c
 
 include/roms.hpp: ${ROMS}
 	cd tools/varext && make
