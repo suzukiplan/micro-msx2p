@@ -35,6 +35,7 @@ class AY8910
     unsigned int clock;
     unsigned char regMask[16];
     unsigned int levels[32];
+    int volume;
 
   public:
     struct Context {
@@ -69,6 +70,17 @@ class AY8910
         unsigned int levels[32] = {0, 1, 1, 1, 2, 2, 3, 4, 5, 6, 7, 9, 10, 12, 15, 18, 22, 26, 31, 37, 44, 53, 63, 75, 90, 107, 127, 151, 180, 214, 255, 255};
         memcpy(this->levels, levels, sizeof(this->levels));
         for (int i = 0; i < 32; i++) this->levels[i] *= gain;
+        this->setVolume(2);
+    }
+
+    void setVolume(int volume)
+    {
+        switch (volume) {
+            case 0: this->volume = 8; break;
+            case 1: this->volume = 5; break; // low
+            case 2: this->volume = 4; break; // mid
+            case 3: this->volume = 2; break; // high
+        }
     }
 
     inline void latch(unsigned char value) { this->ctx.latch = value & 0x0F; }
@@ -205,7 +217,7 @@ class AY8910
         } else {
             this->ctx.mix[ch] >>= 1;
         }
-        return (mix + this->ctx.mix[ch]) >> 4;
+        return (mix + this->ctx.mix[ch]) >> this->volume;
     }
 };
 
