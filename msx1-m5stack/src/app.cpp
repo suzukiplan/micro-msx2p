@@ -436,7 +436,7 @@ void quickSave()
     } else {
         size_t size;
         const uint8_t* save = (const uint8_t*)msx1.quickSave(&size);
-        for (int i = 0; i < (int)save; i++) {
+        for (int i = 0; i < (int)size; i++) {
             fd.write(save[i]);
         }
         fd.close();
@@ -448,6 +448,58 @@ void quickSave()
 void quickLoad()
 {
     pauseAllTasks();
+    gfx.startWrite();
+    gfx.fillRect(0, 96, 320, 48, TFT_BLACK);
+    gfx.drawRect(0, 98, 320, 2, WHITE);
+    gfx.drawRect(0, 140, 320, 2, WHITE);
+    printCenter(108, "LOADING FROM SLOT #%d", pref.slot + 1);
+    printCenter(124, "Please wait...");
+    gfx.endWrite();
+    char path[256];
+    sprintf(path, SAVE_SLOT_FORMAT, pref.slot + 1);
+    File fd = SPIFFS.open(path, "r");
+    if (!fd) {
+        vTaskDelay(2000);
+        gfx.startWrite();
+        gfx.fillRect(0, 96, 320, 48, TFT_BLACK);
+        gfx.drawRect(0, 98, 320, 2, WHITE);
+        gfx.drawRect(0, 140, 320, 2, WHITE);
+        printCenter(116, "NO DATA!");
+        gfx.endWrite();
+        vTaskDelay(2000);
+    } else {
+        if (fd.size() < 1) {
+            vTaskDelay(2000);
+            gfx.startWrite();
+            gfx.fillRect(0, 96, 320, 48, TFT_BLACK);
+            gfx.drawRect(0, 98, 320, 2, WHITE);
+            gfx.drawRect(0, 140, 320, 2, WHITE);
+            printCenter(116, "INVALID DATA SIZE! (%d)", (int)fd.size());
+            gfx.endWrite();
+            vTaskDelay(2000);
+        } else {
+            uint8_t* buffer = (uint8_t*)malloc(fd.size());
+            if (!buffer) {
+                vTaskDelay(2000);
+                gfx.startWrite();
+                gfx.fillRect(0, 96, 320, 48, TFT_BLACK);
+                gfx.drawRect(0, 98, 320, 2, WHITE);
+                gfx.drawRect(0, 140, 320, 2, WHITE);
+                printCenter(116, "MEMORY ALLOCATION ERROR!");
+                gfx.endWrite();
+                vTaskDelay(2000);
+            } else {
+                for (int i = 0; i < fd.size(); i++) {
+                    buffer[i] = fd.read();
+                }
+                msx1.quickLoad(buffer, fd.size());
+                free(buffer);
+                vTaskDelay(1500);
+            }
+        }
+        fd.close();
+    }
+    resumeToPlay();
 }
 
 void setup() {
@@ -581,7 +633,8 @@ inline void menuLoop()
                 quickSave();
                 break;
             case MenuItem::Load:
-                // TODO
+                pref.save();
+                quickLoad();
                 break;
             case MenuItem::Licenses:
                 // TODO
@@ -634,7 +687,7 @@ inline void playingLoop()
     } else if (buttons[ButtonPosition::Center]->wasPressed()) {
         quickSave();
     } else if (buttons[ButtonPosition::Right]->wasPressed()) {
-        // TODO: Load
+        quickLoad();
     }
 }
 
