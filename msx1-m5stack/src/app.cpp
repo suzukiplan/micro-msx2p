@@ -37,6 +37,33 @@ static void log(const char* format, ...)
     Serial.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
 }
 
+class Gamepad {
+  public:
+    void begin() {
+        pinMode(5, INPUT_PULLUP);
+        Wire.begin(21, 22);
+    }
+
+    uint8_t get() {
+        uint8_t result = 0;
+        if (digitalRead(5) == LOW) {
+            Wire.requestFrom(0x08, 1);
+            if (Wire.available()) {
+                uint8_t key = Wire.read() ^ 0xFF;
+                if (key & 0b00000001) result |= MSX1_JOY_UP;
+                if (key & 0b00000010) result |= MSX1_JOY_DW;
+                if (key & 0b00000100) result |= MSX1_JOY_LE;
+                if (key & 0b00001000) result |= MSX1_JOY_RI;
+                if (key & 0b00010000) result |= MSX1_JOY_T1;
+                if (key & 0b00100000) result |= MSX1_JOY_T2;
+                if (key & 0b01000000) result |= MSX1_JOY_S2;
+                if (key & 0b10000000) result |= MSX1_JOY_S1;
+            }                
+        }
+        return result;
+    }
+};
+
 class Preferences {
   private:
     const int DEFAULT_SOUND = 2;
@@ -132,6 +159,8 @@ static bool tickerPaused;
 static bool psgTickerPaused;
 static bool rendererPaused;
 static Preferences pref;
+static Gamepad gamepad;
+static uint8_t gamepad1;
 
 typedef struct OssInfo_ {
     std::string name;
@@ -282,7 +311,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute even frame (rendering display buffer)
         xSemaphoreTake(displayMutex, portMAX_DELAY);
-        msx1.tick(0, 0, 0);
+        msx1.tick(gamepad1, 0, 0);
         xSemaphoreGive(displayMutex);
         fpsCounter++;
 
@@ -296,7 +325,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute odd frame (skip rendering)
         start = millis();
-        msx1.tick(0, 0, 0); 
+        msx1.tick(gamepad1, 0, 0); 
         fpsCounter++;
 
         // wait
@@ -562,6 +591,7 @@ void setup() {
     i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_8BIT, I2S_CHANNEL_MONO);
     i2s_zero_dma_buffer(I2S_NUM_0);
     M5.begin();
+    gamepad.begin();
     SPIFFS.begin();
     SD.begin();
     gfx.begin();
@@ -581,6 +611,8 @@ void setup() {
     msx1.vdp.useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
     msx1.setup(0, 0, (void*)rom_cbios_main_msx1, sizeof(rom_cbios_main_msx1), "MAIN");
     msx1.setup(0, 4, (void*)rom_cbios_logo_msx1, sizeof(rom_cbios_logo_msx1), "LOGO");
+    msx1.setupKeyAssign(0, MSX1_JOY_S1, 0x20); // START = SPACE
+    msx1.setupKeyAssign(0, MSX1_JOY_S2, 0x1B); // SELECT = ESC
     msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL);
     msx1.psgDelegate.reset = []() { psg.reset(27); };
     msx1.psgDelegate.setPads = [](unsigned char pad1, unsigned char pad2) { psg.setPads(pad1, pad2); };
@@ -791,6 +823,7 @@ inline void playingLoop()
 
 void loop() {
     M5.update();
+    gamepad1 = gamepad.get();
     switch (gameState) {
         case GameState::None: resumeToPlay(); break;
         case GameState::Playing: playingLoop(); break;
