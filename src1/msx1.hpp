@@ -622,9 +622,6 @@ class MSX1
 
     void quickLoad(const void* buffer, size_t bufferSize)
     {
-        if (!this->ib.allocateQuickSaveBuffer(this->calcQuickSaveSize())) {
-            return;
-        }
         this->reset();
         const char* ptr = this->ib.quickSaveBuffer;
         int size = (int)bufferSize;
