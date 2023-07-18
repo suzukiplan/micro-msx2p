@@ -48,16 +48,20 @@ class Gamepad {
         uint8_t result = 0;
         if (digitalRead(5) == LOW) {
             Wire.requestFrom(0x08, 1);
-            if (Wire.available()) {
-                uint8_t key = Wire.read() ^ 0xFF;
-                if (key & 0b00000001) result |= MSX1_JOY_UP;
-                if (key & 0b00000010) result |= MSX1_JOY_DW;
-                if (key & 0b00000100) result |= MSX1_JOY_LE;
-                if (key & 0b00001000) result |= MSX1_JOY_RI;
-                if (key & 0b00010000) result |= MSX1_JOY_T1;
-                if (key & 0b00100000) result |= MSX1_JOY_T2;
-                if (key & 0b01000000) result |= MSX1_JOY_S2;
-                if (key & 0b10000000) result |= MSX1_JOY_S1;
+            while (Wire.available()) {
+                uint8_t key = Wire.read();
+                if (key != 0x00) {
+                    key ^= 0xFF;
+                    if (key & 0b00000001) result |= MSX1_JOY_UP;
+                    if (key & 0b00000010) result |= MSX1_JOY_DW;
+                    if (key & 0b00000100) result |= MSX1_JOY_LE;
+                    if (key & 0b00001000) result |= MSX1_JOY_RI;
+                    if (key & 0b00010000) result |= MSX1_JOY_T1;
+                    if (key & 0b00100000) result |= MSX1_JOY_T2;
+                    if (key & 0b01000000) result |= MSX1_JOY_S2;
+                    if (key & 0b10000000) result |= MSX1_JOY_S1;
+                    return result;
+                }
             }                
         }
         return result;
