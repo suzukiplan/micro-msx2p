@@ -1,24 +1,30 @@
+// C++ stdlib
 #include <map>
 #include <vector>
 #include <string>
+
+// micro MSX2+
 #include "msx1.hpp"
 #include "ay8910.hpp"
-#include <M5Core2.h>
+
+// Arduino
+#include <Arduino.h>
+#include <Wire.h>
+#include <SD.h>
+#include <SPIFFS.h>
+#include <driver/i2s.h>
+#include <esp_freertos_hooks.h>
+
+// M5Stack
+#include <M5Unified.h>
 #include <M5GFX.h>
+
+// ROM data (Graphics, BIOS and Game)
 #include "roms.hpp"
-#include "esp_freertos_hooks.h"
 
 #define APP_COPYRIGHT "Copyright (c) 20xx Team HogeHoge"
 #define APP_PREFRENCE_FILE "/suzukiplan_micro-msx1.prf"
 #define SAVE_SLOT_FORMAT "/game_slot%d.dat"
-
-#if defined(CONFIG_ESP32_DEFAULT_CPU_FREQ_240)
-static const uint64_t MaxIdleCalls = 1855000;
-#elif defined(CONFIG_ESP32_DEFAULT_CPU_FREQ_160)
-static const uint64_t MaxIdleCalls = 1233100;
-#else
-#error "Unsupported CPU frequency"
-#endif
 
 class CustomCanvas : public lgfx::LGFX_Sprite {
   public:
@@ -193,11 +199,59 @@ enum class ButtonPosition {
     Right
 };
 
-static std::map<ButtonPosition, Button*> buttons = {
-    { ButtonPosition::Left, &M5.BtnA },
-    { ButtonPosition::Center, &M5.BtnB },
-    { ButtonPosition::Right, &M5.BtnC },
+class ScreenButton {
+  public:
+    int x;
+    int width;
+    bool pressing;
+    bool pressed;
+
+    ScreenButton(int x, int width) {
+        this->x = x;
+        this->width = width;
+        this->pressing = false;
+        this->pressed = false;
+    }
+
+    inline bool wasPressed() {
+        return this->pressed;
+    }
 };
+
+static std::map<ButtonPosition, ScreenButton*> buttons = {
+    { ButtonPosition::Left, new ScreenButton(0, 106) },
+    { ButtonPosition::Center, new ScreenButton(106, 108) },
+    { ButtonPosition::Right, new ScreenButton(214, 106) },
+};
+
+static void updateButtons()
+{
+    bool pressingLeft = false;
+    bool pressingCenter = false;
+    bool pressingRight = false;
+    auto left = buttons[ButtonPosition::Left];
+    auto center = buttons[ButtonPosition::Center];
+    auto right = buttons[ButtonPosition::Right]; 
+    for (int i = 0; i < M5.Touch.getCount(); i++) {
+        auto raw = M5.Touch.getTouchPointRaw(i);
+        auto& detail = M5.Touch.getDetail(i);
+        if (detail.state & m5::touch_state_t::touch) {
+            if (left->x <= raw.x && raw.x < left->x + left->width) {
+                pressingLeft = true;
+            } else if (center->x <= raw.x && raw.x < center->x + center->width) {
+                pressingCenter = true;
+            } else {
+                pressingRight = true;
+            }
+        }
+    }
+    left->pressed = left->pressing && !pressingLeft;
+    center->pressed = center->pressing && !pressingCenter;
+    right->pressed = right->pressing && !pressingRight;
+    left->pressing = pressingLeft;
+    center->pressing = pressingCenter;
+    right->pressing = pressingRight;
+}
 
 enum class MenuItem {
     Resume,
@@ -421,8 +475,8 @@ void cpuMonitor(void* arg)
 		float f1 = idle1;
 		idle0 = 0;
 		idle1 = 0;
-		cpu0 = (int)(100.f - f0 / MaxIdleCalls * 100.f);
-		cpu1 = (int)(100.f - f1 / MaxIdleCalls * 100.f);
+		cpu0 = (int)(100.f - f0 / 1855000.f * 100.f);
+		cpu1 = (int)(100.f - f1 / 1855000.f * 100.f);
 		vTaskDelay(1000);
 	}
 }
@@ -456,12 +510,12 @@ void resetRotation()
 {
     if (pref.rotate) {
         gfx.setRotation(3);
-        buttons[ButtonPosition::Left] = &M5.BtnC;
-        buttons[ButtonPosition::Right] = &M5.BtnA;
+        buttons[ButtonPosition::Left]->x = 214;
+        buttons[ButtonPosition::Right]->x = 0;
     } else {
         gfx.setRotation(1);
-        buttons[ButtonPosition::Left] = &M5.BtnA;
-        buttons[ButtonPosition::Right] = &M5.BtnC;
+        buttons[ButtonPosition::Left]->x = 0;
+        buttons[ButtonPosition::Right]->x = 214;
     }
 }
 
@@ -579,7 +633,7 @@ void quickLoad()
 
 void setup() {
     i2s_config_t audioConfig = {
-        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_DAC_BUILT_IN),
+        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
         .sample_rate = 44100,
         .bits_per_sample = I2S_BITS_PER_SAMPLE_8BIT,
         .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
@@ -591,7 +645,6 @@ void setup() {
         .tx_desc_auto_clear = true
     };
     i2s_driver_install(I2S_NUM_0, &audioConfig, 0, nullptr);
-    i2s_set_dac_mode(I2S_DAC_CHANNEL_RIGHT_EN);
     i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_8BIT, I2S_CHANNEL_MONO);
     i2s_zero_dma_buffer(I2S_NUM_0);
     M5.begin();
@@ -827,6 +880,7 @@ inline void playingLoop()
 
 void loop() {
     M5.update();
+    updateButtons();
     gamepad1 = gamepad.get();
     switch (gameState) {
         case GameState::None: resumeToPlay(); break;
