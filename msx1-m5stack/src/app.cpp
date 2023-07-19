@@ -100,9 +100,11 @@ class Preferences {
 
     void load() {
         this->factoryReset();
+        SPIFFS.begin();
         File file = SPIFFS.open(APP_PREFRENCE_FILE, "r");
         if (!file) {
             log("SPIFFS: preference not found");
+            SPIFFS.end();
             return;
         }
         if (file.available()) {
@@ -134,12 +136,15 @@ class Preferences {
             log("SPIFFS: Loaded slotLocation=%d", this->slotLocation);
         }
         file.close();
+        SPIFFS.end();
     }
 
     void save() {
+        SPIFFS.begin();
         File file = SPIFFS.open(APP_PREFRENCE_FILE, "w");
         if (!file) {
             log("SPIFFS: preference cannot write");
+            SPIFFS.end();
             return;
         }
         file.write((uint8_t)this->sound);
@@ -147,6 +152,7 @@ class Preferences {
         file.write((uint8_t)this->rotate);
         file.write((uint8_t)this->slotLocation);
         file.close();
+        SPIFFS.end();
     }
 };
 
@@ -544,8 +550,10 @@ void quickSave()
     sprintf(path, SAVE_SLOT_FORMAT, pref.slot + 1);
     File fd;
     if (pref.slotLocation) {
+        SD.begin();
         fd = SD.open(path, FILE_WRITE);
      } else {
+        SPIFFS.begin();
         fd = SPIFFS.open(path, "w");
     }
     if (!fd) {
@@ -566,6 +574,11 @@ void quickSave()
         fd.close();
         vTaskDelay(1500);
     }
+    if (pref.slotLocation) {
+        SD.end();
+    } else {
+        SPIFFS.end();
+    }
     resumeToPlay();
 }
 
@@ -583,8 +596,10 @@ void quickLoad()
     sprintf(path, SAVE_SLOT_FORMAT, pref.slot + 1);
     File fd;
     if (pref.slotLocation) {
+        SD.begin();
         fd = SD.open(path, FILE_READ);
      } else {
+        SPIFFS.begin();
         fd = SPIFFS.open(path, "r");
     }
     if (!fd) {
@@ -628,6 +643,11 @@ void quickLoad()
         }
         fd.close();
     }
+    if (pref.slotLocation) {
+        SD.end();
+    } else {
+        SPIFFS.end();
+    }
     resumeToPlay();
 }
 
@@ -647,10 +667,8 @@ void setup() {
     i2s_driver_install(I2S_NUM_0, &audioConfig, 0, nullptr);
     i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_8BIT, I2S_CHANNEL_MONO);
     i2s_zero_dma_buffer(I2S_NUM_0);
-    M5.begin();
     gamepad.begin();
-    SPIFFS.begin();
-    SD.begin();
+    M5.begin();
     gfx.begin();
     gfx.setColorDepth(16);
     gfx.fillScreen(TFT_BLACK);

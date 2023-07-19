@@ -16,8 +16,12 @@ ROMS = src/rom_cbios_main_msx1.c\
 	src/rom_sdcard.c\
 	src/rom_menu_cursor.c
 
-all: copy-core
+all: copy-core data
 	pio run -t upload
+
+init:
+	mkdir data
+	pio run --target uploadfs
 
 build: copy-core
 	pio run
