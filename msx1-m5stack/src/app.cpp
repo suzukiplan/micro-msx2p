@@ -43,19 +43,69 @@ static void log(const char* format, ...)
     Serial.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
 }
 
-class Gamepad {
+class Audio {
+  private:
+    const i2s_port_t i2sNum = I2S_NUM_0;
+
   public:
     void begin() {
-        pinMode(5, INPUT_PULLUP);
-        Wire.begin(21, 22);
+        i2s_config_t audioConfig = {
+            .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
+            .sample_rate = 44100,
+            .bits_per_sample = I2S_BITS_PER_SAMPLE_8BIT,
+            .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
+            .communication_format = I2S_COMM_FORMAT_STAND_MSB,
+            .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+            .dma_buf_count = 4,
+            .dma_buf_len = 1024,
+            .use_apll = false,
+            .tx_desc_auto_clear = true
+        };
+        i2s_driver_install(this->i2sNum, &audioConfig, 0, nullptr);
+        i2s_set_clk(this->i2sNum, 44100, I2S_BITS_PER_SAMPLE_8BIT, I2S_CHANNEL_MONO);
+        i2s_zero_dma_buffer(this->i2sNum);
     }
 
-    uint8_t get() {
+    inline void write(uint8_t* buf, size_t bufSize) {
+        size_t wrote;
+        i2s_write(this->i2sNum, buf, bufSize, &wrote, portMAX_DELAY);
+    }
+};
+
+class Gamepad {
+  private:
+    xSemaphoreHandle gamepadMutex;
+    const int i2cAddr = 0x08;
+    const int pinInt = 5;
+#ifdef M5StackCoreS3
+    const int sda = 12;
+    const int scl = 11;
+#else
+    const int sda = 21;
+    const int scl = 22;
+#endif
+    uint8_t code;
+
+  public:
+    Gamepad() {
+         this->gamepadMutex = xSemaphoreCreateMutex();
+         this->code = 0;
+    }
+
+    void begin() {
+        Wire1.begin(this->sda, this->scl);
+        pinMode(pinInt, INPUT_PULLUP);
+    }
+
+    void lock() { xSemaphoreTake(this->gamepadMutex, portMAX_DELAY); }
+    void unlock() { xSemaphoreGive(this->gamepadMutex); }
+
+    void update() {
         uint8_t result = 0;
-        if (digitalRead(5) == LOW) {
-            Wire.requestFrom(0x08, 1);
-            while (Wire.available()) {
-                uint8_t key = Wire.read();
+        if (digitalRead(pinInt) == LOW) {
+            Wire1.requestFrom(i2cAddr, 1);
+            if (Wire1.available()) {
+                uint8_t key = Wire1.read();
                 if (key != 0x00) {
                     key ^= 0xFF;
                     if (key & 0b00000001) result |= MSX1_JOY_UP;
@@ -66,10 +116,18 @@ class Gamepad {
                     if (key & 0b00100000) result |= MSX1_JOY_T2;
                     if (key & 0b01000000) result |= MSX1_JOY_S2;
                     if (key & 0b10000000) result |= MSX1_JOY_S1;
-                    return result;
                 }
-            }                
+            }
         }
+        this->lock();
+        this->code = result;
+        this->unlock();
+    }
+
+    uint8_t get() {
+        this->lock();
+        uint8_t result = this->code;
+        this->unlock();
         return result;
     }
 };
@@ -177,6 +235,7 @@ static bool rendererPaused;
 static Preferences pref;
 static Gamepad gamepad;
 static uint8_t gamepad1;
+static Audio audio;
 
 typedef struct OssInfo_ {
     std::string name;
@@ -375,7 +434,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute even frame (rendering display buffer)
         xSemaphoreTake(displayMutex, portMAX_DELAY);
-        msx1.tick(gamepad1, 0, 0);
+        msx1.tick(gamepad.get(), 0, 0);
         xSemaphoreGive(displayMutex);
         fpsCounter++;
 
@@ -389,7 +448,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute odd frame (skip rendering)
         start = millis();
-        msx1.tick(gamepad1, 0, 0); 
+        msx1.tick(gamepad.get(), 0, 0); 
         fpsCounter++;
 
         // wait
@@ -420,11 +479,19 @@ void IRAM_ATTR psgTicker(void* arg)
             for (i = 0; i < 1024; i++) {
                 buf[i] = psg.tick(81);
             }
-            i2s_write(I2S_NUM_0, buf, sizeof(buf), &size, portMAX_DELAY);
+            audio.write(buf, sizeof(buf));
             vTaskDelay(2);
         } else {
             vTaskDelay(10);
         }
+    }
+}
+
+void gamepadUpdator(void* arg)
+{
+    while (1) {
+        gamepad.update();
+        vTaskDelay(3);
     }
 }
 
@@ -652,23 +719,8 @@ void quickLoad()
 }
 
 void setup() {
-    i2s_config_t audioConfig = {
-        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
-        .sample_rate = 44100,
-        .bits_per_sample = I2S_BITS_PER_SAMPLE_8BIT,
-        .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
-        .communication_format = I2S_COMM_FORMAT_STAND_MSB,
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-        .dma_buf_count = 4,
-        .dma_buf_len = 1024,
-        .use_apll = false,
-        .tx_desc_auto_clear = true
-    };
-    i2s_driver_install(I2S_NUM_0, &audioConfig, 0, nullptr);
-    i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_8BIT, I2S_CHANNEL_MONO);
-    i2s_zero_dma_buffer(I2S_NUM_0);
-    gamepad.begin();
     M5.begin();
+    Serial.begin(115200);
     gfx.begin();
     gfx.setColorDepth(16);
     gfx.fillScreen(TFT_BLACK);
@@ -677,6 +729,11 @@ void setup() {
     displayMutex = xSemaphoreCreateMutex();
     pref.load();
     resetRotation();
+    displayMessage("Initializing...");
+    displayMessage("Initialize I2S (Audio)");
+    audio.begin();
+    displayMessage("Initialize I2C (GamePad)");
+    gamepad.begin();
     displayMessage("Checking memory usage before launch MSX...");
     displayMessage("- HEAP: %d", esp_get_free_heap_size());
     displayMessage("- MALLOC_CAP_EXEC: %d", heap_caps_get_free_size(MALLOC_CAP_EXEC));
@@ -701,7 +758,7 @@ void setup() {
     msx1.psgDelegate.setContext = [](const void* context, int size) { memcpy(&psg.ctx, context, size); };
     psg.reset(27);
     psg.setVolume(pref.sound);
-    displayMessage("Setup finished.");
+    displayMessage("MSX1-core setup finished.");
     booted = true;
     usleep(1000000);
     gfx.clear();
@@ -710,6 +767,7 @@ void setup() {
 	esp_register_freertos_idle_hook_for_cpu(idleTask1, 1);
     xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 0);
     xTaskCreatePinnedToCore(psgTicker, "psgTicker", 4096, nullptr, 25, nullptr, 1);
+    xTaskCreatePinnedToCore(gamepadUpdator, "gamepadUpdator", 4096, nullptr, 16, nullptr, 1);
     xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 1);
     xTaskCreatePinnedToCore(cpuMonitor, "cpuMonitor", 1024, nullptr, 1, nullptr, 1);
 }
@@ -883,6 +941,7 @@ inline void ossLicensesLoop()
 
 inline void playingLoop()
 {
+    gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, rom_guide_normal);
     if (buttons[ButtonPosition::Left]->wasPressed()) {
         pauseAllTasks();
         gameState = GameState::Menu;
@@ -899,7 +958,6 @@ inline void playingLoop()
 void loop() {
     M5.update();
     updateButtons();
-    gamepad1 = gamepad.get();
     switch (gameState) {
         case GameState::None: resumeToPlay(); break;
         case GameState::Playing: playingLoop(); break;
