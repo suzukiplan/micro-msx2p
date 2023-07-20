@@ -14,6 +14,7 @@
 #include <SPIFFS.h>
 #include <driver/i2s.h>
 #include <esp_freertos_hooks.h>
+#include <esp_log.h>
 
 // M5Stack
 #include <M5Unified.h>
@@ -32,16 +33,6 @@ class CustomCanvas : public lgfx::LGFX_Sprite {
     CustomCanvas(LovyanGFX* parent) : LGFX_Sprite(parent) { _psram = false; }
     void* frameBuffer(uint8_t) { return getBuffer(); }
 };
-
-static void log(const char* format, ...)
-{
-    char buf[256];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buf, sizeof(buf), format, args);
-    va_end(args);
-    Serial.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
-}
 
 class Audio {
   private:
@@ -74,13 +65,12 @@ class Audio {
 
 class Gamepad {
   private:
-    xSemaphoreHandle gamepadMutex;
     const int i2cAddr = 0x08;
-    const int pinInt = 5;
 #ifdef M5StackCoreS3
     const int sda = 12;
     const int scl = 11;
 #else
+    const int pinInt = 5;
     const int sda = 21;
     const int scl = 22;
 #endif
@@ -88,47 +78,47 @@ class Gamepad {
 
   public:
     Gamepad() {
-         this->gamepadMutex = xSemaphoreCreateMutex();
          this->code = 0;
     }
 
     void begin() {
         Wire1.begin(this->sda, this->scl);
-        pinMode(pinInt, INPUT_PULLUP);
+#ifndef M5StackCoreS3
+        pinMode(this->pinInt, INPUT_PULLUP);
+#endif
     }
 
-    void lock() { xSemaphoreTake(this->gamepadMutex, portMAX_DELAY); }
-    void unlock() { xSemaphoreGive(this->gamepadMutex); }
+#ifdef M5StackCoreS3
+    inline bool isReadble() { return true; }
 
-    void update() {
-        uint8_t result = 0;
-        if (digitalRead(pinInt) == LOW) {
+    inline uint8_t read() {
+        uint8_t result = Wire1.peek();
+        Wire1.flush();
+        return result;
+    }
+#else
+    inline bool isReadble() { return digitalRead(this->pinInt) == LOW; }
+    inline uint8_t read() { return (uint8_t)Wire1.read(); }
+#endif
+
+    inline uint8_t get() {
+        if (this->isReadble()) {
             Wire1.requestFrom(i2cAddr, 1);
             if (Wire1.available()) {
-                uint8_t key = Wire1.read();
-                if (key != 0x00) {
-                    key ^= 0xFF;
-                    if (key & 0b00000001) result |= MSX1_JOY_UP;
-                    if (key & 0b00000010) result |= MSX1_JOY_DW;
-                    if (key & 0b00000100) result |= MSX1_JOY_LE;
-                    if (key & 0b00001000) result |= MSX1_JOY_RI;
-                    if (key & 0b00010000) result |= MSX1_JOY_T1;
-                    if (key & 0b00100000) result |= MSX1_JOY_T2;
-                    if (key & 0b01000000) result |= MSX1_JOY_S2;
-                    if (key & 0b10000000) result |= MSX1_JOY_S1;
-                }
+                uint8_t key = this->read() ^ 0xFF;
+                this->code = 0;
+                if (key & 0b00000001) this->code |= MSX1_JOY_UP;
+                if (key & 0b00000010) this->code |= MSX1_JOY_DW;
+                if (key & 0b00000100) this->code |= MSX1_JOY_LE;
+                if (key & 0b00001000) this->code |= MSX1_JOY_RI;
+                if (key & 0b00010000) this->code |= MSX1_JOY_T1;
+                if (key & 0b00100000) this->code |= MSX1_JOY_T2;
+                if (key & 0b01000000) this->code |= MSX1_JOY_S2;
+                if (key & 0b10000000) this->code |= MSX1_JOY_S1;
+                return this->code;
             }
         }
-        this->lock();
-        this->code = result;
-        this->unlock();
-    }
-
-    uint8_t get() {
-        this->lock();
-        uint8_t result = this->code;
-        this->unlock();
-        return result;
+        return this->code;
     }
 };
 
@@ -161,7 +151,7 @@ class Preferences {
         SPIFFS.begin();
         File file = SPIFFS.open(APP_PREFRENCE_FILE, "r");
         if (!file) {
-            log("SPIFFS: preference not found");
+            ESP_LOGI("MSX1", "SPIFFS: preference not found");
             SPIFFS.end();
             return;
         }
@@ -170,28 +160,28 @@ class Preferences {
             if (this->sound < 0 || 3 < this->sound) {
                 this->sound = DEFAULT_SOUND;
             }
-            log("SPIFFS: Loaded sound=%d", this->sound);
+            ESP_LOGI("MSX1", "SPIFFS: Loaded sound=%d", this->sound);
         }
         if (file.available()) {
             this->slot = file.read();
             if (this->slot < 0 || 2 < this->slot) {
                 this->slot = DEFAULT_SLOT;
             }
-            log("SPIFFS: Loaded slot=%d", this->sound);
+            ESP_LOGI("MSX1", "SPIFFS: Loaded slot=%d", this->sound);
         }
         if (file.available()) {
             this->rotate = file.read();
             if (this->rotate < 0 || 1 < this->rotate) {
                 this->rotate = DEFAULT_ROTATE;
             }
-            log("SPIFFS: Loaded rotate=%d", this->rotate);
+            ESP_LOGI("MSX1", "SPIFFS: Loaded rotate=%d", this->rotate);
         }
         if (file.available()) {
             this->slotLocation = file.read();
             if (this->slotLocation < 0 || 1 < this->slotLocation) {
                 this->slotLocation = DEFAULT_SLOT_LOCATION;
             }
-            log("SPIFFS: Loaded slotLocation=%d", this->slotLocation);
+            ESP_LOGI("MSX1", "SPIFFS: Loaded slotLocation=%d", this->slotLocation);
         }
         file.close();
         SPIFFS.end();
@@ -201,7 +191,7 @@ class Preferences {
         SPIFFS.begin();
         File file = SPIFFS.open(APP_PREFRENCE_FILE, "w");
         if (!file) {
-            log("SPIFFS: preference cannot write");
+            ESP_LOGI("MSX1", "SPIFFS: preference cannot write");
             SPIFFS.end();
             return;
         }
@@ -234,7 +224,6 @@ static bool psgTickerPaused;
 static bool rendererPaused;
 static Preferences pref;
 static Gamepad gamepad;
-static uint8_t gamepad1;
 static Audio audio;
 
 typedef struct OssInfo_ {
@@ -401,8 +390,9 @@ static void displayMessage(const char* format, ...)
     vsnprintf(buf, sizeof(buf), format, args);
     va_end(args);
     gfx.startWrite();
-    gfx.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
+    gfx.println(buf);
     gfx.endWrite();
+    ESP_LOGI("MSX1", "%s", buf);
     vTaskDelay(100);
 }
 
@@ -484,14 +474,6 @@ void IRAM_ATTR psgTicker(void* arg)
         } else {
             vTaskDelay(10);
         }
-    }
-}
-
-void gamepadUpdator(void* arg)
-{
-    while (1) {
-        gamepad.update();
-        vTaskDelay(3);
     }
 }
 
@@ -767,7 +749,6 @@ void setup() {
 	esp_register_freertos_idle_hook_for_cpu(idleTask1, 1);
     xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 0);
     xTaskCreatePinnedToCore(psgTicker, "psgTicker", 4096, nullptr, 25, nullptr, 1);
-    xTaskCreatePinnedToCore(gamepadUpdator, "gamepadUpdator", 4096, nullptr, 16, nullptr, 1);
     xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 1);
     xTaskCreatePinnedToCore(cpuMonitor, "cpuMonitor", 1024, nullptr, 1, nullptr, 1);
 }
