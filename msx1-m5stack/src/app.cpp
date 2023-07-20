@@ -65,6 +65,7 @@ class Audio {
 
 class Gamepad {
   private:
+    bool enabled;
     const int i2cAddr = 0x08;
 #ifdef M5StackCoreS3
     const int sda = 12;
@@ -79,12 +80,15 @@ class Gamepad {
   public:
     Gamepad() {
          this->code = 0;
+         this->enabled = false;
     }
 
     void begin() {
         Wire1.begin(this->sda, this->scl);
+        Wire1.beginTransmission(0x08);
+        this->enabled = 0 == Wire1.endTransmission();
 #ifndef M5StackCoreS3
-        pinMode(this->pinInt, INPUT_PULLUP);
+        if (this->enabled) pinMode(this->pinInt, INPUT_PULLUP);
 #endif
     }
 
@@ -100,8 +104,10 @@ class Gamepad {
     inline bool isReadble() { return digitalRead(this->pinInt) == LOW; }
     inline uint8_t read() { return (uint8_t)Wire1.read(); }
 #endif
+    inline bool isEnabled() { return this->enabled; }
 
     inline uint8_t get() {
+        if (!this->enabled) return 0;
         if (this->isReadble()) {
             Wire1.requestFrom(i2cAddr, 1);
             if (Wire1.available()) {
@@ -555,7 +561,7 @@ void resumeToPlay()
     gfx.fillRect(0, 216, 320, 16, backdropColor);
     gfx.fillRect(0, 24, 32, 192, backdropColor);
     gfx.fillRect(288, 24, 32, 192, backdropColor);
-    gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, rom_guide_normal);
+    gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, gamepad.isEnabled() ? rom_guide_gameboy : rom_guide_normal);
     gfx.endWrite();
     gameState = GameState::Playing;
     pauseRequest = false;
@@ -898,7 +904,9 @@ inline void menuLoop()
         gfx.fillRect(0, pref.rotate ? 232 : 0, 320, 8, TFT_BLACK);
         gfx.setCursor(0, pref.rotate ? 232 : 0);
         gfx.print(menuDesc[menuItems[menuDescIndex]].c_str());
-        gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, rom_guide_menu);
+        if (!gamepad.isEnabled()) {
+            gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, rom_guide_menu);
+        }
     }
     gfx.endWrite();
 }
@@ -922,7 +930,7 @@ inline void ossLicensesLoop()
 
 inline void playingLoop()
 {
-    gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, rom_guide_normal);
+    gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, gamepad.isEnabled() ? rom_guide_gameboy : rom_guide_normal);
     if (buttons[ButtonPosition::Left]->wasPressed()) {
         pauseAllTasks();
         gameState = GameState::Menu;
@@ -937,7 +945,9 @@ inline void playingLoop()
 }
 
 void loop() {
-    M5.update();
+    if (!gamepad.isEnabled()) {
+        M5.update();
+    }
     updateButtons();
     switch (gameState) {
         case GameState::None: resumeToPlay(); break;

@@ -2,6 +2,7 @@ ROMS = src/rom_cbios_main_msx1.c\
 	src/rom_cbios_logo_msx1.c\
 	src/rom_game.c\
 	src/rom_guide_normal.c\
+	src/rom_guide_gameboy.c\
 	src/rom_guide_menu.c\
 	src/rom_sound_mute.c\
 	src/rom_sound_low.c\
@@ -45,6 +46,9 @@ src/rom_game.c: bios/game.rom
 
 src/rom_guide_normal.c: bios/guide_normal.bmp
 	tools/bmp2img/bmp2img bios/guide_normal.bmp > src/rom_guide_normal.c
+
+src/rom_guide_gameboy.c: bios/guide_gameboy.bmp
+	tools/bmp2img/bmp2img bios/guide_gameboy.bmp > src/rom_guide_gameboy.c
 
 src/rom_guide_menu.c: bios/guide_menu.bmp
 	tools/bmp2img/bmp2img bios/guide_menu.bmp > src/rom_guide_menu.c
