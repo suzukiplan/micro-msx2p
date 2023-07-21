@@ -1,26 +1,31 @@
-# micro MSX2+ for M5Stack CoreS3
+# micro MSX2+ for M5Stack
 
-- micro-msx2p を M5Stack Core2 での動作をサポートしたものです
-- M5Stack の性能上の問題で MSX2/2+ の再現度の高いエミュレーションは難しいと判断したため MSX1 コアを使っています
+- micro-msx2p を M5Stack での動作をサポートしたものです
+- M5Stack の性能上の都合で MSX2/2+ の再現度の高いエミュレーションは難しいと判断したため MSX1 コアを使っています
   - ただし、それでもまだ性能面での問題を完全にはクリアできていません
+  - 現状、実機より 17%〜20% 程度遅く (48〜50fps程度で) 動作します
   - 性能目標: https://github.com/suzukiplan/micro-msx2p/issues/17
 
-補足事項:
+## Pre-requests
 
-- 性能目標は C-BIOS で `Hello World!` を表示するシンプルな ROM を動かした時の性能（最終的にもっと画面表示や音声出力する ROM でもテスト予定）
-- M5Stack には 3 つのシステムボタンがあり、ホットキー、ショートカット(1,2) として割り当てる想定
-
-## Required M5 Hardware
+### M5Stack Hardware
 
 - M5Stack CoreS3
-  - 本当は Core2 対応予定でしたが検証過程で壊れたので CoreS3 のみテストしてます
-  - [platform.ini](platform.ini) の `default_envs` を `m5stack-core2` にすれば一応 Core2 でも動くはずです
+  - 本当は Core2 に対応予定でしたが検証過程で壊れたので CoreS3 のみテストしてます
+  - [platform.ini](platform.ini) の `default_envs` を `m5stack-core2` にすれば一応 Core2 でも動くかもしれません（テストしてません）
 - M5 Face II
   - ゲームの操作を行うには M5 Face II (※Faces II ではなく MSX0 付属の Bottom Base) が必要です
 
-> その内 StampS3 にも対応するかもしれません
+> M5Stamp Pico と M5Stamp S3 への追加対応を検討中です
 
-## Pre-requests
+### Build Support OS
+
+- macOS
+- Linux
+
+> ビルド以外にも色々な事前処理を行っており（詳細は [Makefile](Makefile) を参照）、その関係で基本的に **macOS または Linux 系 OS でのコマンドラインビルドのみサポート** します。Windows で試したい場合は WSL2 等をご利用ください。
+
+### Middleware
 
 - [PlatformIO Core (CLI)](https://docs.platformio.org/en/latest/core/index.html)
   - macOS: `brew install platformio`
@@ -28,12 +33,7 @@
 
 > Playform I/O は Visual Studio Code 経由で用いる方式が一般的には多いですが、本プロジェクトでは CLI (pioコマンド) のみ用いるので Visual Studio Code や Plugin のインストールは不要です。
 
-## Build Support OS
-
-- macOS
-- Linux
-
-> ビルド以外にも色々な事前処理を行っており（詳細は [Makefile](Makefile) を参照）、その関係で基本的に **macOS または Linux 系 OS でのコマンドラインビルドのみサポート** します。Windows で試したい場合は WSL2 等をご利用ください。
+## How to Build
 
 ### initialize SPIFFS
 
@@ -72,7 +72,7 @@ make build
 
 1. [bios/game.rom](bios/game.rom) を更新
 2. `src/rom_game.c` を削除
-3. メガロムの場合 [src/app.cpp](src/app.cpp) の `setup` 関数で実行している `loadRom` の `MSX1_ROM_TYPE_` を対象のメガロム種別に変更
+3. メガロムの場合 [src/app.cpp](src/app.cpp) の `setup` 関数で実行している `MSX1::loadRom` の `MSX1_ROM_TYPE_` を対象のメガロム種別に変更
 
 ## License
 
