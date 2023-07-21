@@ -35,6 +35,7 @@ class CustomCanvas : public lgfx::LGFX_Sprite {
 };
 
 class Audio {
+#ifdef M5StackCore2
   private:
     const i2s_port_t i2sNum = I2S_NUM_0;
 
@@ -57,10 +58,26 @@ class Audio {
         i2s_zero_dma_buffer(this->i2sNum);
     }
 
-    inline void write(uint8_t* buf, size_t bufSize) {
+    inline void write(int8_t* buf, size_t bufSize) {
         size_t wrote;
         i2s_write(this->i2sNum, buf, bufSize, &wrote, portMAX_DELAY);
+        vTaskDelay(2);
     }
+#else
+  public:
+    void begin() {
+        auto config = M5.Speaker.config();
+        config.sample_rate = 44100;
+        M5.Speaker.config(config);
+        M5.Speaker.setVolume(255);
+        M5.Speaker.begin();
+    }
+
+    inline void write(int8_t* buf, size_t bufSize) {
+        while (M5.Speaker.isPlaying()) { vTaskDelay(1); }
+        M5.Speaker.playRaw(buf, bufSize, 44100, false);
+    }
+#endif
 };
 
 class Gamepad {
@@ -524,7 +541,7 @@ void IRAM_ATTR ticker(void* arg)
 
 void IRAM_ATTR psgTicker(void* arg)
 {
-    static uint8_t buf[1024];
+    static int8_t buf[1024];
     static size_t size;
     static int i;
     while (1) {
@@ -540,7 +557,6 @@ void IRAM_ATTR psgTicker(void* arg)
                 buf[i] = psg.tick8(81);
             }
             audio.write(buf, sizeof(buf));
-            vTaskDelay(2);
         } else {
             vTaskDelay(10);
         }
