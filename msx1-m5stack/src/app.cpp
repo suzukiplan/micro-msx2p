@@ -360,8 +360,8 @@ typedef struct OssInfo_ {
 
 static std::vector<OssInfo> ossLicensesList = {
     { "C-BIOS", "2-clause BSD", "Copyright (c) 2002 C-BIOS Association"},
-    { "M5Core2 Library", "MIT", "Copyright (c) 2020 M5Stack" },
     { "M5GFX", "MIT", "Copyright (c) 2021 M5Stack" },
+    { "M5Unified", "MIT", "Copyright (c) 2021 M5Stack" },
     { "micro MSX2+", "MIT", "Copyright (c) 2023 Yoji Suzuki"},
     { "SUZUKIPLAN - Z80 Emulator", "MIT", "Copyright (c) 2019 Yoji Suzuki"},
 };
