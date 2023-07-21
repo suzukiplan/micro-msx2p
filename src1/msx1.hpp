@@ -411,7 +411,7 @@ class MSX1
         this->psg.ctx.bobo += cpuClocks * this->PSG_CLOCK;
         while (0 < this->psg.ctx.bobo) {
             this->psg.ctx.bobo -= this->CPU_CLOCK;
-            this->ib.soundBuffer[this->ib.soundBufferCursor++] = this->psg.tick(81);
+            this->ib.soundBuffer[this->ib.soundBufferCursor++] = this->psg.tick8(81);
             this->ib.soundBufferCursor &= sizeof(this->ib.soundBuffer) - 1;
             if (0 == this->ib.soundBufferCursor && this->audioCallback) {
                 this->audioCallback(this, ib.soundBuffer, sizeof(ib.soundBuffer));
