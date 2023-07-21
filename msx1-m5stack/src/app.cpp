@@ -67,6 +67,8 @@ class Gamepad {
   private:
     bool enabled;
     const int i2cAddr = 0x08;
+    uint8_t code;
+    xSemaphoreHandle mutex;
 #ifdef M5StackCoreS3
     const int sda = 12;
     const int scl = 11;
@@ -75,12 +77,22 @@ class Gamepad {
     const int sda = 21;
     const int scl = 22;
 #endif
-    uint8_t code;
 
   public:
+    bool wasPushUp;
+    bool wasPushDown;
+    bool wasPushLeft;
+    bool wasPushRight;
+    bool wasPushA;
+    bool wasPushB;
+    bool wasPushStart;
+    bool wasPushSelect;
+
     Gamepad() {
          this->code = 0;
          this->enabled = false;
+         this->mutex = xSemaphoreCreateMutex();
+         this->clearPush();
     }
 
     void begin() {
@@ -107,11 +119,15 @@ class Gamepad {
     inline bool isEnabled() { return this->enabled; }
 
     inline uint8_t get() {
-        if (!this->enabled) return 0;
-        if (this->isReadble()) {
+        if (!this->enabled) {
+            xSemaphoreTake(this->mutex, portMAX_DELAY);
+            this->code = 0;
+            xSemaphoreGive(this->mutex);
+        } else if (this->isReadble()) {
             Wire1.requestFrom(i2cAddr, 1);
             if (Wire1.available()) {
                 uint8_t key = this->read() ^ 0xFF;
+                xSemaphoreTake(this->mutex, portMAX_DELAY);
                 this->code = 0;
                 if (key & 0b00000001) this->code |= MSX1_JOY_UP;
                 if (key & 0b00000010) this->code |= MSX1_JOY_DW;
@@ -121,10 +137,58 @@ class Gamepad {
                 if (key & 0b00100000) this->code |= MSX1_JOY_T2;
                 if (key & 0b01000000) this->code |= MSX1_JOY_S2;
                 if (key & 0b10000000) this->code |= MSX1_JOY_S1;
-                return this->code;
+                xSemaphoreGive(this->mutex);
             }
         }
         return this->code;
+    }
+
+    inline uint8_t getExcludeHotkey() {
+        uint8_t result = this->get();
+        return result & MSX1_JOY_S2 && result ^ MSX1_JOY_S2 ? 0 : result;
+    }
+
+    inline uint8_t getLatest() {
+        xSemaphoreTake(this->mutex, portMAX_DELAY);
+        uint8_t result = this->code;
+        xSemaphoreGive(this->mutex);
+        return result;
+    }
+
+    inline void clearPush() {
+         this->wasPushUp = false;
+         this->wasPushDown = false;
+         this->wasPushLeft = false;
+         this->wasPushRight = false;
+         this->wasPushA = false;
+         this->wasPushB = false;
+         this->wasPushStart = false;
+         this->wasPushSelect = false;
+    }
+
+    inline void updatePush() {
+        uint8_t prev = this->code;
+        this->get();
+        xSemaphoreTake(this->mutex, portMAX_DELAY);
+        this->clearPush();
+        if (0 != prev && 0 == this->code) {
+            this->wasPushUp = prev & MSX1_JOY_UP ? true : false;
+            this->wasPushDown = prev & MSX1_JOY_DW ? true : false;
+            this->wasPushLeft = prev & MSX1_JOY_LE ? true : false;
+            this->wasPushRight = prev & MSX1_JOY_RI ? true : false;
+            this->wasPushA = prev & MSX1_JOY_T1 ? true : false;
+            this->wasPushB = prev & MSX1_JOY_T2 ? true : false;
+            this->wasPushStart = prev & MSX1_JOY_S1 ? true : false;
+            this->wasPushSelect = prev & MSX1_JOY_S2 ? true : false;
+        }
+        xSemaphoreGive(this->mutex);
+    }
+
+    inline void resetCode() {
+        this->get();
+        xSemaphoreTake(this->mutex, portMAX_DELAY);
+        this->code = 0;
+        xSemaphoreGive(this->mutex);
     }
 };
 
@@ -430,7 +494,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute even frame (rendering display buffer)
         xSemaphoreTake(displayMutex, portMAX_DELAY);
-        msx1.tick(gamepad.get(), 0, 0);
+        msx1.tick(gamepad.getExcludeHotkey(), 0, 0);
         xSemaphoreGive(displayMutex);
         fpsCounter++;
 
@@ -444,7 +508,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute odd frame (skip rendering)
         start = millis();
-        msx1.tick(gamepad.get(), 0, 0); 
+        msx1.tick(gamepad.getExcludeHotkey(), 0, 0); 
         fpsCounter++;
 
         // wait
@@ -563,6 +627,7 @@ void resumeToPlay()
     gfx.fillRect(288, 24, 32, 192, backdropColor);
     gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, gamepad.isEnabled() ? rom_guide_gameboy : rom_guide_normal);
     gfx.endWrite();
+    gamepad.resetCode();
     gameState = GameState::Playing;
     pauseRequest = false;
 }
@@ -759,8 +824,10 @@ void setup() {
     xTaskCreatePinnedToCore(cpuMonitor, "cpuMonitor", 1024, nullptr, 1, nullptr, 1);
 }
 
+static bool renderMenuFlag = false;
 inline void renderMenu()
 {
+    renderMenuFlag = true;
     gfx.startWrite();
     gfx.fillRect(0, 0, 320, 8, TFT_BLACK);
     gfx.fillRoundRect(32, 16, 256, 208, 4, TFT_BLACK);
@@ -823,9 +890,64 @@ inline void renderOssLicenses()
     gfx.endWrite();
 }
 
+void modifySoundVolume(int d)
+{
+    pref.sound += d;
+    if (pref.sound < 0) {
+        pref.sound = 3;
+    } else if (3 < pref.sound) {
+        pref.sound = 0;
+    }
+    psg.setVolume(pref.sound);
+}
+
+void modifySlotSelection(int d)
+{
+    pref.slot += d;
+    if (pref.slot < 0) {
+        pref.slot = 2;
+    } else if (2 < pref.slot) {
+        pref.slot = 0;
+    }
+}
+
+void modifySlotLocation(int d)
+{
+    pref.slotLocation += d;
+    if (pref.slotLocation < 0) {
+        pref.slotLocation = 1;
+    } else if (1 < pref.slotLocation) {
+        pref.slotLocation = 0;
+    }
+}
+
+void modifyScreenRotation(int d)
+{
+    pref.rotate += d;
+    if (pref.rotate < 0) {
+        pref.rotate = 1;
+    } else if (1 < pref.rotate) {
+        pref.rotate = 0;
+    }
+    menuDescIndex = -1;
+    resetRotation();
+    gfx.clear();
+    renderMenu();
+}
+
 inline void menuLoop()
 {
-    if (buttons[ButtonPosition::Center]->wasPressed()) { // TODO: or gamepad B/A/START/SELECT
+    uint8_t pad = 0;
+    if (renderMenuFlag) {
+        gamepad.clearPush();
+        if (0 == gamepad.get()) {
+            renderMenuFlag = false;
+        }
+    } else {
+        gamepad.updatePush();
+    }    
+    
+    if (buttons[ButtonPosition::Center]->wasPressed() || gamepad.wasPushStart || gamepad.wasPushA || gamepad.wasPushB || gamepad.wasPushSelect) {
         switch (menuItems[menuCursor]) {
             case MenuItem::Resume:
                 pref.save();
@@ -837,25 +959,16 @@ inline void menuLoop()
                 resumeToPlay();
                 return;
             case MenuItem::SoundVolume:
-                pref.sound++;
-                pref.sound %= 4;
-                psg.setVolume(pref.sound);
+                modifySoundVolume(gamepad.wasPushB || gamepad.wasPushSelect ? -1 : 1);
                 break;
             case MenuItem::SelectSlot:
-                pref.slot++;
-                pref.slot %= 3;
+                modifySlotSelection(gamepad.wasPushB || gamepad.wasPushSelect ? -1 : 1);
                 break;
             case MenuItem::SlotLocation:
-                pref.slotLocation++;
-                pref.slotLocation %= 2;
+                modifySlotLocation(gamepad.wasPushB || gamepad.wasPushSelect ? -1 : 1);
                 break;
             case MenuItem::ScreenRotate:
-                pref.rotate++;
-                pref.rotate %= 2;
-                menuDescIndex = -1;
-                resetRotation();
-                gfx.clear();
-                renderMenu();
+                modifyScreenRotation(gamepad.wasPushB || gamepad.wasPushSelect ? -1 : 1);
                 break;
             case MenuItem::Save:
                 pref.save();
@@ -870,10 +983,28 @@ inline void menuLoop()
                 renderOssLicenses();
                 return;
         }
-    } else if (buttons[ButtonPosition::Left]->wasPressed()) { // TODO: or gamepad dpad:down
+    } else if (gamepad.wasPushLeft || gamepad.wasPushRight) {
+        int d = gamepad.wasPushLeft ? -1 : 1;
+        switch (menuItems[menuCursor]) {
+            case MenuItem::SoundVolume:
+                modifySoundVolume(d);
+                break;
+            case MenuItem::SelectSlot:
+                modifySlotSelection(d);
+                break;
+            case MenuItem::SlotLocation:
+                modifySlotLocation(d);
+                break;
+            case MenuItem::ScreenRotate:
+                modifyScreenRotation(d);
+                break;
+            default:
+                ; // nothing to do
+        }
+    } else if (buttons[ButtonPosition::Left]->wasPressed() || gamepad.wasPushDown) {
         menuCursor++;
         menuCursor %= (int)menuItems.size();
-    } else if (buttons[ButtonPosition::Right]->wasPressed()) { // TODO: or gamepad dpad:up
+    } else if (buttons[ButtonPosition::Right]->wasPressed() || gamepad.wasPushUp) {
         menuCursor--;
         if (menuCursor < 0) {
             menuCursor = (int)menuItems.size() - 1;
@@ -913,6 +1044,7 @@ inline void menuLoop()
 
 bool checkPressedAnyButton() 
 {
+    if (gamepad.get()) return true;
     if (buttons[ButtonPosition::Left]->wasPressed()) return true;
     if (buttons[ButtonPosition::Center]->wasPressed()) return true;
     if (buttons[ButtonPosition::Right]->wasPressed()) return true;
@@ -931,15 +1063,16 @@ inline void ossLicensesLoop()
 inline void playingLoop()
 {
     gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, gamepad.isEnabled() ? rom_guide_gameboy : rom_guide_normal);
-    if (buttons[ButtonPosition::Left]->wasPressed()) {
+    uint8_t pad = gamepad.getLatest();
+    if (buttons[ButtonPosition::Left]->wasPressed() || (pad & MSX1_JOY_S2 && pad & MSX1_JOY_S1)) {
         pauseAllTasks();
         gameState = GameState::Menu;
         menuCursor = 0;
         menuDescIndex = -1;
         renderMenu();
-    } else if (buttons[ButtonPosition::Center]->wasPressed()) {
+    } else if (buttons[ButtonPosition::Center]->wasPressed() || (pad & MSX1_JOY_S2 && pad & MSX1_JOY_T2)) {
         quickSave();
-    } else if (buttons[ButtonPosition::Right]->wasPressed()) {
+    } else if (buttons[ButtonPosition::Right]->wasPressed() || (pad & MSX1_JOY_S2 && pad & MSX1_JOY_T1)) {
         quickLoad();
     }
 }
