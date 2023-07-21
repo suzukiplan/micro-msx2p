@@ -76,10 +76,10 @@ class AY8910
     void setVolume(int volume)
     {
         switch (volume) {
-            case 0: this->volume = 8; break;
-            case 1: this->volume = 5; break; // low
-            case 2: this->volume = 4; break; // mid
-            case 3: this->volume = 2; break; // high
+            case 0: this->volume = 16; break;
+            case 1: this->volume = 10; break; // low
+            case 2: this->volume = 7; break;  // mid
+            case 3: this->volume = 4; break;  // high
         }
     }
 
