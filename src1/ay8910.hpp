@@ -128,7 +128,12 @@ class AY8910
         }
     }
 
-    inline signed char tick(unsigned int cycles)
+    inline signed char tick8(unsigned int cycles)
+    {
+        return (signed char)(this->tick16(cycles) / 256);
+    }
+
+    inline short tick16(unsigned int cycles)
     {
         if (this->ctx.eHolding) {
             this->ctx.eCounter += cycles;
@@ -183,10 +188,9 @@ class AY8910
             mix = 32767;
         else if (mix < -32768)
             mix = -32768;
-        return (signed char)(mix / 256);
+        return mix;
     }
 
-  private:
     inline int getRandom()
     {
         if (this->ctx.random & 1) {

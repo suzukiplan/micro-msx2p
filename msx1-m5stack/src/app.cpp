@@ -537,7 +537,7 @@ void IRAM_ATTR psgTicker(void* arg)
         }
         if (0 < pref.sound) {
             for (i = 0; i < 1024; i++) {
-                buf[i] = psg.tick(81);
+                buf[i] = psg.tick8(81);
             }
             audio.write(buf, sizeof(buf));
             vTaskDelay(2);
