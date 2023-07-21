@@ -1,24 +1,31 @@
+// C++ stdlib
 #include <map>
 #include <vector>
 #include <string>
+
+// micro MSX2+
 #include "msx1.hpp"
 #include "ay8910.hpp"
-#include <M5Core2.h>
+
+// Arduino
+#include <Arduino.h>
+#include <Wire.h>
+#include <SD.h>
+#include <SPIFFS.h>
+#include <driver/i2s.h>
+#include <esp_freertos_hooks.h>
+#include <esp_log.h>
+
+// M5Stack
+#include <M5Unified.h>
 #include <M5GFX.h>
+
+// ROM data (Graphics, BIOS and Game)
 #include "roms.hpp"
-#include "esp_freertos_hooks.h"
 
 #define APP_COPYRIGHT "Copyright (c) 20xx Team HogeHoge"
 #define APP_PREFRENCE_FILE "/suzukiplan_micro-msx1.prf"
 #define SAVE_SLOT_FORMAT "/game_slot%d.dat"
-
-#if defined(CONFIG_ESP32_DEFAULT_CPU_FREQ_240)
-static const uint64_t MaxIdleCalls = 1855000;
-#elif defined(CONFIG_ESP32_DEFAULT_CPU_FREQ_160)
-static const uint64_t MaxIdleCalls = 1233100;
-#else
-#error "Unsupported CPU frequency"
-#endif
 
 class CustomCanvas : public lgfx::LGFX_Sprite {
   public:
@@ -27,15 +34,163 @@ class CustomCanvas : public lgfx::LGFX_Sprite {
     void* frameBuffer(uint8_t) { return getBuffer(); }
 };
 
-static void log(const char* format, ...)
-{
-    char buf[256];
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buf, sizeof(buf), format, args);
-    va_end(args);
-    Serial.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
-}
+class Audio {
+  private:
+    const i2s_port_t i2sNum = I2S_NUM_0;
+
+  public:
+    void begin() {
+        i2s_config_t audioConfig = {
+            .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
+            .sample_rate = 44100,
+            .bits_per_sample = I2S_BITS_PER_SAMPLE_8BIT,
+            .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
+            .communication_format = I2S_COMM_FORMAT_STAND_MSB,
+            .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+            .dma_buf_count = 4,
+            .dma_buf_len = 1024,
+            .use_apll = false,
+            .tx_desc_auto_clear = true
+        };
+        i2s_driver_install(this->i2sNum, &audioConfig, 0, nullptr);
+        i2s_set_clk(this->i2sNum, 44100, I2S_BITS_PER_SAMPLE_8BIT, I2S_CHANNEL_MONO);
+        i2s_zero_dma_buffer(this->i2sNum);
+    }
+
+    inline void write(uint8_t* buf, size_t bufSize) {
+        size_t wrote;
+        i2s_write(this->i2sNum, buf, bufSize, &wrote, portMAX_DELAY);
+    }
+};
+
+class Gamepad {
+  private:
+    bool enabled;
+    const int i2cAddr = 0x08;
+    uint8_t code;
+    xSemaphoreHandle mutex;
+#ifdef M5StackCoreS3
+    const int sda = 12;
+    const int scl = 11;
+#else
+    const int pinInt = 5;
+    const int sda = 21;
+    const int scl = 22;
+#endif
+
+  public:
+    bool wasPushUp;
+    bool wasPushDown;
+    bool wasPushLeft;
+    bool wasPushRight;
+    bool wasPushA;
+    bool wasPushB;
+    bool wasPushStart;
+    bool wasPushSelect;
+
+    Gamepad() {
+         this->code = 0;
+         this->enabled = false;
+         this->mutex = xSemaphoreCreateMutex();
+         this->clearPush();
+    }
+
+    void begin() {
+        Wire1.begin(this->sda, this->scl);
+        Wire1.beginTransmission(0x08);
+        this->enabled = 0 == Wire1.endTransmission();
+#ifndef M5StackCoreS3
+        if (this->enabled) pinMode(this->pinInt, INPUT_PULLUP);
+#endif
+    }
+
+#ifdef M5StackCoreS3
+    inline bool isReadble() { return true; }
+
+    inline uint8_t read() {
+        uint8_t result = Wire1.peek();
+        Wire1.flush();
+        return result;
+    }
+#else
+    inline bool isReadble() { return digitalRead(this->pinInt) == LOW; }
+    inline uint8_t read() { return (uint8_t)Wire1.read(); }
+#endif
+    inline bool isEnabled() { return this->enabled; }
+
+    inline uint8_t get() {
+        if (!this->enabled) {
+            xSemaphoreTake(this->mutex, portMAX_DELAY);
+            this->code = 0;
+            xSemaphoreGive(this->mutex);
+        } else if (this->isReadble()) {
+            Wire1.requestFrom(i2cAddr, 1);
+            if (Wire1.available()) {
+                uint8_t key = this->read() ^ 0xFF;
+                xSemaphoreTake(this->mutex, portMAX_DELAY);
+                this->code = 0;
+                if (key & 0b00000001) this->code |= MSX1_JOY_UP;
+                if (key & 0b00000010) this->code |= MSX1_JOY_DW;
+                if (key & 0b00000100) this->code |= MSX1_JOY_LE;
+                if (key & 0b00001000) this->code |= MSX1_JOY_RI;
+                if (key & 0b00010000) this->code |= MSX1_JOY_T1;
+                if (key & 0b00100000) this->code |= MSX1_JOY_T2;
+                if (key & 0b01000000) this->code |= MSX1_JOY_S2;
+                if (key & 0b10000000) this->code |= MSX1_JOY_S1;
+                xSemaphoreGive(this->mutex);
+            }
+        }
+        return this->code;
+    }
+
+    inline uint8_t getExcludeHotkey() {
+        uint8_t result = this->get();
+        return result & MSX1_JOY_S2 && result ^ MSX1_JOY_S2 ? 0 : result;
+    }
+
+    inline uint8_t getLatest() {
+        xSemaphoreTake(this->mutex, portMAX_DELAY);
+        uint8_t result = this->code;
+        xSemaphoreGive(this->mutex);
+        return result;
+    }
+
+    inline void clearPush() {
+         this->wasPushUp = false;
+         this->wasPushDown = false;
+         this->wasPushLeft = false;
+         this->wasPushRight = false;
+         this->wasPushA = false;
+         this->wasPushB = false;
+         this->wasPushStart = false;
+         this->wasPushSelect = false;
+    }
+
+    inline void updatePush() {
+        uint8_t prev = this->code;
+        this->get();
+        xSemaphoreTake(this->mutex, portMAX_DELAY);
+        this->clearPush();
+        if (0 != prev && 0 == this->code) {
+            this->wasPushUp = prev & MSX1_JOY_UP ? true : false;
+            this->wasPushDown = prev & MSX1_JOY_DW ? true : false;
+            this->wasPushLeft = prev & MSX1_JOY_LE ? true : false;
+            this->wasPushRight = prev & MSX1_JOY_RI ? true : false;
+            this->wasPushA = prev & MSX1_JOY_T1 ? true : false;
+            this->wasPushB = prev & MSX1_JOY_T2 ? true : false;
+            this->wasPushStart = prev & MSX1_JOY_S1 ? true : false;
+            this->wasPushSelect = prev & MSX1_JOY_S2 ? true : false;
+        }
+        xSemaphoreGive(this->mutex);
+    }
+
+    inline void resetCode() {
+        this->get();
+        xSemaphoreTake(this->mutex, portMAX_DELAY);
+        this->code = 0;
+        xSemaphoreGive(this->mutex);
+    }
+};
 
 class Preferences {
   private:
@@ -63,9 +218,11 @@ class Preferences {
 
     void load() {
         this->factoryReset();
+        SPIFFS.begin();
         File file = SPIFFS.open(APP_PREFRENCE_FILE, "r");
         if (!file) {
-            log("SPIFFS: preference not found");
+            ESP_LOGI("MSX1", "SPIFFS: preference not found");
+            SPIFFS.end();
             return;
         }
         if (file.available()) {
@@ -73,36 +230,39 @@ class Preferences {
             if (this->sound < 0 || 3 < this->sound) {
                 this->sound = DEFAULT_SOUND;
             }
-            log("SPIFFS: Loaded sound=%d", this->sound);
+            ESP_LOGI("MSX1", "SPIFFS: Loaded sound=%d", this->sound);
         }
         if (file.available()) {
             this->slot = file.read();
             if (this->slot < 0 || 2 < this->slot) {
                 this->slot = DEFAULT_SLOT;
             }
-            log("SPIFFS: Loaded slot=%d", this->sound);
+            ESP_LOGI("MSX1", "SPIFFS: Loaded slot=%d", this->sound);
         }
         if (file.available()) {
             this->rotate = file.read();
             if (this->rotate < 0 || 1 < this->rotate) {
                 this->rotate = DEFAULT_ROTATE;
             }
-            log("SPIFFS: Loaded rotate=%d", this->rotate);
+            ESP_LOGI("MSX1", "SPIFFS: Loaded rotate=%d", this->rotate);
         }
         if (file.available()) {
             this->slotLocation = file.read();
             if (this->slotLocation < 0 || 1 < this->slotLocation) {
                 this->slotLocation = DEFAULT_SLOT_LOCATION;
             }
-            log("SPIFFS: Loaded slotLocation=%d", this->slotLocation);
+            ESP_LOGI("MSX1", "SPIFFS: Loaded slotLocation=%d", this->slotLocation);
         }
         file.close();
+        SPIFFS.end();
     }
 
     void save() {
+        SPIFFS.begin();
         File file = SPIFFS.open(APP_PREFRENCE_FILE, "w");
         if (!file) {
-            log("SPIFFS: preference cannot write");
+            ESP_LOGI("MSX1", "SPIFFS: preference cannot write");
+            SPIFFS.end();
             return;
         }
         file.write((uint8_t)this->sound);
@@ -110,6 +270,7 @@ class Preferences {
         file.write((uint8_t)this->rotate);
         file.write((uint8_t)this->slotLocation);
         file.close();
+        SPIFFS.end();
     }
 };
 
@@ -132,6 +293,8 @@ static bool tickerPaused;
 static bool psgTickerPaused;
 static bool rendererPaused;
 static Preferences pref;
+static Gamepad gamepad;
+static Audio audio;
 
 typedef struct OssInfo_ {
     std::string name;
@@ -160,11 +323,59 @@ enum class ButtonPosition {
     Right
 };
 
-static std::map<ButtonPosition, Button*> buttons = {
-    { ButtonPosition::Left, &M5.BtnA },
-    { ButtonPosition::Center, &M5.BtnB },
-    { ButtonPosition::Right, &M5.BtnC },
+class ScreenButton {
+  public:
+    int x;
+    int width;
+    bool pressing;
+    bool pressed;
+
+    ScreenButton(int x, int width) {
+        this->x = x;
+        this->width = width;
+        this->pressing = false;
+        this->pressed = false;
+    }
+
+    inline bool wasPressed() {
+        return this->pressed;
+    }
 };
+
+static std::map<ButtonPosition, ScreenButton*> buttons = {
+    { ButtonPosition::Left, new ScreenButton(0, 106) },
+    { ButtonPosition::Center, new ScreenButton(106, 108) },
+    { ButtonPosition::Right, new ScreenButton(214, 106) },
+};
+
+static void updateButtons()
+{
+    bool pressingLeft = false;
+    bool pressingCenter = false;
+    bool pressingRight = false;
+    auto left = buttons[ButtonPosition::Left];
+    auto center = buttons[ButtonPosition::Center];
+    auto right = buttons[ButtonPosition::Right]; 
+    for (int i = 0; i < M5.Touch.getCount(); i++) {
+        auto raw = M5.Touch.getTouchPointRaw(i);
+        auto& detail = M5.Touch.getDetail(i);
+        if (detail.state & m5::touch_state_t::touch) {
+            if (left->x <= raw.x && raw.x < left->x + left->width) {
+                pressingLeft = true;
+            } else if (center->x <= raw.x && raw.x < center->x + center->width) {
+                pressingCenter = true;
+            } else {
+                pressingRight = true;
+            }
+        }
+    }
+    left->pressed = left->pressing && !pressingLeft;
+    center->pressed = center->pressing && !pressingCenter;
+    right->pressed = right->pressing && !pressingRight;
+    left->pressing = pressingLeft;
+    center->pressing = pressingCenter;
+    right->pressing = pressingRight;
+}
 
 enum class MenuItem {
     Resume,
@@ -249,8 +460,9 @@ static void displayMessage(const char* format, ...)
     vsnprintf(buf, sizeof(buf), format, args);
     va_end(args);
     gfx.startWrite();
-    gfx.println(buf); // いちいちscreenコマンドでチェックするのが面倒なので暫定的にLCDにデバッグ表示しておく
+    gfx.println(buf);
     gfx.endWrite();
+    ESP_LOGI("MSX1", "%s", buf);
     vTaskDelay(100);
 }
 
@@ -282,7 +494,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute even frame (rendering display buffer)
         xSemaphoreTake(displayMutex, portMAX_DELAY);
-        msx1.tick(0, 0, 0);
+        msx1.tick(gamepad.getExcludeHotkey(), 0, 0);
         xSemaphoreGive(displayMutex);
         fpsCounter++;
 
@@ -296,7 +508,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute odd frame (skip rendering)
         start = millis();
-        msx1.tick(0, 0, 0); 
+        msx1.tick(gamepad.getExcludeHotkey(), 0, 0); 
         fpsCounter++;
 
         // wait
@@ -327,7 +539,7 @@ void IRAM_ATTR psgTicker(void* arg)
             for (i = 0; i < 1024; i++) {
                 buf[i] = psg.tick(81);
             }
-            i2s_write(I2S_NUM_0, buf, sizeof(buf), &size, portMAX_DELAY);
+            audio.write(buf, sizeof(buf));
             vTaskDelay(2);
         } else {
             vTaskDelay(10);
@@ -388,8 +600,8 @@ void cpuMonitor(void* arg)
 		float f1 = idle1;
 		idle0 = 0;
 		idle1 = 0;
-		cpu0 = (int)(100.f - f0 / MaxIdleCalls * 100.f);
-		cpu1 = (int)(100.f - f1 / MaxIdleCalls * 100.f);
+		cpu0 = (int)(100.f - f0 / 1855000.f * 100.f);
+		cpu1 = (int)(100.f - f1 / 1855000.f * 100.f);
 		vTaskDelay(1000);
 	}
 }
@@ -413,8 +625,9 @@ void resumeToPlay()
     gfx.fillRect(0, 216, 320, 16, backdropColor);
     gfx.fillRect(0, 24, 32, 192, backdropColor);
     gfx.fillRect(288, 24, 32, 192, backdropColor);
-    gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, rom_guide_normal);
+    gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, gamepad.isEnabled() ? rom_guide_gameboy : rom_guide_normal);
     gfx.endWrite();
+    gamepad.resetCode();
     gameState = GameState::Playing;
     pauseRequest = false;
 }
@@ -423,12 +636,12 @@ void resetRotation()
 {
     if (pref.rotate) {
         gfx.setRotation(3);
-        buttons[ButtonPosition::Left] = &M5.BtnC;
-        buttons[ButtonPosition::Right] = &M5.BtnA;
+        buttons[ButtonPosition::Left]->x = 214;
+        buttons[ButtonPosition::Right]->x = 0;
     } else {
         gfx.setRotation(1);
-        buttons[ButtonPosition::Left] = &M5.BtnA;
-        buttons[ButtonPosition::Right] = &M5.BtnC;
+        buttons[ButtonPosition::Left]->x = 0;
+        buttons[ButtonPosition::Right]->x = 214;
     }
 }
 
@@ -457,8 +670,10 @@ void quickSave()
     sprintf(path, SAVE_SLOT_FORMAT, pref.slot + 1);
     File fd;
     if (pref.slotLocation) {
+        SD.begin();
         fd = SD.open(path, FILE_WRITE);
      } else {
+        SPIFFS.begin();
         fd = SPIFFS.open(path, "w");
     }
     if (!fd) {
@@ -479,6 +694,11 @@ void quickSave()
         fd.close();
         vTaskDelay(1500);
     }
+    if (pref.slotLocation) {
+        SD.end();
+    } else {
+        SPIFFS.end();
+    }
     resumeToPlay();
 }
 
@@ -496,8 +716,10 @@ void quickLoad()
     sprintf(path, SAVE_SLOT_FORMAT, pref.slot + 1);
     File fd;
     if (pref.slotLocation) {
+        SD.begin();
         fd = SD.open(path, FILE_READ);
      } else {
+        SPIFFS.begin();
         fd = SPIFFS.open(path, "r");
     }
     if (!fd) {
@@ -541,29 +763,17 @@ void quickLoad()
         }
         fd.close();
     }
+    if (pref.slotLocation) {
+        SD.end();
+    } else {
+        SPIFFS.end();
+    }
     resumeToPlay();
 }
 
 void setup() {
-    i2s_config_t audioConfig = {
-        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_DAC_BUILT_IN),
-        .sample_rate = 44100,
-        .bits_per_sample = I2S_BITS_PER_SAMPLE_8BIT,
-        .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
-        .communication_format = I2S_COMM_FORMAT_STAND_MSB,
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-        .dma_buf_count = 4,
-        .dma_buf_len = 1024,
-        .use_apll = false,
-        .tx_desc_auto_clear = true
-    };
-    i2s_driver_install(I2S_NUM_0, &audioConfig, 0, nullptr);
-    i2s_set_dac_mode(I2S_DAC_CHANNEL_RIGHT_EN);
-    i2s_set_clk(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_8BIT, I2S_CHANNEL_MONO);
-    i2s_zero_dma_buffer(I2S_NUM_0);
     M5.begin();
-    SPIFFS.begin();
-    SD.begin();
+    Serial.begin(115200);
     gfx.begin();
     gfx.setColorDepth(16);
     gfx.fillScreen(TFT_BLACK);
@@ -572,6 +782,11 @@ void setup() {
     displayMutex = xSemaphoreCreateMutex();
     pref.load();
     resetRotation();
+    displayMessage("Initializing...");
+    displayMessage("Initialize I2S (Audio)");
+    audio.begin();
+    displayMessage("Initialize I2C (GamePad)");
+    gamepad.begin();
     displayMessage("Checking memory usage before launch MSX...");
     displayMessage("- HEAP: %d", esp_get_free_heap_size());
     displayMessage("- MALLOC_CAP_EXEC: %d", heap_caps_get_free_size(MALLOC_CAP_EXEC));
@@ -581,6 +796,8 @@ void setup() {
     msx1.vdp.useOwnDisplayBuffer(displayBuffer, sizeof(displayBuffer));
     msx1.setup(0, 0, (void*)rom_cbios_main_msx1, sizeof(rom_cbios_main_msx1), "MAIN");
     msx1.setup(0, 4, (void*)rom_cbios_logo_msx1, sizeof(rom_cbios_logo_msx1), "LOGO");
+    msx1.setupKeyAssign(0, MSX1_JOY_S1, 0x20); // START = SPACE
+    msx1.setupKeyAssign(0, MSX1_JOY_S2, 0x1B); // SELECT = ESC
     msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL);
     msx1.psgDelegate.reset = []() { psg.reset(27); };
     msx1.psgDelegate.setPads = [](unsigned char pad1, unsigned char pad2) { psg.setPads(pad1, pad2); };
@@ -594,7 +811,7 @@ void setup() {
     msx1.psgDelegate.setContext = [](const void* context, int size) { memcpy(&psg.ctx, context, size); };
     psg.reset(27);
     psg.setVolume(pref.sound);
-    displayMessage("Setup finished.");
+    displayMessage("MSX1-core setup finished.");
     booted = true;
     usleep(1000000);
     gfx.clear();
@@ -607,8 +824,10 @@ void setup() {
     xTaskCreatePinnedToCore(cpuMonitor, "cpuMonitor", 1024, nullptr, 1, nullptr, 1);
 }
 
+static bool renderMenuFlag = false;
 inline void renderMenu()
 {
+    renderMenuFlag = true;
     gfx.startWrite();
     gfx.fillRect(0, 0, 320, 8, TFT_BLACK);
     gfx.fillRoundRect(32, 16, 256, 208, 4, TFT_BLACK);
@@ -671,9 +890,64 @@ inline void renderOssLicenses()
     gfx.endWrite();
 }
 
+void modifySoundVolume(int d)
+{
+    pref.sound += d;
+    if (pref.sound < 0) {
+        pref.sound = 3;
+    } else if (3 < pref.sound) {
+        pref.sound = 0;
+    }
+    psg.setVolume(pref.sound);
+}
+
+void modifySlotSelection(int d)
+{
+    pref.slot += d;
+    if (pref.slot < 0) {
+        pref.slot = 2;
+    } else if (2 < pref.slot) {
+        pref.slot = 0;
+    }
+}
+
+void modifySlotLocation(int d)
+{
+    pref.slotLocation += d;
+    if (pref.slotLocation < 0) {
+        pref.slotLocation = 1;
+    } else if (1 < pref.slotLocation) {
+        pref.slotLocation = 0;
+    }
+}
+
+void modifyScreenRotation(int d)
+{
+    pref.rotate += d;
+    if (pref.rotate < 0) {
+        pref.rotate = 1;
+    } else if (1 < pref.rotate) {
+        pref.rotate = 0;
+    }
+    menuDescIndex = -1;
+    resetRotation();
+    gfx.clear();
+    renderMenu();
+}
+
 inline void menuLoop()
 {
-    if (buttons[ButtonPosition::Center]->wasPressed()) { // TODO: or gamepad B/A/START/SELECT
+    uint8_t pad = 0;
+    if (renderMenuFlag) {
+        gamepad.clearPush();
+        if (0 == gamepad.get()) {
+            renderMenuFlag = false;
+        }
+    } else {
+        gamepad.updatePush();
+    }    
+    
+    if (buttons[ButtonPosition::Center]->wasPressed() || gamepad.wasPushStart || gamepad.wasPushA || gamepad.wasPushB || gamepad.wasPushSelect) {
         switch (menuItems[menuCursor]) {
             case MenuItem::Resume:
                 pref.save();
@@ -685,25 +959,16 @@ inline void menuLoop()
                 resumeToPlay();
                 return;
             case MenuItem::SoundVolume:
-                pref.sound++;
-                pref.sound %= 4;
-                psg.setVolume(pref.sound);
+                modifySoundVolume(gamepad.wasPushB || gamepad.wasPushSelect ? -1 : 1);
                 break;
             case MenuItem::SelectSlot:
-                pref.slot++;
-                pref.slot %= 3;
+                modifySlotSelection(gamepad.wasPushB || gamepad.wasPushSelect ? -1 : 1);
                 break;
             case MenuItem::SlotLocation:
-                pref.slotLocation++;
-                pref.slotLocation %= 2;
+                modifySlotLocation(gamepad.wasPushB || gamepad.wasPushSelect ? -1 : 1);
                 break;
             case MenuItem::ScreenRotate:
-                pref.rotate++;
-                pref.rotate %= 2;
-                menuDescIndex = -1;
-                resetRotation();
-                gfx.clear();
-                renderMenu();
+                modifyScreenRotation(gamepad.wasPushB || gamepad.wasPushSelect ? -1 : 1);
                 break;
             case MenuItem::Save:
                 pref.save();
@@ -718,10 +983,28 @@ inline void menuLoop()
                 renderOssLicenses();
                 return;
         }
-    } else if (buttons[ButtonPosition::Left]->wasPressed()) { // TODO: or gamepad dpad:down
+    } else if (gamepad.wasPushLeft || gamepad.wasPushRight) {
+        int d = gamepad.wasPushLeft ? -1 : 1;
+        switch (menuItems[menuCursor]) {
+            case MenuItem::SoundVolume:
+                modifySoundVolume(d);
+                break;
+            case MenuItem::SelectSlot:
+                modifySlotSelection(d);
+                break;
+            case MenuItem::SlotLocation:
+                modifySlotLocation(d);
+                break;
+            case MenuItem::ScreenRotate:
+                modifyScreenRotation(d);
+                break;
+            default:
+                ; // nothing to do
+        }
+    } else if (buttons[ButtonPosition::Left]->wasPressed() || gamepad.wasPushDown) {
         menuCursor++;
         menuCursor %= (int)menuItems.size();
-    } else if (buttons[ButtonPosition::Right]->wasPressed()) { // TODO: or gamepad dpad:up
+    } else if (buttons[ButtonPosition::Right]->wasPressed() || gamepad.wasPushUp) {
         menuCursor--;
         if (menuCursor < 0) {
             menuCursor = (int)menuItems.size() - 1;
@@ -752,13 +1035,16 @@ inline void menuLoop()
         gfx.fillRect(0, pref.rotate ? 232 : 0, 320, 8, TFT_BLACK);
         gfx.setCursor(0, pref.rotate ? 232 : 0);
         gfx.print(menuDesc[menuItems[menuDescIndex]].c_str());
-        gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, rom_guide_menu);
+        if (!gamepad.isEnabled()) {
+            gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, rom_guide_menu);
+        }
     }
     gfx.endWrite();
 }
 
 bool checkPressedAnyButton() 
 {
+    if (gamepad.get()) return true;
     if (buttons[ButtonPosition::Left]->wasPressed()) return true;
     if (buttons[ButtonPosition::Center]->wasPressed()) return true;
     if (buttons[ButtonPosition::Right]->wasPressed()) return true;
@@ -776,21 +1062,26 @@ inline void ossLicensesLoop()
 
 inline void playingLoop()
 {
-    if (buttons[ButtonPosition::Left]->wasPressed()) {
+    gfx.pushImage(0, pref.rotate ? 0 : 232, 320, 8, gamepad.isEnabled() ? rom_guide_gameboy : rom_guide_normal);
+    uint8_t pad = gamepad.getLatest();
+    if (buttons[ButtonPosition::Left]->wasPressed() || (pad & MSX1_JOY_S2 && pad & MSX1_JOY_S1)) {
         pauseAllTasks();
         gameState = GameState::Menu;
         menuCursor = 0;
         menuDescIndex = -1;
         renderMenu();
-    } else if (buttons[ButtonPosition::Center]->wasPressed()) {
+    } else if (buttons[ButtonPosition::Center]->wasPressed() || (pad & MSX1_JOY_S2 && pad & MSX1_JOY_T2)) {
         quickSave();
-    } else if (buttons[ButtonPosition::Right]->wasPressed()) {
+    } else if (buttons[ButtonPosition::Right]->wasPressed() || (pad & MSX1_JOY_S2 && pad & MSX1_JOY_T1)) {
         quickLoad();
     }
 }
 
 void loop() {
-    M5.update();
+    if (!gamepad.isEnabled()) {
+        M5.update();
+    }
+    updateButtons();
     switch (gameState) {
         case GameState::None: resumeToPlay(); break;
         case GameState::Playing: playingLoop(); break;
