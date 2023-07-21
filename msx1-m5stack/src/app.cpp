@@ -35,7 +35,7 @@ class CustomCanvas : public lgfx::LGFX_Sprite {
 };
 
 class Audio {
-#ifdef M5StackCore2
+#if defined(M5StackCore2)
     // Simple Audio DAC implementation
   private:
     static constexpr i2s_port_t i2sNum = I2S_NUM_0;
@@ -64,7 +64,7 @@ class Audio {
         i2s_write(this->i2sNum, buf, bufSize, &wrote, portMAX_DELAY);
         vTaskDelay(2);
     }
-#else
+#elif defined(M5StackCoreS3)
     // AW88298 Audio Amplifier implementation
   private:
     static constexpr uint8_t i2cAddrAw88298 = 0x36;
@@ -116,6 +116,8 @@ class Audio {
         i2s_write(this->i2sNum, buf, bufSize, &wrote, portMAX_DELAY);
         vTaskDelay(2);
     }
+#else
+#error unsupported
 #endif
 };
 
