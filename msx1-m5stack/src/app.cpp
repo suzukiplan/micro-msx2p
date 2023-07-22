@@ -819,7 +819,7 @@ inline void menuLoop()
         gamepad.updatePush();
     }
 
-    if (buttons[ButtonPosition::Center]->wasPressed() || gamepad.wasPushStart || gamepad.wasPushA || gamepad.wasPushB || gamepad.wasPushSelect) {
+    if (buttons[ButtonPosition::Center]->wasPressed() || gamepad.wasPushStart || gamepad.wasPushA) {
         switch (menuItems[menuCursor]) {
             case MenuItem::Resume:
                 pref.save();
@@ -880,6 +880,8 @@ inline void menuLoop()
         if (menuCursor < 0) {
             menuCursor = (int)menuItems.size() - 1;
         }
+    } else if (gamepad.wasPushB || gamepad.wasPushSelect) {
+        menuCursor = 0;
     }
     gfx.startWrite();
     for (int i = 0; i < menuItems.size(); i++) {
