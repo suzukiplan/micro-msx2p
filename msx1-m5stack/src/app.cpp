@@ -45,6 +45,7 @@
 // M5Stack
 #include <M5Unified.h>
 #include <M5GFX.h>
+#include "CustomCanvas.hpp"
 
 // ROM data (Graphics, BIOS and Game)
 #include "roms.hpp"
@@ -52,13 +53,6 @@
 #define APP_COPYRIGHT "Copyright (c) 20xx Team HogeHoge"
 #define APP_PREFRENCE_FILE "/suzukiplan_micro-msx1.prf"
 #define SAVE_SLOT_FORMAT "/game_slot%d.dat"
-
-class CustomCanvas : public lgfx::LGFX_Sprite {
-  public:
-    CustomCanvas() : LGFX_Sprite() {}
-    CustomCanvas(LovyanGFX* parent) : LGFX_Sprite(parent) { _psram = false; }
-    void* frameBuffer(uint8_t) { return getBuffer(); }
-};
 
 class Audio {
 #if defined(M5StackCore2)
