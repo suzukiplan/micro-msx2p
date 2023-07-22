@@ -50,8 +50,8 @@ class MSX1
     } psgDelegate;
 #endif
   private:
-    const int CPU_CLOCK = 3584160;
-    const int VDP_CLOCK = 5376240;
+    const int CPU_CLOCK = 3579545;
+    const int VDP_CLOCK = 5370863;
 
 #ifndef MSX1_REMOVE_PSG
     const int PSG_CLOCK = 44100;
