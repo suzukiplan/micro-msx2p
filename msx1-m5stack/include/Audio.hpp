@@ -27,17 +27,19 @@
 #ifndef INCLUDE_AUDIO_HPP
 #define INCLUDE_AUDIO_HPP
 
-#include <driver/i2s.h>
 #include <M5Unified.h>
+#include <driver/i2s.h>
 
-class Audio {
+class Audio
+{
 #if defined(M5StackCore2)
     // Simple Audio DAC implementation
   private:
     static constexpr i2s_port_t i2sNum = I2S_NUM_0;
 
   public:
-    void begin() {
+    void begin()
+    {
         i2s_config_t audioConfig = {
             .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
             .sample_rate = 44100,
@@ -48,14 +50,14 @@ class Audio {
             .dma_buf_count = 4,
             .dma_buf_len = 1024,
             .use_apll = false,
-            .tx_desc_auto_clear = true
-        };
+            .tx_desc_auto_clear = true};
         i2s_driver_install(this->i2sNum, &audioConfig, 0, nullptr);
         i2s_set_clk(this->i2sNum, 44100, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO);
         i2s_zero_dma_buffer(this->i2sNum);
     }
 
-    inline void write(int16_t* buf, size_t bufSize) {
+    inline void write(int16_t* buf, size_t bufSize)
+    {
         size_t wrote;
         i2s_write(this->i2sNum, buf, bufSize, &wrote, portMAX_DELAY);
         vTaskDelay(2);
@@ -66,20 +68,22 @@ class Audio {
     static constexpr uint8_t i2cAddrAw88298 = 0x36;
     static constexpr i2s_port_t i2sNum = I2S_NUM_1;
 
-    inline void writeRegister(uint8_t reg, uint16_t value) {
+    inline void writeRegister(uint8_t reg, uint16_t value)
+    {
         value = __builtin_bswap16(value);
         M5.In_I2C.writeRegister(this->i2cAddrAw88298, reg, (const uint8_t*)&value, 2, 400000);
     }
 
   public:
-    void begin() {
+    void begin()
+    {
         // setup AW88298 regisgter
         M5.In_I2C.bitOn(this->i2cAddrAw88298, 0x02, 0b00000100, 400000);
-        this->writeRegister(0x61, 0x0673); // BSTCTL2 (same as M5Unified) 
-        this->writeRegister(0x04, 0x4040); // SYSCTL (same as M5Unified)
-        this->writeRegister(0x05, 0x0008); // SYSCTL2 (same as M5Unified)
+        this->writeRegister(0x61, 0x0673);             // BSTCTL2 (same as M5Unified)
+        this->writeRegister(0x04, 0x4040);             // SYSCTL (same as M5Unified)
+        this->writeRegister(0x05, 0x0008);             // SYSCTL2 (same as M5Unified)
         this->writeRegister(0x06, 0b0001110000000111); // I2SCTL: 44.1kHz, 16bits, monoral (他は全部デフォルト値)
-        this->writeRegister(0x0C, 0x0064); // HAGCCFG (same as M5Unified)
+        this->writeRegister(0x0C, 0x0064);             // HAGCCFG (same as M5Unified)
         // I2S config
         i2s_config_t config;
         memset(&config, 0, sizeof(i2s_config_t));
@@ -107,7 +111,8 @@ class Audio {
         i2s_start(this->i2sNum);
     }
 
-    inline void write(int16_t* buf, size_t bufSize) {
+    inline void write(int16_t* buf, size_t bufSize)
+    {
         size_t wrote;
         i2s_write(this->i2sNum, buf, bufSize, &wrote, portMAX_DELAY);
         vTaskDelay(2);

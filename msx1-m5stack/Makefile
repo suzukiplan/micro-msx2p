@@ -92,3 +92,14 @@ src/rom_sdcard.c: bios/sdcard.bmp
 include/roms.hpp: ${ROMS}
 	cd tools/varext && make
 	tools/varext/varext ${ROMS} >include/roms.hpp
+
+format:
+	make execute-format FILENAME=./src/app.cpp
+	make execute-format FILENAME=./include/CustomCanvas.hpp
+	make execute-format FILENAME=./include/Audio.hpp
+	make execute-format FILENAME=./include/Gamepad.hpp
+
+execute-format:
+	clang-format -style=file < ${FILENAME} > ${FILENAME}.bak
+	cat ${FILENAME}.bak > ${FILENAME}
+	rm ${FILENAME}.bak

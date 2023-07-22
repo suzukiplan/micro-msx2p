@@ -29,15 +29,18 @@
 
 #include <M5GFX.h>
 
-class CustomCanvas : public lgfx::LGFX_Sprite {
+class CustomCanvas : public lgfx::LGFX_Sprite
+{
   public:
     CustomCanvas() : LGFX_Sprite() {}
 
-    CustomCanvas(LovyanGFX* parent) : LGFX_Sprite(parent) {
+    CustomCanvas(LovyanGFX* parent) : LGFX_Sprite(parent)
+    {
         _psram = false; // PSRAM is not used to ensure performance (DMA is used)
     }
 
-    void* frameBuffer(uint8_t) {
+    void* frameBuffer(uint8_t)
+    {
         return getBuffer();
     }
 };

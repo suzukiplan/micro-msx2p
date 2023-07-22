@@ -29,7 +29,8 @@
 
 #include <M5Unified.h>
 
-class Gamepad {
+class Gamepad
+{
   private:
     bool enabled;
     const int i2cAddr = 0x08;
@@ -54,14 +55,16 @@ class Gamepad {
     bool wasPushStart;
     bool wasPushSelect;
 
-    Gamepad() {
-         this->code = 0;
-         this->enabled = false;
-         this->mutex = xSemaphoreCreateMutex();
-         this->clearPush();
+    Gamepad()
+    {
+        this->code = 0;
+        this->enabled = false;
+        this->mutex = xSemaphoreCreateMutex();
+        this->clearPush();
     }
 
-    void begin() {
+    void begin()
+    {
         Wire1.begin(this->sda, this->scl);
         Wire1.beginTransmission(0x08);
         this->enabled = 0 == Wire1.endTransmission();
@@ -71,20 +74,31 @@ class Gamepad {
     }
 
 #ifdef M5StackCoreS3
-    inline bool isReadble() { return true; }
+    inline bool isReadble()
+    {
+        return true;
+    }
 
-    inline uint8_t read() {
+    inline uint8_t read()
+    {
         uint8_t result = Wire1.peek();
         Wire1.flush();
         return result;
     }
 #else
-    inline bool isReadble() { return digitalRead(this->pinInt) == LOW; }
+    inline bool isReadble()
+    {
+        return digitalRead(this->pinInt) == LOW;
+    }
     inline uint8_t read() { return (uint8_t)Wire1.read(); }
 #endif
-    inline bool isEnabled() { return this->enabled; }
+    inline bool isEnabled()
+    {
+        return this->enabled;
+    }
 
-    inline uint8_t get() {
+    inline uint8_t get()
+    {
         if (!this->enabled) {
             xSemaphoreTake(this->mutex, portMAX_DELAY);
             this->code = 0;
@@ -109,30 +123,34 @@ class Gamepad {
         return this->code;
     }
 
-    inline uint8_t getExcludeHotkey() {
+    inline uint8_t getExcludeHotkey()
+    {
         uint8_t result = this->get();
         return result & MSX1_JOY_S2 && result ^ MSX1_JOY_S2 ? 0 : result;
     }
 
-    inline uint8_t getLatest() {
+    inline uint8_t getLatest()
+    {
         xSemaphoreTake(this->mutex, portMAX_DELAY);
         uint8_t result = this->code;
         xSemaphoreGive(this->mutex);
         return result;
     }
 
-    inline void clearPush() {
-         this->wasPushUp = false;
-         this->wasPushDown = false;
-         this->wasPushLeft = false;
-         this->wasPushRight = false;
-         this->wasPushA = false;
-         this->wasPushB = false;
-         this->wasPushStart = false;
-         this->wasPushSelect = false;
+    inline void clearPush()
+    {
+        this->wasPushUp = false;
+        this->wasPushDown = false;
+        this->wasPushLeft = false;
+        this->wasPushRight = false;
+        this->wasPushA = false;
+        this->wasPushB = false;
+        this->wasPushStart = false;
+        this->wasPushSelect = false;
     }
 
-    inline void updatePush() {
+    inline void updatePush()
+    {
         uint8_t prev = this->code;
         this->get();
         xSemaphoreTake(this->mutex, portMAX_DELAY);
@@ -150,7 +168,8 @@ class Gamepad {
         xSemaphoreGive(this->mutex);
     }
 
-    inline void resetCode() {
+    inline void resetCode()
+    {
         this->get();
         xSemaphoreTake(this->mutex, portMAX_DELAY);
         this->code = 0;

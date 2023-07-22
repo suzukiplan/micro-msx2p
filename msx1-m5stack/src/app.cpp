@@ -26,28 +26,28 @@
  */
 // C++ stdlib
 #include <map>
-#include <vector>
 #include <string>
+#include <vector>
 
 // micro MSX2+
-#include "msx1.hpp"
 #include "ay8910.hpp"
+#include "msx1.hpp"
 
 // Arduino
 #include <Arduino.h>
-#include <Wire.h>
 #include <SD.h>
 #include <SPIFFS.h>
+#include <Wire.h>
 #include <driver/i2s.h>
 #include <esp_freertos_hooks.h>
 #include <esp_log.h>
 
 // M5Stack
-#include <M5Unified.h>
-#include <M5GFX.h>
-#include "CustomCanvas.hpp"
 #include "Audio.hpp"
+#include "CustomCanvas.hpp"
 #include "Gamepad.hpp"
+#include <M5GFX.h>
+#include <M5Unified.h>
 
 // ROM data (Graphics, BIOS and Game)
 #include "roms.hpp"
@@ -56,7 +56,8 @@
 #define APP_PREFRENCE_FILE "/suzukiplan_micro-msx1.prf"
 #define SAVE_SLOT_FORMAT "/game_slot%d.dat"
 
-class Preferences {
+class Preferences
+{
   private:
     const int DEFAULT_SOUND = 2;
     const int DEFAULT_SLOT = 0;
@@ -69,18 +70,21 @@ class Preferences {
     int rotate;
     int slotLocation;
 
-    Preferences() {
+    Preferences()
+    {
         this->factoryReset();
     }
 
-    void factoryReset() {
+    void factoryReset()
+    {
         this->sound = DEFAULT_SOUND;
         this->slot = DEFAULT_SLOT;
         this->rotate = DEFAULT_ROTATE;
         this->slotLocation = DEFAULT_SLOT_LOCATION;
     }
 
-    void load() {
+    void load()
+    {
         this->factoryReset();
         SPIFFS.begin();
         File file = SPIFFS.open(APP_PREFRENCE_FILE, "r");
@@ -121,7 +125,8 @@ class Preferences {
         SPIFFS.end();
     }
 
-    void save() {
+    void save()
+    {
         SPIFFS.begin();
         File file = SPIFFS.open(APP_PREFRENCE_FILE, "w");
         if (!file) {
@@ -167,11 +172,11 @@ typedef struct OssInfo_ {
 } OssInfo;
 
 static std::vector<OssInfo> ossLicensesList = {
-    { "C-BIOS", "2-clause BSD", "Copyright (c) 2002 C-BIOS Association"},
-    { "M5GFX", "MIT", "Copyright (c) 2021 M5Stack" },
-    { "M5Unified", "MIT", "Copyright (c) 2021 M5Stack" },
-    { "micro MSX2+", "MIT", "Copyright (c) 2023 Yoji Suzuki"},
-    { "SUZUKIPLAN - Z80 Emulator", "MIT", "Copyright (c) 2019 Yoji Suzuki"},
+    {"C-BIOS", "2-clause BSD", "Copyright (c) 2002 C-BIOS Association"},
+    {"M5GFX", "MIT", "Copyright (c) 2021 M5Stack"},
+    {"M5Unified", "MIT", "Copyright (c) 2021 M5Stack"},
+    {"micro MSX2+", "MIT", "Copyright (c) 2023 Yoji Suzuki"},
+    {"SUZUKIPLAN - Z80 Emulator", "MIT", "Copyright (c) 2019 Yoji Suzuki"},
 };
 
 enum class GameState {
@@ -187,29 +192,32 @@ enum class ButtonPosition {
     Right
 };
 
-class ScreenButton {
+class ScreenButton
+{
   public:
     int x;
     int width;
     bool pressing;
     bool pressed;
 
-    ScreenButton(int x, int width) {
+    ScreenButton(int x, int width)
+    {
         this->x = x;
         this->width = width;
         this->pressing = false;
         this->pressed = false;
     }
 
-    inline bool wasPressed() {
+    inline bool wasPressed()
+    {
         return this->pressed;
     }
 };
 
 static std::map<ButtonPosition, ScreenButton*> buttons = {
-    { ButtonPosition::Left, new ScreenButton(0, 106) },
-    { ButtonPosition::Center, new ScreenButton(106, 108) },
-    { ButtonPosition::Right, new ScreenButton(214, 106) },
+    {ButtonPosition::Left, new ScreenButton(0, 106)},
+    {ButtonPosition::Center, new ScreenButton(106, 108)},
+    {ButtonPosition::Right, new ScreenButton(214, 106)},
 };
 
 static void updateButtons()
@@ -219,7 +227,7 @@ static void updateButtons()
     bool pressingRight = false;
     auto left = buttons[ButtonPosition::Left];
     auto center = buttons[ButtonPosition::Center];
-    auto right = buttons[ButtonPosition::Right]; 
+    auto right = buttons[ButtonPosition::Right];
     for (int i = 0; i < M5.Touch.getCount(); i++) {
         auto raw = M5.Touch.getTouchPointRaw(i);
         auto& detail = M5.Touch.getDetail(i);
@@ -254,27 +262,27 @@ enum class MenuItem {
 };
 
 static std::map<MenuItem, std::string> menuName = {
-    { MenuItem::Resume, "Resume" },
-    { MenuItem::Reset, "Reset" },
-    { MenuItem::SoundVolume, "Sound Volume" },
-    { MenuItem::SelectSlot,  "Select Slot" },
-    { MenuItem::ScreenRotate,  "Screen Rotate" },
-    { MenuItem::Save, "Save" },
-    { MenuItem::Load, "Load" },
-    { MenuItem::Licenses, "Using OSS Licenses" },
-    { MenuItem::SlotLocation, "Slot Location" },
+    {MenuItem::Resume, "Resume"},
+    {MenuItem::Reset, "Reset"},
+    {MenuItem::SoundVolume, "Sound Volume"},
+    {MenuItem::SelectSlot, "Select Slot"},
+    {MenuItem::ScreenRotate, "Screen Rotate"},
+    {MenuItem::Save, "Save"},
+    {MenuItem::Load, "Load"},
+    {MenuItem::Licenses, "Using OSS Licenses"},
+    {MenuItem::SlotLocation, "Slot Location"},
 };
 
 static std::map<MenuItem, std::string> menuDesc = {
-    { MenuItem::Resume, "Nothing to do, back in play." },
-    { MenuItem::Reset, "Reset the MSX." },
-    { MenuItem::SoundVolume, "Adjusts the volume level." },
-    { MenuItem::SelectSlot, "Select slot number to save and load." },
-    { MenuItem::ScreenRotate,  "Flip the screen up and down setting." },
-    { MenuItem::Save, "Saves the state of play." },
-    { MenuItem::Load, "Loads the state of play." },
-    { MenuItem::Licenses, "Displays OSS license information in use." },
-    { MenuItem::SlotLocation, "Choice of storage for savedata slots." },
+    {MenuItem::Resume, "Nothing to do, back in play."},
+    {MenuItem::Reset, "Reset the MSX."},
+    {MenuItem::SoundVolume, "Adjusts the volume level."},
+    {MenuItem::SelectSlot, "Select slot number to save and load."},
+    {MenuItem::ScreenRotate, "Flip the screen up and down setting."},
+    {MenuItem::Save, "Saves the state of play."},
+    {MenuItem::Load, "Loads the state of play."},
+    {MenuItem::Licenses, "Displays OSS license information in use."},
+    {MenuItem::SlotLocation, "Choice of storage for savedata slots."},
 };
 
 static const std::vector<MenuItem> menuItems = {
@@ -299,14 +307,14 @@ static GameState gameState = GameState::None;
 
 static IRAM_ATTR bool idleTask0()
 {
-	idle0++;
-	return false;
+    idle0++;
+    return false;
 }
 
 static IRAM_ATTR bool idleTask1()
 {
-	idle1++;
-	return false;
+    idle1++;
+    return false;
 }
 
 static DRAM_ATTR MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
@@ -336,7 +344,7 @@ void IRAM_ATTR ticker(void* arg)
     static size_t soundSize;
     static long start;
     static long procTime = 0;
-    static const long interval[3] = { 16, 17, 17 };
+    static const long interval[3] = {16, 17, 17};
     static int loopCount = 0;
     static int fpsCounter;
     static long sec = 0;
@@ -372,7 +380,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute odd frame (skip rendering)
         start = millis();
-        msx1.tick(gamepad.getExcludeHotkey(), 0, 0); 
+        msx1.tick(gamepad.getExcludeHotkey(), 0, 0);
         fpsCounter++;
 
         // wait
@@ -382,7 +390,6 @@ void IRAM_ATTR ticker(void* arg)
         }
         loopCount++;
         loopCount %= 3;
-
     }
 }
 
@@ -458,15 +465,15 @@ void renderer(void* arg)
 
 void cpuMonitor(void* arg)
 {
-	while (1) {
-		float f0 = idle0;
-		float f1 = idle1;
-		idle0 = 0;
-		idle1 = 0;
-		cpu0 = (int)(100.f - f0 / 1855000.f * 100.f);
-		cpu1 = (int)(100.f - f1 / 1855000.f * 100.f);
-		vTaskDelay(1000);
-	}
+    while (1) {
+        float f0 = idle0;
+        float f1 = idle1;
+        idle0 = 0;
+        idle1 = 0;
+        cpu0 = (int)(100.f - f0 / 1855000.f * 100.f);
+        cpu1 = (int)(100.f - f1 / 1855000.f * 100.f);
+        vTaskDelay(1000);
+    }
 }
 
 void pauseAllTasks()
@@ -535,7 +542,7 @@ void quickSave()
     if (pref.slotLocation) {
         SD.begin();
         fd = SD.open(path, FILE_WRITE);
-     } else {
+    } else {
         SPIFFS.begin();
         fd = SPIFFS.open(path, "w");
     }
@@ -581,7 +588,7 @@ void quickLoad()
     if (pref.slotLocation) {
         SD.begin();
         fd = SD.open(path, FILE_READ);
-     } else {
+    } else {
         SPIFFS.begin();
         fd = SPIFFS.open(path, "r");
     }
@@ -634,7 +641,8 @@ void quickLoad()
     resumeToPlay();
 }
 
-void setup() {
+void setup()
+{
     M5.begin();
     Serial.begin(115200);
     gfx.begin();
@@ -680,8 +688,8 @@ void setup() {
     usleep(1000000);
     gfx.clear();
     disableCore0WDT();
-	esp_register_freertos_idle_hook_for_cpu(idleTask0, 0);
-	esp_register_freertos_idle_hook_for_cpu(idleTask1, 1);
+    esp_register_freertos_idle_hook_for_cpu(idleTask0, 0);
+    esp_register_freertos_idle_hook_for_cpu(idleTask1, 1);
     xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 0);
     xTaskCreatePinnedToCore(psgTicker, "psgTicker", 4096, nullptr, 25, nullptr, 1);
     xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 1);
@@ -702,25 +710,25 @@ inline void renderMenu()
         gfx.print(menuName[item].c_str());
         if (item == MenuItem::SoundVolume) {
             menuSoundY = y;
-            const unsigned short* roms[4] = { rom_sound_mute, rom_sound_low, rom_sound_mid, rom_sound_high };
+            const unsigned short* roms[4] = {rom_sound_mute, rom_sound_low, rom_sound_mid, rom_sound_high};
             for (int i = 0; i < 4; i++) {
                 gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
             }
         } else if (item == MenuItem::SelectSlot) {
             menuSlotY = y;
-            const unsigned short* roms[3] = { rom_slot1, rom_slot2, rom_slot3 };
+            const unsigned short* roms[3] = {rom_slot1, rom_slot2, rom_slot3};
             for (int i = 0; i < 3; i++) {
                 gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
             }
         } else if (item == MenuItem::ScreenRotate) {
             menuRotateY = y;
-            const unsigned short* roms[2] = { rom_normal, rom_reverse };
+            const unsigned short* roms[2] = {rom_normal, rom_reverse};
             for (int i = 0; i < 2; i++) {
                 gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
             }
         } else if (item == MenuItem::SlotLocation) {
             menuSlotLocationY = y;
-            const unsigned short* roms[2] = { rom_spiffs, rom_sdcard };
+            const unsigned short* roms[2] = {rom_spiffs, rom_sdcard};
             for (int i = 0; i < 2; i++) {
                 gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
             }
@@ -744,7 +752,7 @@ inline void renderOssLicenses()
         gfx.print(oss.name.c_str());
         y += 10;
         gfx.setCursor(52, y);
-        gfx.print(("License: "  + oss.license).c_str());
+        gfx.print(("License: " + oss.license).c_str());
         y += 8;
         gfx.setCursor(52, y);
         gfx.print(oss.copyright.c_str());
@@ -809,8 +817,8 @@ inline void menuLoop()
         }
     } else {
         gamepad.updatePush();
-    }    
-    
+    }
+
     if (buttons[ButtonPosition::Center]->wasPressed() || gamepad.wasPushStart || gamepad.wasPushA || gamepad.wasPushB || gamepad.wasPushSelect) {
         switch (menuItems[menuCursor]) {
             case MenuItem::Resume:
@@ -862,8 +870,7 @@ inline void menuLoop()
             case MenuItem::ScreenRotate:
                 modifyScreenRotation(d);
                 break;
-            default:
-                ; // nothing to do
+            default:; // nothing to do
         }
     } else if (buttons[ButtonPosition::Left]->wasPressed() || gamepad.wasPushDown) {
         menuCursor++;
@@ -906,7 +913,7 @@ inline void menuLoop()
     gfx.endWrite();
 }
 
-bool checkPressedAnyButton() 
+bool checkPressedAnyButton()
 {
     if (gamepad.get()) return true;
     if (buttons[ButtonPosition::Left]->wasPressed()) return true;
@@ -941,7 +948,8 @@ inline void playingLoop()
     }
 }
 
-void loop() {
+void loop()
+{
     if (!gamepad.isEnabled()) {
         M5.update();
     }
