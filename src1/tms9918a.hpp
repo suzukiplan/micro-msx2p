@@ -570,7 +570,7 @@ class TMS9918A
                     }
                     if (0 == dlog[x]) {
                         if (this->ctx->ram[cur] & bit[j / ac.mag]) {
-                            if (rendering) renderPosition[x] = this->palette[col];
+                            if (rendering && col) renderPosition[x] = this->palette[col];
                             dlog[x] = col;
                             wlog[x] = 1;
                         }
@@ -585,7 +585,7 @@ class TMS9918A
                         }
                         if (0 == dlog[x]) {
                             if (this->ctx->ram[cur] & bit[j / ac.mag]) {
-                                if (rendering) renderPosition[x] = this->palette[col];
+                                if (rendering && col) renderPosition[x] = this->palette[col];
                                 dlog[x] = col;
                                 wlog[x] = 1;
                             }
