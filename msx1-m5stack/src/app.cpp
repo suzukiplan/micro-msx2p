@@ -26,25 +26,28 @@
  */
 // C++ stdlib
 #include <map>
-#include <vector>
 #include <string>
+#include <vector>
 
 // micro MSX2+
-#include "msx1.hpp"
 #include "ay8910.hpp"
+#include "msx1.hpp"
 
 // Arduino
 #include <Arduino.h>
-#include <Wire.h>
 #include <SD.h>
 #include <SPIFFS.h>
+#include <Wire.h>
 #include <driver/i2s.h>
 #include <esp_freertos_hooks.h>
 #include <esp_log.h>
 
 // M5Stack
-#include <M5Unified.h>
+#include "Audio.hpp"
+#include "CustomCanvas.hpp"
+#include "Gamepad.hpp"
 #include <M5GFX.h>
+#include <M5Unified.h>
 
 // ROM data (Graphics, BIOS and Game)
 #include "roms.hpp"
@@ -53,230 +56,8 @@
 #define APP_PREFRENCE_FILE "/suzukiplan_micro-msx1.prf"
 #define SAVE_SLOT_FORMAT "/game_slot%d.dat"
 
-class CustomCanvas : public lgfx::LGFX_Sprite {
-  public:
-    CustomCanvas() : LGFX_Sprite() {}
-    CustomCanvas(LovyanGFX* parent) : LGFX_Sprite(parent) { _psram = false; }
-    void* frameBuffer(uint8_t) { return getBuffer(); }
-};
-
-class Audio {
-#if defined(M5StackCore2)
-    // Simple Audio DAC implementation
-  private:
-    static constexpr i2s_port_t i2sNum = I2S_NUM_0;
-
-  public:
-    void begin() {
-        i2s_config_t audioConfig = {
-            .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
-            .sample_rate = 44100,
-            .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-            .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
-            .communication_format = I2S_COMM_FORMAT_STAND_MSB,
-            .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-            .dma_buf_count = 4,
-            .dma_buf_len = 1024,
-            .use_apll = false,
-            .tx_desc_auto_clear = true
-        };
-        i2s_driver_install(this->i2sNum, &audioConfig, 0, nullptr);
-        i2s_set_clk(this->i2sNum, 44100, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO);
-        i2s_zero_dma_buffer(this->i2sNum);
-    }
-
-    inline void write(int16_t* buf, size_t bufSize) {
-        size_t wrote;
-        i2s_write(this->i2sNum, buf, bufSize, &wrote, portMAX_DELAY);
-        vTaskDelay(2);
-    }
-#elif defined(M5StackCoreS3)
-    // AW88298 Audio Amplifier implementation
-  private:
-    static constexpr uint8_t i2cAddrAw88298 = 0x36;
-    static constexpr i2s_port_t i2sNum = I2S_NUM_1;
-
-    inline void writeRegister(uint8_t reg, uint16_t value) {
-        value = __builtin_bswap16(value);
-        M5.In_I2C.writeRegister(this->i2cAddrAw88298, reg, (const uint8_t*)&value, 2, 400000);
-    }
-
-  public:
-    void begin() {
-        // setup AW88298 regisgter
-        M5.In_I2C.bitOn(this->i2cAddrAw88298, 0x02, 0b00000100, 400000);
-        this->writeRegister(0x61, 0x0673); // BSTCTL2 (same as M5Unified) 
-        this->writeRegister(0x04, 0x4040); // SYSCTL (same as M5Unified)
-        this->writeRegister(0x05, 0x0008); // SYSCTL2 (same as M5Unified)
-        this->writeRegister(0x06, 0b0001110000000111); // I2SCTL: 44.1kHz, 16bits, monoral (他は全部デフォルト値)
-        this->writeRegister(0x0C, 0x0064); // HAGCCFG (same as M5Unified)
-        // I2S config
-        i2s_config_t config;
-        memset(&config, 0, sizeof(i2s_config_t));
-        config.mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX);
-        config.sample_rate = 48000; // dummy setting
-        config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
-        config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
-        config.communication_format = I2S_COMM_FORMAT_STAND_I2S;
-        config.dma_buf_count = 4;
-        config.dma_buf_len = 1024;
-        config.tx_desc_auto_clear = true;
-        // I2S pin config
-        i2s_pin_config_t pinConfig;
-        memset(&pinConfig, ~0u, sizeof(i2s_pin_config_t));
-        pinConfig.bck_io_num = GPIO_NUM_34;
-        pinConfig.ws_io_num = GPIO_NUM_33;
-        pinConfig.data_out_num = GPIO_NUM_13;
-        // Setup I2S
-        if (ESP_OK != i2s_driver_install(this->i2sNum, &config, 0, nullptr)) {
-            i2s_driver_uninstall(this->i2sNum);
-            i2s_driver_install(this->i2sNum, &config, 0, nullptr);
-        }
-        i2s_set_pin(this->i2sNum, &pinConfig);
-        i2s_zero_dma_buffer(this->i2sNum);
-        i2s_start(this->i2sNum);
-    }
-
-    inline void write(int16_t* buf, size_t bufSize) {
-        size_t wrote;
-        i2s_write(this->i2sNum, buf, bufSize, &wrote, portMAX_DELAY);
-        vTaskDelay(2);
-    }
-#else
-#error unsupported
-#endif
-};
-
-class Gamepad {
-  private:
-    bool enabled;
-    const int i2cAddr = 0x08;
-    uint8_t code;
-    xSemaphoreHandle mutex;
-#ifdef M5StackCoreS3
-    const int sda = 12;
-    const int scl = 11;
-#else
-    const int pinInt = 5;
-    const int sda = 21;
-    const int scl = 22;
-#endif
-
-  public:
-    bool wasPushUp;
-    bool wasPushDown;
-    bool wasPushLeft;
-    bool wasPushRight;
-    bool wasPushA;
-    bool wasPushB;
-    bool wasPushStart;
-    bool wasPushSelect;
-
-    Gamepad() {
-         this->code = 0;
-         this->enabled = false;
-         this->mutex = xSemaphoreCreateMutex();
-         this->clearPush();
-    }
-
-    void begin() {
-        Wire1.begin(this->sda, this->scl);
-        Wire1.beginTransmission(0x08);
-        this->enabled = 0 == Wire1.endTransmission();
-#ifndef M5StackCoreS3
-        if (this->enabled) pinMode(this->pinInt, INPUT_PULLUP);
-#endif
-    }
-
-#ifdef M5StackCoreS3
-    inline bool isReadble() { return true; }
-
-    inline uint8_t read() {
-        uint8_t result = Wire1.peek();
-        Wire1.flush();
-        return result;
-    }
-#else
-    inline bool isReadble() { return digitalRead(this->pinInt) == LOW; }
-    inline uint8_t read() { return (uint8_t)Wire1.read(); }
-#endif
-    inline bool isEnabled() { return this->enabled; }
-
-    inline uint8_t get() {
-        if (!this->enabled) {
-            xSemaphoreTake(this->mutex, portMAX_DELAY);
-            this->code = 0;
-            xSemaphoreGive(this->mutex);
-        } else if (this->isReadble()) {
-            Wire1.requestFrom(i2cAddr, 1);
-            if (Wire1.available()) {
-                uint8_t key = this->read() ^ 0xFF;
-                xSemaphoreTake(this->mutex, portMAX_DELAY);
-                this->code = 0;
-                if (key & 0b00000001) this->code |= MSX1_JOY_UP;
-                if (key & 0b00000010) this->code |= MSX1_JOY_DW;
-                if (key & 0b00000100) this->code |= MSX1_JOY_LE;
-                if (key & 0b00001000) this->code |= MSX1_JOY_RI;
-                if (key & 0b00010000) this->code |= MSX1_JOY_T1;
-                if (key & 0b00100000) this->code |= MSX1_JOY_T2;
-                if (key & 0b01000000) this->code |= MSX1_JOY_S2;
-                if (key & 0b10000000) this->code |= MSX1_JOY_S1;
-                xSemaphoreGive(this->mutex);
-            }
-        }
-        return this->code;
-    }
-
-    inline uint8_t getExcludeHotkey() {
-        uint8_t result = this->get();
-        return result & MSX1_JOY_S2 && result ^ MSX1_JOY_S2 ? 0 : result;
-    }
-
-    inline uint8_t getLatest() {
-        xSemaphoreTake(this->mutex, portMAX_DELAY);
-        uint8_t result = this->code;
-        xSemaphoreGive(this->mutex);
-        return result;
-    }
-
-    inline void clearPush() {
-         this->wasPushUp = false;
-         this->wasPushDown = false;
-         this->wasPushLeft = false;
-         this->wasPushRight = false;
-         this->wasPushA = false;
-         this->wasPushB = false;
-         this->wasPushStart = false;
-         this->wasPushSelect = false;
-    }
-
-    inline void updatePush() {
-        uint8_t prev = this->code;
-        this->get();
-        xSemaphoreTake(this->mutex, portMAX_DELAY);
-        this->clearPush();
-        if (0 != prev && 0 == this->code) {
-            this->wasPushUp = prev & MSX1_JOY_UP ? true : false;
-            this->wasPushDown = prev & MSX1_JOY_DW ? true : false;
-            this->wasPushLeft = prev & MSX1_JOY_LE ? true : false;
-            this->wasPushRight = prev & MSX1_JOY_RI ? true : false;
-            this->wasPushA = prev & MSX1_JOY_T1 ? true : false;
-            this->wasPushB = prev & MSX1_JOY_T2 ? true : false;
-            this->wasPushStart = prev & MSX1_JOY_S1 ? true : false;
-            this->wasPushSelect = prev & MSX1_JOY_S2 ? true : false;
-        }
-        xSemaphoreGive(this->mutex);
-    }
-
-    inline void resetCode() {
-        this->get();
-        xSemaphoreTake(this->mutex, portMAX_DELAY);
-        this->code = 0;
-        xSemaphoreGive(this->mutex);
-    }
-};
-
-class Preferences {
+class Preferences
+{
   private:
     const int DEFAULT_SOUND = 2;
     const int DEFAULT_SLOT = 0;
@@ -289,18 +70,21 @@ class Preferences {
     int rotate;
     int slotLocation;
 
-    Preferences() {
+    Preferences()
+    {
         this->factoryReset();
     }
 
-    void factoryReset() {
+    void factoryReset()
+    {
         this->sound = DEFAULT_SOUND;
         this->slot = DEFAULT_SLOT;
         this->rotate = DEFAULT_ROTATE;
         this->slotLocation = DEFAULT_SLOT_LOCATION;
     }
 
-    void load() {
+    void load()
+    {
         this->factoryReset();
         SPIFFS.begin();
         File file = SPIFFS.open(APP_PREFRENCE_FILE, "r");
@@ -341,7 +125,8 @@ class Preferences {
         SPIFFS.end();
     }
 
-    void save() {
+    void save()
+    {
         SPIFFS.begin();
         File file = SPIFFS.open(APP_PREFRENCE_FILE, "w");
         if (!file) {
@@ -387,11 +172,11 @@ typedef struct OssInfo_ {
 } OssInfo;
 
 static std::vector<OssInfo> ossLicensesList = {
-    { "C-BIOS", "2-clause BSD", "Copyright (c) 2002 C-BIOS Association"},
-    { "M5GFX", "MIT", "Copyright (c) 2021 M5Stack" },
-    { "M5Unified", "MIT", "Copyright (c) 2021 M5Stack" },
-    { "micro MSX2+", "MIT", "Copyright (c) 2023 Yoji Suzuki"},
-    { "SUZUKIPLAN - Z80 Emulator", "MIT", "Copyright (c) 2019 Yoji Suzuki"},
+    {"C-BIOS", "2-clause BSD", "Copyright (c) 2002 C-BIOS Association"},
+    {"M5GFX", "MIT", "Copyright (c) 2021 M5Stack"},
+    {"M5Unified", "MIT", "Copyright (c) 2021 M5Stack"},
+    {"micro MSX2+", "MIT", "Copyright (c) 2023 Yoji Suzuki"},
+    {"SUZUKIPLAN - Z80 Emulator", "MIT", "Copyright (c) 2019 Yoji Suzuki"},
 };
 
 enum class GameState {
@@ -407,29 +192,32 @@ enum class ButtonPosition {
     Right
 };
 
-class ScreenButton {
+class ScreenButton
+{
   public:
     int x;
     int width;
     bool pressing;
     bool pressed;
 
-    ScreenButton(int x, int width) {
+    ScreenButton(int x, int width)
+    {
         this->x = x;
         this->width = width;
         this->pressing = false;
         this->pressed = false;
     }
 
-    inline bool wasPressed() {
+    inline bool wasPressed()
+    {
         return this->pressed;
     }
 };
 
 static std::map<ButtonPosition, ScreenButton*> buttons = {
-    { ButtonPosition::Left, new ScreenButton(0, 106) },
-    { ButtonPosition::Center, new ScreenButton(106, 108) },
-    { ButtonPosition::Right, new ScreenButton(214, 106) },
+    {ButtonPosition::Left, new ScreenButton(0, 106)},
+    {ButtonPosition::Center, new ScreenButton(106, 108)},
+    {ButtonPosition::Right, new ScreenButton(214, 106)},
 };
 
 static void updateButtons()
@@ -439,7 +227,7 @@ static void updateButtons()
     bool pressingRight = false;
     auto left = buttons[ButtonPosition::Left];
     auto center = buttons[ButtonPosition::Center];
-    auto right = buttons[ButtonPosition::Right]; 
+    auto right = buttons[ButtonPosition::Right];
     for (int i = 0; i < M5.Touch.getCount(); i++) {
         auto raw = M5.Touch.getTouchPointRaw(i);
         auto& detail = M5.Touch.getDetail(i);
@@ -474,27 +262,27 @@ enum class MenuItem {
 };
 
 static std::map<MenuItem, std::string> menuName = {
-    { MenuItem::Resume, "Resume" },
-    { MenuItem::Reset, "Reset" },
-    { MenuItem::SoundVolume, "Sound Volume" },
-    { MenuItem::SelectSlot,  "Select Slot" },
-    { MenuItem::ScreenRotate,  "Screen Rotate" },
-    { MenuItem::Save, "Save" },
-    { MenuItem::Load, "Load" },
-    { MenuItem::Licenses, "Using OSS Licenses" },
-    { MenuItem::SlotLocation, "Slot Location" },
+    {MenuItem::Resume, "Resume"},
+    {MenuItem::Reset, "Reset"},
+    {MenuItem::SoundVolume, "Sound Volume"},
+    {MenuItem::SelectSlot, "Select Slot"},
+    {MenuItem::ScreenRotate, "Screen Rotate"},
+    {MenuItem::Save, "Save"},
+    {MenuItem::Load, "Load"},
+    {MenuItem::Licenses, "Using OSS Licenses"},
+    {MenuItem::SlotLocation, "Slot Location"},
 };
 
 static std::map<MenuItem, std::string> menuDesc = {
-    { MenuItem::Resume, "Nothing to do, back in play." },
-    { MenuItem::Reset, "Reset the MSX." },
-    { MenuItem::SoundVolume, "Adjusts the volume level." },
-    { MenuItem::SelectSlot, "Select slot number to save and load." },
-    { MenuItem::ScreenRotate,  "Flip the screen up and down setting." },
-    { MenuItem::Save, "Saves the state of play." },
-    { MenuItem::Load, "Loads the state of play." },
-    { MenuItem::Licenses, "Displays OSS license information in use." },
-    { MenuItem::SlotLocation, "Choice of storage for savedata slots." },
+    {MenuItem::Resume, "Nothing to do, back in play."},
+    {MenuItem::Reset, "Reset the MSX."},
+    {MenuItem::SoundVolume, "Adjusts the volume level."},
+    {MenuItem::SelectSlot, "Select slot number to save and load."},
+    {MenuItem::ScreenRotate, "Flip the screen up and down setting."},
+    {MenuItem::Save, "Saves the state of play."},
+    {MenuItem::Load, "Loads the state of play."},
+    {MenuItem::Licenses, "Displays OSS license information in use."},
+    {MenuItem::SlotLocation, "Choice of storage for savedata slots."},
 };
 
 static const std::vector<MenuItem> menuItems = {
@@ -519,14 +307,14 @@ static GameState gameState = GameState::None;
 
 static IRAM_ATTR bool idleTask0()
 {
-	idle0++;
-	return false;
+    idle0++;
+    return false;
 }
 
 static IRAM_ATTR bool idleTask1()
 {
-	idle1++;
-	return false;
+    idle1++;
+    return false;
 }
 
 static DRAM_ATTR MSX1 msx1(TMS9918A::ColorMode::RGB565_Swap, ram, sizeof(ram), &vram, [](void* arg, int frame, int lineNumber, uint16_t* display) {
@@ -556,7 +344,7 @@ void IRAM_ATTR ticker(void* arg)
     static size_t soundSize;
     static long start;
     static long procTime = 0;
-    static const long interval[3] = { 16, 17, 17 };
+    static const long interval[3] = {16, 17, 17};
     static int loopCount = 0;
     static int fpsCounter;
     static long sec = 0;
@@ -592,7 +380,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute odd frame (skip rendering)
         start = millis();
-        msx1.tick(gamepad.getExcludeHotkey(), 0, 0); 
+        msx1.tick(gamepad.getExcludeHotkey(), 0, 0);
         fpsCounter++;
 
         // wait
@@ -602,7 +390,6 @@ void IRAM_ATTR ticker(void* arg)
         }
         loopCount++;
         loopCount %= 3;
-
     }
 }
 
@@ -678,15 +465,15 @@ void renderer(void* arg)
 
 void cpuMonitor(void* arg)
 {
-	while (1) {
-		float f0 = idle0;
-		float f1 = idle1;
-		idle0 = 0;
-		idle1 = 0;
-		cpu0 = (int)(100.f - f0 / 1855000.f * 100.f);
-		cpu1 = (int)(100.f - f1 / 1855000.f * 100.f);
-		vTaskDelay(1000);
-	}
+    while (1) {
+        float f0 = idle0;
+        float f1 = idle1;
+        idle0 = 0;
+        idle1 = 0;
+        cpu0 = (int)(100.f - f0 / 1855000.f * 100.f);
+        cpu1 = (int)(100.f - f1 / 1855000.f * 100.f);
+        vTaskDelay(1000);
+    }
 }
 
 void pauseAllTasks()
@@ -755,7 +542,7 @@ void quickSave()
     if (pref.slotLocation) {
         SD.begin();
         fd = SD.open(path, FILE_WRITE);
-     } else {
+    } else {
         SPIFFS.begin();
         fd = SPIFFS.open(path, "w");
     }
@@ -801,7 +588,7 @@ void quickLoad()
     if (pref.slotLocation) {
         SD.begin();
         fd = SD.open(path, FILE_READ);
-     } else {
+    } else {
         SPIFFS.begin();
         fd = SPIFFS.open(path, "r");
     }
@@ -854,7 +641,8 @@ void quickLoad()
     resumeToPlay();
 }
 
-void setup() {
+void setup()
+{
     M5.begin();
     Serial.begin(115200);
     gfx.begin();
@@ -900,8 +688,8 @@ void setup() {
     usleep(1000000);
     gfx.clear();
     disableCore0WDT();
-	esp_register_freertos_idle_hook_for_cpu(idleTask0, 0);
-	esp_register_freertos_idle_hook_for_cpu(idleTask1, 1);
+    esp_register_freertos_idle_hook_for_cpu(idleTask0, 0);
+    esp_register_freertos_idle_hook_for_cpu(idleTask1, 1);
     xTaskCreatePinnedToCore(ticker, "ticker", 4096, nullptr, 25, nullptr, 0);
     xTaskCreatePinnedToCore(psgTicker, "psgTicker", 4096, nullptr, 25, nullptr, 1);
     xTaskCreatePinnedToCore(renderer, "renderer", 4096, nullptr, 25, nullptr, 1);
@@ -922,25 +710,25 @@ inline void renderMenu()
         gfx.print(menuName[item].c_str());
         if (item == MenuItem::SoundVolume) {
             menuSoundY = y;
-            const unsigned short* roms[4] = { rom_sound_mute, rom_sound_low, rom_sound_mid, rom_sound_high };
+            const unsigned short* roms[4] = {rom_sound_mute, rom_sound_low, rom_sound_mid, rom_sound_high};
             for (int i = 0; i < 4; i++) {
                 gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
             }
         } else if (item == MenuItem::SelectSlot) {
             menuSlotY = y;
-            const unsigned short* roms[3] = { rom_slot1, rom_slot2, rom_slot3 };
+            const unsigned short* roms[3] = {rom_slot1, rom_slot2, rom_slot3};
             for (int i = 0; i < 3; i++) {
                 gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
             }
         } else if (item == MenuItem::ScreenRotate) {
             menuRotateY = y;
-            const unsigned short* roms[2] = { rom_normal, rom_reverse };
+            const unsigned short* roms[2] = {rom_normal, rom_reverse};
             for (int i = 0; i < 2; i++) {
                 gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
             }
         } else if (item == MenuItem::SlotLocation) {
             menuSlotLocationY = y;
-            const unsigned short* roms[2] = { rom_spiffs, rom_sdcard };
+            const unsigned short* roms[2] = {rom_spiffs, rom_sdcard};
             for (int i = 0; i < 2; i++) {
                 gfx.pushImage(152 + i * 32, y, 32, 8, roms[i]);
             }
@@ -964,7 +752,7 @@ inline void renderOssLicenses()
         gfx.print(oss.name.c_str());
         y += 10;
         gfx.setCursor(52, y);
-        gfx.print(("License: "  + oss.license).c_str());
+        gfx.print(("License: " + oss.license).c_str());
         y += 8;
         gfx.setCursor(52, y);
         gfx.print(oss.copyright.c_str());
@@ -1029,8 +817,8 @@ inline void menuLoop()
         }
     } else {
         gamepad.updatePush();
-    }    
-    
+    }
+
     if (buttons[ButtonPosition::Center]->wasPressed() || gamepad.wasPushStart || gamepad.wasPushA || gamepad.wasPushB || gamepad.wasPushSelect) {
         switch (menuItems[menuCursor]) {
             case MenuItem::Resume:
@@ -1082,8 +870,7 @@ inline void menuLoop()
             case MenuItem::ScreenRotate:
                 modifyScreenRotation(d);
                 break;
-            default:
-                ; // nothing to do
+            default:; // nothing to do
         }
     } else if (buttons[ButtonPosition::Left]->wasPressed() || gamepad.wasPushDown) {
         menuCursor++;
@@ -1126,7 +913,7 @@ inline void menuLoop()
     gfx.endWrite();
 }
 
-bool checkPressedAnyButton() 
+bool checkPressedAnyButton()
 {
     if (gamepad.get()) return true;
     if (buttons[ButtonPosition::Left]->wasPressed()) return true;
@@ -1161,7 +948,8 @@ inline void playingLoop()
     }
 }
 
-void loop() {
+void loop()
+{
     if (!gamepad.isEnabled()) {
         M5.update();
     }
