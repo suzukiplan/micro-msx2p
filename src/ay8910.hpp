@@ -78,8 +78,8 @@ class AY8910
 
     inline void setPads(unsigned char pad1, unsigned char pad2)
     {
-        this->ctx.reg[0x0E] = (~pad1) & 0x7F;
-        this->ctx.reg[0x0F] = (~pad2) & 0x7F;
+        this->ctx.reg[0x0E] = (~pad1) & 0xFF;
+        this->ctx.reg[0x0F] = (~pad2) & 0xFF;
     }
 
     inline void write(unsigned char value)
