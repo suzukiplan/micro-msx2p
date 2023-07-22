@@ -194,6 +194,7 @@ class MSX2
         this->kanji = new MSX2Kanji();
         this->cpu = new Z80([](void* arg, unsigned short addr) { return ((MSX2*)arg)->mmu->read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX2*)arg)->mmu->write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX2*)arg)->inPort((unsigned char)port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX2*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu->wtc.fetch = 1;
+        this->cpu->wtc.fetchM = 1;
         this->scc = nullptr;
 #ifndef MSX2_REMOVE_OPLL
         if (ym2413Enabled) {

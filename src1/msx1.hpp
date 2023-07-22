@@ -50,8 +50,8 @@ class MSX1
     } psgDelegate;
 #endif
   private:
-    const int CPU_CLOCK = 3584160;
-    const int VDP_CLOCK = 5376240;
+    const int CPU_CLOCK = 3579545;
+    const int VDP_CLOCK = 5370863;
 
 #ifndef MSX1_REMOVE_PSG
     const int PSG_CLOCK = 44100;
@@ -179,6 +179,7 @@ class MSX1
             colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
         this->cpu.setupCallbackFP([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort(port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu.wtc.fetch = 1;
+        this->cpu.wtc.fetchM = 1;
         this->cpu.setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
             ((MSX1*)arg)->consumeClock(cpuClocks);
         });
