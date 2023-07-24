@@ -409,6 +409,7 @@ class MSX2MMU
     inline void asc8sram2(int idx, unsigned short addr, unsigned char value)
     {
         this->ctx.isSelectSRAM[4] = value & 0b11110000 ? 1 : 0;
+        this->ctx.isSelectSRAM[5] = this->ctx.isSelectSRAM[4];
         value &= 0b00001111;
         this->asc8(idx, addr, value);
     }
