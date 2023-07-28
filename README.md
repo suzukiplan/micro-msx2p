@@ -31,6 +31,8 @@
   - [msx2-android](./msx2-android) Android
   - [msx2-ios](./msx2-ios) iOS
   - [msx2-dotnet](./msx2-dotnet) .NET Core
+  - [msx1-m5stack](./msx1-m5stack) M5Stack CoreS3 (MSX1)
+  - [msx1-m5stamps3](./msx1-m5stamps3) M5StampS3 (MSX1)
   - 以下のプラットフォームはまだ提供していません:
     - Windows（将来的には作るかも）
     - Linux（将来的には作るかも）
