@@ -78,16 +78,6 @@ class ILI9431 : public lgfx::LGFX_Device
         this->panel.config(config);
     }
 
-    void setupLightConfig()
-    {
-        auto config = this->light.config();
-        config.pin_bl = PIN_LED;
-        config.invert = false;
-        config.freq = 44100;
-        config.pwm_channel = 7;
-        this->light.config(config);
-    }
-
   public:
     ILI9431(void)
     {
