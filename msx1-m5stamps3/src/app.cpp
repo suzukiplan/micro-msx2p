@@ -62,10 +62,58 @@ class CustomCanvas : public lgfx::LGFX_Sprite
     }
 };
 
+class Audio
+{
+  private:
+    static constexpr i2s_port_t i2sNum = I2S_NUM_0;
+    static constexpr int sampleRate = 44100;
+
+  public:
+    void begin()
+    {
+        // I2S config
+        i2s_config_t config;
+        memset(&config, 0, sizeof(i2s_config_t));
+        config.mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX);
+        config.sample_rate = this->sampleRate;
+        config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
+        config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
+        config.communication_format = I2S_COMM_FORMAT_STAND_MSB;
+        config.dma_buf_count = 4;
+        config.dma_buf_len = 1024;
+        config.tx_desc_auto_clear = true;
+        // I2S pin config
+        i2s_pin_config_t pinConfig;
+        memset(&pinConfig, ~0u, sizeof(i2s_pin_config_t));
+        pinConfig.bck_io_num = GPIO_NUM_5;
+        pinConfig.ws_io_num = GPIO_NUM_9;
+        pinConfig.data_out_num = GPIO_NUM_7;
+        pinConfig.data_in_num = I2S_PIN_NO_CHANGE;
+        // Setup I2S
+        if (ESP_OK != i2s_driver_install(this->i2sNum, &config, 0, nullptr)) {
+            i2s_driver_uninstall(this->i2sNum);
+            i2s_driver_install(this->i2sNum, &config, 0, nullptr);
+        }
+        i2s_set_pin(this->i2sNum, &pinConfig);
+        i2s_set_sample_rates(this->i2sNum, this->sampleRate);
+        i2s_set_clk(this->i2sNum, this->sampleRate, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO);
+        i2s_zero_dma_buffer(this->i2sNum);
+        i2s_start(this->i2sNum);
+    }
+
+    inline void write(int16_t* buf, size_t bufSize)
+    {
+        size_t wrote;
+        i2s_write(this->i2sNum, buf, bufSize, &wrote, portMAX_DELAY);
+        vTaskDelay(2);
+    }
+};
+
 static uint8_t ram[0x4000];
 static TMS9918A::Context vram;
 static ILI9431 gfx;
 static CustomCanvas canvas(&gfx);
+static Audio audio;
 static uint16_t displayBuffer[256];
 static xSemaphoreHandle displayMutex;
 static unsigned short backdropColor;
@@ -158,14 +206,14 @@ void IRAM_ATTR ticker(void* arg)
 void IRAM_ATTR psgTicker(void* arg)
 {
     static int16_t buf[512];
+    static uint16_t work;
     static size_t size;
     static int i;
     while (1) {
         for (i = 0; i < 512; i++) {
             buf[i] = psg.tick16(81);
         }
-        vTaskDelay(2);
-        // audio.write(buf, sizeof(buf));
+        audio.write(buf, sizeof(buf));
     }
 }
 
@@ -243,6 +291,8 @@ void setup()
     msx1.setupKeyAssign(0, MSX1_JOY_S1, 0x20); // START = SPACE
     msx1.setupKeyAssign(0, MSX1_JOY_S2, 0x1B); // SELECT = ESC
     msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL);
+    displayMessage("Initializing audio system (I2S)");
+    audio.begin();
     displayMessage("Initializing PSG emulator");
     msx1.psgDelegate.reset = []() { psg.reset(27); };
     msx1.psgDelegate.setPads = [](unsigned char pad1, unsigned char pad2) { psg.setPads(pad1, pad2); };

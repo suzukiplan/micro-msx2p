@@ -6,7 +6,7 @@
 ## WIP status
 
 - [x] グラフィック表示
-- [ ] 音声出力
+- [x] 音声出力
 - [ ] ゲームパッド操作対応
 
 ## Rquired Hardware
@@ -15,6 +15,7 @@
 - LCD (ILI9341)
   - Display Resolution: 240x320 (QVGA)
   - Touch Feature: Not Required
+- Audio (UDA1334A)
 
 詳しい組み立て方法は [こちらの記事](https://qiita.com/suzukiplan/items/b5882449fdbf571b4e80) を参照してください。
 
@@ -25,11 +26,11 @@
 |`VCC`|`3V3`|電源給電|
 |`GND`|`GND`|グランド|
 |`CS`|`1` (GPIO)|LCD チップ選択有効化の信号|
-|`RESET`|`5` (GPIO)|リセット信号|
+|`RESET`|`EN`|リセット信号|
 |`DC`|`3` (GPIO)|データ/レジスタ選択の信号|
 |`SDI (MOSI)`|`13 SDA`|I2C (Stamp→LCD方向のデータ送信)|
 |`SCK`|`15 SCL`|I2C (クロック同期)|
-|`LED`|`7` (GPIO)|バックライト|
+|`LED`|`3V3`|バックライト|
 |`SDO (MISO)`|配線なし|LCD→Stamp方向のデータ送信は不要なため|
 |`T_CS`|配線なし|タッチ機能は利用しないため|
 |`T_DIN`|配線なし|タッチ機能は利用しないため|
@@ -38,7 +39,13 @@
 
 ### Pin Assign (DAC)
 
-TODO
+|DAC (UDA1334A)|M5StampS3|用途|
+|:-:|:-:|:-|
+|`VIN`|`5V`|電源給電|
+|`GND`|`GND`|グランド|
+|`WSEL`|`9`|I2S (チャネルセレクタ)|
+|`DIN`|`7`|I2S (データ送信)|
+|`BCLK`|`5`|I2S (クロック同期)|
 
 ### Pin Assign (GamePad)
 
