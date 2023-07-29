@@ -31,8 +31,6 @@
 
 #define PIN_CS GPIO_NUM_1
 #define PIN_DC GPIO_NUM_3
-#define PIN_RST GPIO_NUM_5
-#define PIN_LED GPIO_NUM_7
 #define PIN_MOSI GPIO_NUM_13
 #define PIN_SCLK GPIO_NUM_15
 
@@ -64,7 +62,6 @@ class ILI9431 : public lgfx::LGFX_Device
     {
         auto config = this->panel.config();
         config.pin_cs = PIN_CS;
-        config.pin_rst = PIN_RST;
         config.pin_busy = -1;
         config.panel_width = 240;
         config.panel_height = 320;
@@ -96,9 +93,7 @@ class ILI9431 : public lgfx::LGFX_Device
     {
         this->setupBusConfig();
         this->setupPanelConfig();
-        this->setupLightConfig();
         this->panel.setBus(&this->bus);
-        this->panel.setLight(&this->light);
         setPanel(&this->panel);
     }
 };
