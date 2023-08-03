@@ -27,10 +27,11 @@
   - `MSX2_ROM_TYPE_KONAMI_SCC` KONAMI SCC メガロム
   - `MSX2_ROM_TYPE_KONAMI` KONAMI 標準メガロム
 - 各プラットフォーム向けの実装例:
-  - [msx2-osx](./msx2-osx) macOS (Cocoa)
+  - [msx2-osx](./msx2-osx) macOS (MSX2+)
   - [msx2-android](./msx2-android) Android
   - [msx2-ios](./msx2-ios) iOS
   - [msx2-dotnet](./msx2-dotnet) .NET Core
+  - [msx1-osx](./msx1-osx) macOS (MSX1)
   - [msx1-m5stack](./msx1-m5stack) M5Stack CoreS3 (MSX1)
   - [msx1-m5stamps3](./msx1-m5stamps3) M5StampS3 (MSX1)
   - 以下のプラットフォームはまだ提供していません:
