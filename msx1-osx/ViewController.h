@@ -8,7 +8,7 @@
 #import <Cocoa/Cocoa.h>
 
 @interface ViewController : NSViewController
-
-
+- (IBAction)menuQuit:(id)sender;
+- (IBAction)menuOpenRomFile:(id)sender;
 @end
 

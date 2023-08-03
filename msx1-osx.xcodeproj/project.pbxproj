@@ -12,6 +12,12 @@
 		749395892A7B6AB8007B9DAA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 749395882A7B6AB8007B9DAA /* Assets.xcassets */; };
 		7493958C2A7B6AB8007B9DAA /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7493958A2A7B6AB8007B9DAA /* Main.storyboard */; };
 		7493958E2A7B6AB8007B9DAA /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 7493958D2A7B6AB8007B9DAA /* main.m */; };
+		7493959E2A7B6C36007B9DAA /* VideoLayer.m in Sources */ = {isa = PBXBuildFile; fileRef = 7493959D2A7B6C36007B9DAA /* VideoLayer.m */; };
+		749395A22A7B6CB0007B9DAA /* emu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 749395A02A7B6CB0007B9DAA /* emu.cpp */; };
+		749395A52A7B6D9E007B9DAA /* VideoView.m in Sources */ = {isa = PBXBuildFile; fileRef = 749395A42A7B6D9E007B9DAA /* VideoView.m */; };
+		749395B02A7B70CB007B9DAA /* vgsspu_al.c in Sources */ = {isa = PBXBuildFile; fileRef = 749395AF2A7B70CB007B9DAA /* vgsspu_al.c */; };
+		749395B32A7B73ED007B9DAA /* cbios_main_msx1.rom in Resources */ = {isa = PBXBuildFile; fileRef = 749395B12A7B73ED007B9DAA /* cbios_main_msx1.rom */; };
+		749395B42A7B73ED007B9DAA /* cbios_logo_msx1.rom in Resources */ = {isa = PBXBuildFile; fileRef = 749395B22A7B73ED007B9DAA /* cbios_logo_msx1.rom */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +36,17 @@
 		749395992A7B6BC5007B9DAA /* ay8910.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ay8910.hpp; path = src1/ay8910.hpp; sourceTree = SOURCE_ROOT; };
 		7493959A2A7B6BC5007B9DAA /* msx1def.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msx1def.h; path = src1/msx1def.h; sourceTree = SOURCE_ROOT; };
 		7493959B2A7B6BC5007B9DAA /* tms9918a.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tms9918a.hpp; path = src1/tms9918a.hpp; sourceTree = SOURCE_ROOT; };
+		7493959C2A7B6C36007B9DAA /* VideoLayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VideoLayer.h; sourceTree = "<group>"; };
+		7493959D2A7B6C36007B9DAA /* VideoLayer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VideoLayer.m; sourceTree = "<group>"; };
+		7493959F2A7B6C70007B9DAA /* constants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = constants.h; sourceTree = "<group>"; };
+		749395A02A7B6CB0007B9DAA /* emu.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = emu.cpp; sourceTree = "<group>"; };
+		749395A12A7B6CB0007B9DAA /* emu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = emu.h; sourceTree = "<group>"; };
+		749395A32A7B6D9E007B9DAA /* VideoView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VideoView.h; sourceTree = "<group>"; };
+		749395A42A7B6D9E007B9DAA /* VideoView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VideoView.m; sourceTree = "<group>"; };
+		749395AE2A7B70CB007B9DAA /* vgsspu_al.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vgsspu_al.h; sourceTree = "<group>"; };
+		749395AF2A7B70CB007B9DAA /* vgsspu_al.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vgsspu_al.c; sourceTree = "<group>"; };
+		749395B12A7B73ED007B9DAA /* cbios_main_msx1.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_main_msx1.rom; sourceTree = "<group>"; };
+		749395B22A7B73ED007B9DAA /* cbios_logo_msx1.rom */ = {isa = PBXFileReference; lastKnownFileType = file; path = cbios_logo_msx1.rom; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,9 +79,19 @@
 		749395812A7B6AB6007B9DAA /* msx1-osx */ = {
 			isa = PBXGroup;
 			children = (
+				749395A62A7B7007007B9DAA /* bios */,
 				749395952A7B6B9E007B9DAA /* core */,
 				749395822A7B6AB6007B9DAA /* AppDelegate.h */,
 				749395832A7B6AB6007B9DAA /* AppDelegate.m */,
+				7493959F2A7B6C70007B9DAA /* constants.h */,
+				749395A02A7B6CB0007B9DAA /* emu.cpp */,
+				749395A12A7B6CB0007B9DAA /* emu.h */,
+				749395AE2A7B70CB007B9DAA /* vgsspu_al.h */,
+				749395AF2A7B70CB007B9DAA /* vgsspu_al.c */,
+				7493959C2A7B6C36007B9DAA /* VideoLayer.h */,
+				7493959D2A7B6C36007B9DAA /* VideoLayer.m */,
+				749395A32A7B6D9E007B9DAA /* VideoView.h */,
+				749395A42A7B6D9E007B9DAA /* VideoView.m */,
 				749395852A7B6AB6007B9DAA /* ViewController.h */,
 				749395862A7B6AB6007B9DAA /* ViewController.m */,
 				749395882A7B6AB8007B9DAA /* Assets.xcassets */,
@@ -86,6 +113,15 @@
 				749395962A7B6BC5007B9DAA /* z80.hpp */,
 			);
 			path = core;
+			sourceTree = "<group>";
+		};
+		749395A62A7B7007007B9DAA /* bios */ = {
+			isa = PBXGroup;
+			children = (
+				749395B22A7B73ED007B9DAA /* cbios_logo_msx1.rom */,
+				749395B12A7B73ED007B9DAA /* cbios_main_msx1.rom */,
+			);
+			path = bios;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -147,6 +183,8 @@
 			files = (
 				749395892A7B6AB8007B9DAA /* Assets.xcassets in Resources */,
 				7493958C2A7B6AB8007B9DAA /* Main.storyboard in Resources */,
+				749395B32A7B73ED007B9DAA /* cbios_main_msx1.rom in Resources */,
+				749395B42A7B73ED007B9DAA /* cbios_logo_msx1.rom in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -158,8 +196,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				749395872A7B6AB6007B9DAA /* ViewController.m in Sources */,
+				749395A22A7B6CB0007B9DAA /* emu.cpp in Sources */,
 				7493958E2A7B6AB8007B9DAA /* main.m in Sources */,
+				749395B02A7B70CB007B9DAA /* vgsspu_al.c in Sources */,
 				749395842A7B6AB6007B9DAA /* AppDelegate.m in Sources */,
+				749395A52A7B6D9E007B9DAA /* VideoView.m in Sources */,
+				7493959E2A7B6C36007B9DAA /* VideoLayer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -80,6 +80,7 @@ class AY8910
             case 1: this->volume = 10; break; // low
             case 2: this->volume = 7; break;  // mid
             case 3: this->volume = 4; break;  // high
+            case 4: this->volume = 0; break;  // not shift (original)
         }
     }
 
