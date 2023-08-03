@@ -590,7 +590,7 @@ class TMS9918A
                                 }
                             }
                             overflow = x == 0xFF;
-                       }
+                        }
                     }
                 } else {
                     // 8x8 x 2
