@@ -24,6 +24,12 @@
 		7493958B2A7B6AB8007B9DAA /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		7493958D2A7B6AB8007B9DAA /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		7493958F2A7B6AB8007B9DAA /* msx1_osx.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = msx1_osx.entitlements; sourceTree = "<group>"; };
+		749395962A7B6BC5007B9DAA /* z80.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = z80.hpp; path = src1/z80.hpp; sourceTree = SOURCE_ROOT; };
+		749395972A7B6BC5007B9DAA /* msx1.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx1.hpp; path = src1/msx1.hpp; sourceTree = SOURCE_ROOT; };
+		749395982A7B6BC5007B9DAA /* msx1mmu.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msx1mmu.hpp; path = src1/msx1mmu.hpp; sourceTree = SOURCE_ROOT; };
+		749395992A7B6BC5007B9DAA /* ay8910.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ay8910.hpp; path = src1/ay8910.hpp; sourceTree = SOURCE_ROOT; };
+		7493959A2A7B6BC5007B9DAA /* msx1def.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msx1def.h; path = src1/msx1def.h; sourceTree = SOURCE_ROOT; };
+		7493959B2A7B6BC5007B9DAA /* tms9918a.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tms9918a.hpp; path = src1/tms9918a.hpp; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +62,7 @@
 		749395812A7B6AB6007B9DAA /* msx1-osx */ = {
 			isa = PBXGroup;
 			children = (
+				749395952A7B6B9E007B9DAA /* core */,
 				749395822A7B6AB6007B9DAA /* AppDelegate.h */,
 				749395832A7B6AB6007B9DAA /* AppDelegate.m */,
 				749395852A7B6AB6007B9DAA /* ViewController.h */,
@@ -66,6 +73,19 @@
 				7493958F2A7B6AB8007B9DAA /* msx1_osx.entitlements */,
 			);
 			path = "msx1-osx";
+			sourceTree = "<group>";
+		};
+		749395952A7B6B9E007B9DAA /* core */ = {
+			isa = PBXGroup;
+			children = (
+				749395992A7B6BC5007B9DAA /* ay8910.hpp */,
+				749395972A7B6BC5007B9DAA /* msx1.hpp */,
+				7493959A2A7B6BC5007B9DAA /* msx1def.h */,
+				749395982A7B6BC5007B9DAA /* msx1mmu.hpp */,
+				7493959B2A7B6BC5007B9DAA /* tms9918a.hpp */,
+				749395962A7B6BC5007B9DAA /* z80.hpp */,
+			);
+			path = core;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
