@@ -1,3 +1,10 @@
+#define Z80_DISABLE_DEBUG
+#define Z80_DISABLE_BREAKPOINT
+#define Z80_DISABLE_NESTCHECK
+#define Z80_CALLBACK_WITHOUT_CHECK
+#define Z80_CALLBACK_PER_INSTRUCTION
+#define Z80_UNSUPPORT_16BIT_PORT
+
 #include "emu.h"
 #include "msx1.hpp"
 #include "vgsspu_al.h"
