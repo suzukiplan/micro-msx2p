@@ -9,6 +9,7 @@
 
 @interface ViewController : NSViewController
 - (IBAction)menuQuit:(id)sender;
+- (IBAction)menuReset:(id)sender;
 - (IBAction)menuOpenRomFile:(id)sender;
 @end
 

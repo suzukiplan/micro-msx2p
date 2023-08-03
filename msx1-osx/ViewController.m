@@ -83,6 +83,11 @@ typedef NS_ENUM(NSInteger, OpenFileType) {
     exit(0);
 }
 
+- (IBAction)menuReset:(id)sender
+{
+    emu_reset();
+}
+
 - (IBAction)menuOpenRomFile:(id)sender
 {
     NSLog(@"menuOpenRomFile");

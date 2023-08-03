@@ -15,6 +15,11 @@
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" title="Application" id="qDp-AL-XOl">
                                     <items>
+                                        <menuItem title="Reset" keyEquivalent="r" id="Xca-Fg-udB" userLabel="Reset">
+                                            <connections>
+                                                <action selector="menuReset:" target="Ady-hI-5gd" id="bqG-OP-Jmk"/>
+                                            </connections>
+                                        </menuItem>
                                         <menuItem title="Quit" keyEquivalent="q" id="D4D-0B-whq">
                                             <connections>
                                                 <action selector="menuQuit:" target="Ady-hI-5gd" id="Hso-UX-w6e"/>
