@@ -7,6 +7,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: "Update apt-get"
+          command: "sudo apt-get update"
+      - run:
           name: "Install Prerequests"
           command: "sudo apt-get install -y clang wget"
       - run:
