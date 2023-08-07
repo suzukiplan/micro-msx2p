@@ -442,10 +442,10 @@ class TMS9918A
         bool previousInterrupt = this->isEnabledInterrupt();
         int r = this->ctx->tmpAddr[1] & 0b00001111;
         this->ctx->reg[r] = this->ctx->tmpAddr[0];
+        this->acUpdate(r);
         if (!previousInterrupt && this->isEnabledInterrupt() && this->ctx->stat & 0x80) {
             this->detectBlank(this->arg);
         }
-        this->acUpdate(r);
     }
 
     inline int getDisplayPtr(int lineNumber)
