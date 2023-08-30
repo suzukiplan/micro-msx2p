@@ -159,6 +159,13 @@ int main()
         fclose(fp);
     }
 
+    puts("save");
+    size_t saveSize;
+    auto saveData = msx1->quickSave(&saveSize);
+
+    puts("load");
+    msx1->quickLoad(saveData, saveSize);
+
     delete msx1;
     free(main);
     free(logo);
