@@ -632,9 +632,11 @@ class MSX1
             strncpy(chunk, ptr, 4);
             if ('\0' != chunk[3]) break;
             ptr += 4;
+            size -= 4;
             memcpy(&chunkSize, ptr, 4);
             if (chunkSize < 1) break;
             ptr += 4;
+            size -= 4;
             if (chunkSize < 0) break;
             if (0 == strcmp(chunk, "BRD")) {
                 memcpy(&this->ctx, ptr, chunkSize);
