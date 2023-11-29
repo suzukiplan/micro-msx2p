@@ -33,6 +33,7 @@
 #include "ay8910.hpp"
 #include "msx1.hpp"
 #include "roms.hpp"
+#include "joypad.hpp"
 
 // Arduino
 #include <Arduino.h>
@@ -123,6 +124,7 @@ static int cpu1;
 static uint64_t idle0 = 0;
 static uint64_t idle1 = 0;
 static AY8910 psg;
+static Joypad joypad;
 
 static void displayMessage(const char* format, ...)
 {
@@ -175,8 +177,9 @@ void IRAM_ATTR ticker(void* arg)
         }
 
         // execute even frame (rendering display buffer)
+        uint8_t key = joypad.scan();
         xSemaphoreTake(displayMutex, portMAX_DELAY);
-        msx1.tick(0, 0, 0);
+        msx1.tick(key, 0, 0);
         xSemaphoreGive(displayMutex);
         fpsCounter++;
 
@@ -190,7 +193,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute odd frame (skip rendering)
         start = millis();
-        msx1.tick(0, 0, 0);
+        msx1.tick(key, 0, 0);
         fpsCounter++;
 
         // wait
@@ -271,8 +274,18 @@ void cpuMonitor(void* arg)
 
 void setup()
 {
+    joypad.init(
+        GPIO_NUM_41, // up
+        GPIO_NUM_42, // down
+        GPIO_NUM_39, // left
+        GPIO_NUM_40, // right
+        GPIO_NUM_12, // A
+        GPIO_NUM_14, // B
+        GPIO_NUM_11, // Select
+        GPIO_NUM_10  // Start
+    );
     gfx.init();
-    gfx.setRotation(1);
+    gfx.setRotation(3);
     gfx.setColorDepth(16);
     gfx.fillScreen(TFT_BLACK);
     canvas.setColorDepth(16);
