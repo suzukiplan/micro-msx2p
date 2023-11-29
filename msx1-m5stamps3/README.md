@@ -12,7 +12,9 @@
 - DAC (UDA1334A)
 - Joypad (GPIO+GND直結)
 
-- ジョイパッド以外の詳しい組み立て方法は [こちらの記事](https://qiita.com/suzukiplan/items/b5882449fdbf571b4e80) を参照してください
+## References
+
+- 詳しい組み立て方法は [こちらの記事](https://qiita.com/suzukiplan/items/b5882449fdbf571b4e80) を参照してください
 - ジョイパッドについては [こちらの記事](https://note.com/suzukiplan/n/ncccafb305eae) を参照してください
 
 ## Pin Assign
