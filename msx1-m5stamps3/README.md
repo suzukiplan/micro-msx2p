@@ -1,13 +1,7 @@
-# micro MSX2+ for M5StampS3 <WIP>
+# micro MSX2+ for M5StampS3
 
 - micro-msx2p を M5StampS3 + ILI9341 LCD での動作をサポートしたものです
 - M5StampS3 の性能上の都合で MSX2/2+ の再現度の高いエミュレーションは難しいと判断したため MSX1 コアを使っています
-
-## WIP status
-
-- [x] グラフィック表示
-- [x] 音声出力
-- [ ] ゲームパッド操作対応
 
 ## Rquired Hardware
 
@@ -15,11 +9,15 @@
 - LCD (ILI9341)
   - Display Resolution: 240x320 (QVGA)
   - Touch Feature: Not Required
-- Audio (UDA1334A)
+- DAC (UDA1334A)
+- Joypad (GPIO+GND直結)
 
-詳しい組み立て方法は [こちらの記事](https://qiita.com/suzukiplan/items/b5882449fdbf571b4e80) を参照してください。
+- ジョイパッド以外の詳しい組み立て方法は [こちらの記事](https://qiita.com/suzukiplan/items/b5882449fdbf571b4e80) を参照してください
+- ジョイパッドについては [こちらの記事](https://note.com/suzukiplan/n/ncccafb305eae) を参照してください
 
-### Pin Assign (LCD)
+## Pin Assign
+
+### LCD + M5StampS3
 
 |LCD (ILI9341)|M5StampS3|用途|
 |:-:|:-:|:-|
@@ -37,7 +35,7 @@
 |`T_DO`|配線なし|タッチ機能は利用しないため|
 |`T_IRQ`|配線なし|タッチ機能は利用しないため|
 
-### Pin Assign (DAC)
+### DAC + M5StampS3
 
 |DAC (UDA1334A)|M5StampS3|用途|
 |:-:|:-:|:-|
@@ -47,9 +45,19 @@
 |`DIN`|`7`|I2S (データ送信)|
 |`BCLK`|`5`|I2S (クロック同期)|
 
-### Pin Assign (GamePad)
+### Joypad + M5StampS3
 
-TODO
+|Joypad|M5StampS3|用途|
+|:-:|:-:|:-|
+|`GND`|`GND`|グランド (※各ボタンのGNDを全て同じGNDに接続)|
+|Start|`10`|スタートボタン (特殊キー割り当て)|
+|Select|`11`|セレクトボタン (特殊キー割り当て)|
+|A|`12`|Aボタン (トリガー1)|
+|B|`14`|Bボタン (トリガー2)|
+|Left|`39`|左キー|
+|Right|`40`|右キー|
+|Up|`41`|上キー|
+|Down|`42`|下キー|
 
 ## Build
 
