@@ -9,7 +9,6 @@ ObjCSpaceBeforeProtocolList: true
 AllowShortFunctionsOnASingleLine: true 
 AllowShortIfStatementsOnASingleLine: true
 AllowShortLoopsOnASingleLine: true
-AllowShortFunctionsOnASingleLine: true
 AllowShortBlocksOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
 PointerAlignment: Left

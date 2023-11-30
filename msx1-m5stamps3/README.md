@@ -11,6 +11,7 @@
   - Touch Feature: Not Required
 - DAC (UDA1334A)
 - Joypad (GPIO+GND直結)
+- Keyboard ([かんたんUSBホスト](https://q61.org/blog/2021/06/09/easyusbhost/))
 
 ## References
 
@@ -60,6 +61,20 @@
 |Right|`40`|右キー|
 |Up|`41`|上キー|
 |Down|`42`|下キー|
+
+### Keyboard + M5StampS3
+
+- キーボードは ([かんたんUSBホスト](https://q61.org/blog/2021/06/09/easyusbhost/)) 経由で USB キーボードを接続してご利用ください
+- 現状 Mac 用のキー割当になっています
+- 最後に受信したイベント（AABCC形式）を画面右下にプレビュー表示されるので、Mac 用の USB キーボード以外を利用したい場合、[app.cpp](src/app.cpp) の `KantanUsbKeyboard::check` メソッドの内容を使いたいキーボードに合わせて適宜修正して利用する想定です
+
+|Easy USB Host|M5StampS3|用途|
+|:-|:-|:-|
+|`GND`|`GND`|グランド|
+|`5V`|`5V`|かんたん USB ホストの電源|
+|`VBUS`|`5V`|USB キーボードの電源|
+|`TX1`|`44 (U0RX)`|UART通信（Serial）|
+|`P3.3 - Mode` → `GND`|-|イベントモードに設定|
 
 ## Build
 
