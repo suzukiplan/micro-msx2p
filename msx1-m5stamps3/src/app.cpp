@@ -110,6 +110,220 @@ class Audio
     }
 };
 
+class KantanUsbKeyboard {
+public:
+    typedef struct Event_ {
+        uint8_t addr;
+        uint8_t code;
+        uint8_t type;
+    } Event;
+    uint8_t msxKeyCodeMap[16];
+
+private:
+    Event lastEvent;
+
+public:
+    KantanUsbKeyboard()
+    {
+        memset(&this->lastEvent, 0, sizeof(this->lastEvent));
+        memset(&this->msxKeyCodeMap, 0, sizeof(this->msxKeyCodeMap));
+    }
+
+    void init()
+    {
+        Serial.begin(9600, SERIAL_8N1);
+    }
+
+    Event* check()
+    {
+        if (Serial.available() < 1) {
+            return nullptr;
+        }
+        char buf[16];
+        int ptr =0;
+        do {
+            while (Serial.available() < 1) {
+                vTaskDelay(1);
+            }
+            buf[ptr++] = Serial.read();
+        } while (ptr != 8 && buf[ptr - 1] != ';');
+        this->lastEvent.addr = isdigit(buf[0]) ? buf[0] - '0' : buf[0] - 'a' + 10;
+        this->lastEvent.addr <<= 4;
+        this->lastEvent.addr |= isdigit(buf[1]) ? buf[1] - '0' : buf[1] - 'a' + 10;
+        this->lastEvent.type = buf[2];
+        this->lastEvent.code = isdigit(buf[3]) ? buf[3] - '0' : buf[3] - 'a' + 10;
+        this->lastEvent.code <<= 4;
+        this->lastEvent.code |= isdigit(buf[4]) ? buf[4] - '0' : buf[4] - 'a' + 10;
+        switch (this->lastEvent.type) {
+            case 'k': // released key
+                switch (this->lastEvent.code) {
+                    case 0x27: this->msxKeyCodeMap[0] &= 0b11111110; break; // 0
+                    case 0x1E: this->msxKeyCodeMap[0] &= 0b11111101; break; // 1
+                    case 0x1F: this->msxKeyCodeMap[0] &= 0b11111011; break; // 2
+                    case 0x20: this->msxKeyCodeMap[0] &= 0b11110111; break; // 3
+                    case 0x21: this->msxKeyCodeMap[0] &= 0b11101111; break; // 4
+                    case 0x22: this->msxKeyCodeMap[0] &= 0b11011111; break; // 5
+                    case 0x23: this->msxKeyCodeMap[0] &= 0b10111111; break; // 6
+                    case 0x24: this->msxKeyCodeMap[0] &= 0b01111111; break; // 7
+                    case 0x25: this->msxKeyCodeMap[1] &= 0b11111110; break; // 8
+                    case 0x26: this->msxKeyCodeMap[1] &= 0b11111101; break; // 9
+                    case 0x2D: this->msxKeyCodeMap[1] &= 0b11111011; break; // -
+                    case 0x2E: this->msxKeyCodeMap[1] &= 0b11110111; break; // ^
+                    case 0x89: this->msxKeyCodeMap[1] &= 0b11101111; break; // ¥
+                    case 0x2F: this->msxKeyCodeMap[1] &= 0b11011111; break; // @
+                    case 0x30: this->msxKeyCodeMap[1] &= 0b10111111; break; // [
+                    case 0x33: this->msxKeyCodeMap[1] &= 0b01111111; break; // ;
+                    case 0x34: this->msxKeyCodeMap[2] &= 0b11111110; break; // :
+                    case 0x31: this->msxKeyCodeMap[2] &= 0b11111101; break; // ]
+                    case 0x36: this->msxKeyCodeMap[2] &= 0b11111011; break; // ,
+                    case 0x37: this->msxKeyCodeMap[2] &= 0b11110111; break; // .
+                    case 0x38: this->msxKeyCodeMap[2] &= 0b11101111; break; // /
+                    case 0x87: this->msxKeyCodeMap[2] &= 0b11101111; break; // _
+                    case 0x04: this->msxKeyCodeMap[2] &= 0b10111111; break; // A
+                    case 0x05: this->msxKeyCodeMap[2] &= 0b01111111; break; // B
+                    case 0x06: this->msxKeyCodeMap[3] &= 0b11111110; break; // C
+                    case 0x07: this->msxKeyCodeMap[3] &= 0b11111101; break; // D
+                    case 0x08: this->msxKeyCodeMap[3] &= 0b11111011; break; // E
+                    case 0x09: this->msxKeyCodeMap[3] &= 0b11110111; break; // F
+                    case 0x0A: this->msxKeyCodeMap[3] &= 0b11101111; break; // G
+                    case 0x0B: this->msxKeyCodeMap[3] &= 0b11011111; break; // H
+                    case 0x0C: this->msxKeyCodeMap[3] &= 0b10111111; break; // I
+                    case 0x0D: this->msxKeyCodeMap[3] &= 0b01111111; break; // J
+                    case 0x0E: this->msxKeyCodeMap[4] &= 0b11111110; break; // K
+                    case 0x0F: this->msxKeyCodeMap[4] &= 0b11111101; break; // L
+                    case 0x10: this->msxKeyCodeMap[4] &= 0b11111011; break; // M
+                    case 0x11: this->msxKeyCodeMap[4] &= 0b11110111; break; // N
+                    case 0x12: this->msxKeyCodeMap[4] &= 0b11101111; break; // O
+                    case 0x13: this->msxKeyCodeMap[4] &= 0b11011111; break; // P
+                    case 0x14: this->msxKeyCodeMap[4] &= 0b10111111; break; // Q
+                    case 0x15: this->msxKeyCodeMap[4] &= 0b01111111; break; // R
+                    case 0x16: this->msxKeyCodeMap[5] &= 0b11111110; break; // S
+                    case 0x17: this->msxKeyCodeMap[5] &= 0b11111101; break; // T
+                    case 0x18: this->msxKeyCodeMap[5] &= 0b11111011; break; // U
+                    case 0x19: this->msxKeyCodeMap[5] &= 0b11110111; break; // V
+                    case 0x1A: this->msxKeyCodeMap[5] &= 0b11101111; break; // W
+                    case 0x1B: this->msxKeyCodeMap[5] &= 0b11011111; break; // X
+                    case 0x1C: this->msxKeyCodeMap[5] &= 0b10111111; break; // Y
+                    case 0x1D: this->msxKeyCodeMap[5] &= 0b01111111; break; // Z
+                    case 0x39: this->msxKeyCodeMap[6] &= 0b11110111; break; // caps
+                    case 0x90: this->msxKeyCodeMap[6] &= 0b11101111; break; // kana
+                    case 0x3A: this->msxKeyCodeMap[6] &= 0b11011111; break; // F1
+                    case 0x3B: this->msxKeyCodeMap[6] &= 0b10111111; break; // F2
+                    case 0x3C: this->msxKeyCodeMap[6] &= 0b01111111; break; // F3
+                    case 0x3D: this->msxKeyCodeMap[7] &= 0b11111110; break; // F4
+                    case 0x3E: this->msxKeyCodeMap[7] &= 0b11111101; break; // F5
+                    case 0x29: this->msxKeyCodeMap[7] &= 0b11111011; break; // esc
+                    case 0x2B: this->msxKeyCodeMap[7] &= 0b11110111; break; // tab
+                    case 0x45: this->msxKeyCodeMap[7] &= 0b11101111; break; // F12 as stop
+                    case 0x2A: this->msxKeyCodeMap[7] &= 0b11011111; break; // delete as BS
+                    case 0x44: this->msxKeyCodeMap[7] &= 0b10111111; break; // F11 as select
+                    case 0x28: this->msxKeyCodeMap[7] &= 0b01111111; break; // return
+                    case 0x2C: this->msxKeyCodeMap[8] &= 0b11111110; break; // space
+                    case 0x43: this->msxKeyCodeMap[8] &= 0b11111101; break; // F10 as cls/home
+                    case 0x42: this->msxKeyCodeMap[8] &= 0b11111011; break; // F9 as ins
+                    case 0x41: this->msxKeyCodeMap[8] &= 0b11110111; break; // F8 as del
+                    case 0x50: this->msxKeyCodeMap[8] &= 0b11101111; break; // left cursor
+                    case 0x52: this->msxKeyCodeMap[8] &= 0b11011111; break; // up cursor
+                    case 0x51: this->msxKeyCodeMap[8] &= 0b10111111; break; // down cursor
+                    case 0x4F: this->msxKeyCodeMap[8] &= 0b01111111; break; // right cursor
+                }
+                break;
+            case 'K': // pressed key
+                switch (this->lastEvent.code) {
+                    case 0x27: this->msxKeyCodeMap[0] |= 0b00000001; break; // 0
+                    case 0x1E: this->msxKeyCodeMap[0] |= 0b00000010; break; // 1
+                    case 0x1F: this->msxKeyCodeMap[0] |= 0b00000100; break; // 2
+                    case 0x20: this->msxKeyCodeMap[0] |= 0b00001000; break; // 3
+                    case 0x21: this->msxKeyCodeMap[0] |= 0b00010000; break; // 4
+                    case 0x22: this->msxKeyCodeMap[0] |= 0b00100000; break; // 5
+                    case 0x23: this->msxKeyCodeMap[0] |= 0b01000000; break; // 6
+                    case 0x24: this->msxKeyCodeMap[0] |= 0b10000000; break; // 7
+                    case 0x25: this->msxKeyCodeMap[1] |= 0b00000001; break; // 8
+                    case 0x26: this->msxKeyCodeMap[1] |= 0b00000010; break; // 9
+                    case 0x2D: this->msxKeyCodeMap[1] |= 0b00000100; break; // -
+                    case 0x2E: this->msxKeyCodeMap[1] |= 0b00001000; break; // ^
+                    case 0x89: this->msxKeyCodeMap[1] |= 0b00010000; break; // ¥
+                    case 0x2F: this->msxKeyCodeMap[1] |= 0b00100000; break; // @
+                    case 0x30: this->msxKeyCodeMap[1] |= 0b01000000; break; // [
+                    case 0x33: this->msxKeyCodeMap[1] |= 0b10000000; break; // ;
+                    case 0x34: this->msxKeyCodeMap[2] |= 0b00000001; break; // :
+                    case 0x31: this->msxKeyCodeMap[2] |= 0b00000010; break; // ]
+                    case 0x36: this->msxKeyCodeMap[2] |= 0b00000100; break; // ,
+                    case 0x37: this->msxKeyCodeMap[2] |= 0b00001000; break; // .
+                    case 0x38: this->msxKeyCodeMap[2] |= 0b00010000; break; // /
+                    case 0x87: this->msxKeyCodeMap[2] |= 0b00100000; break; // _
+                    case 0x04: this->msxKeyCodeMap[2] |= 0b01000000; break; // A
+                    case 0x05: this->msxKeyCodeMap[2] |= 0b10000000; break; // B
+                    case 0x06: this->msxKeyCodeMap[3] |= 0b00000001; break; // C
+                    case 0x07: this->msxKeyCodeMap[3] |= 0b00000010; break; // D
+                    case 0x08: this->msxKeyCodeMap[3] |= 0b00000100; break; // E
+                    case 0x09: this->msxKeyCodeMap[3] |= 0b00001000; break; // F
+                    case 0x0A: this->msxKeyCodeMap[3] |= 0b00010000; break; // G
+                    case 0x0B: this->msxKeyCodeMap[3] |= 0b00100000; break; // H
+                    case 0x0C: this->msxKeyCodeMap[3] |= 0b01000000; break; // I
+                    case 0x0D: this->msxKeyCodeMap[3] |= 0b10000000; break; // J
+                    case 0x0E: this->msxKeyCodeMap[4] |= 0b00000001; break; // K
+                    case 0x0F: this->msxKeyCodeMap[4] |= 0b00000010; break; // L
+                    case 0x10: this->msxKeyCodeMap[4] |= 0b00000100; break; // M
+                    case 0x11: this->msxKeyCodeMap[4] |= 0b00001000; break; // N
+                    case 0x12: this->msxKeyCodeMap[4] |= 0b00010000; break; // O
+                    case 0x13: this->msxKeyCodeMap[4] |= 0b00100000; break; // P
+                    case 0x14: this->msxKeyCodeMap[4] |= 0b01000000; break; // Q
+                    case 0x15: this->msxKeyCodeMap[4] |= 0b10000000; break; // R
+                    case 0x16: this->msxKeyCodeMap[5] |= 0b00000001; break; // S
+                    case 0x17: this->msxKeyCodeMap[5] |= 0b00000010; break; // T
+                    case 0x18: this->msxKeyCodeMap[5] |= 0b00000100; break; // U
+                    case 0x19: this->msxKeyCodeMap[5] |= 0b00001000; break; // V
+                    case 0x1A: this->msxKeyCodeMap[5] |= 0b00010000; break; // W
+                    case 0x1B: this->msxKeyCodeMap[5] |= 0b00100000; break; // X
+                    case 0x1C: this->msxKeyCodeMap[5] |= 0b01000000; break; // Y
+                    case 0x1D: this->msxKeyCodeMap[5] |= 0b10000000; break; // Z
+                    case 0x39: this->msxKeyCodeMap[6] |= 0b00001000; break; // caps
+                    case 0x90: this->msxKeyCodeMap[6] |= 0b00010000; break; // kana
+                    case 0x3A: this->msxKeyCodeMap[6] |= 0b00100000; break; // F1
+                    case 0x3B: this->msxKeyCodeMap[6] |= 0b01000000; break; // F2
+                    case 0x3C: this->msxKeyCodeMap[6] |= 0b10000000; break; // F3
+                    case 0x3D: this->msxKeyCodeMap[7] |= 0b00000001; break; // F4
+                    case 0x3E: this->msxKeyCodeMap[7] |= 0b00000010; break; // F5
+                    case 0x29: this->msxKeyCodeMap[7] |= 0b00000100; break; // esc
+                    case 0x2B: this->msxKeyCodeMap[7] |= 0b00001000; break; // tab
+                    case 0x45: this->msxKeyCodeMap[7] |= 0b00010000; break; // F12 as stop
+                    case 0x2A: this->msxKeyCodeMap[7] |= 0b00100000; break; // delete as BS
+                    case 0x44: this->msxKeyCodeMap[7] |= 0b01000000; break; // F11 as select
+                    case 0x28: this->msxKeyCodeMap[7] |= 0b10000000; break; // return
+                    case 0x2C: this->msxKeyCodeMap[8] |= 0b00000001; break; // space
+                    case 0x43: this->msxKeyCodeMap[8] |= 0b00000010; break; // F10 as cls/home
+                    case 0x42: this->msxKeyCodeMap[8] |= 0b00000100; break; // F9 as ins
+                    case 0x41: this->msxKeyCodeMap[8] |= 0b00001000; break; // F8 as del
+                    case 0x50: this->msxKeyCodeMap[8] |= 0b00010000; break; // left cursor
+                    case 0x52: this->msxKeyCodeMap[8] |= 0b00100000; break; // up cursor
+                    case 0x51: this->msxKeyCodeMap[8] |= 0b01000000; break; // down cursor
+                    case 0x4F: this->msxKeyCodeMap[8] |= 0b10000000; break; // right cursor
+                }
+                break;
+            case 'm': // released subkey
+                switch (this->lastEvent.code) {
+                    case 0x02: this->msxKeyCodeMap[6] &= 0b11111110; break; // left shift
+                    case 0x20: this->msxKeyCodeMap[6] &= 0b11111110; break; // right shift
+                    case 0x01: this->msxKeyCodeMap[6] &= 0b11111101; break; // control as ctrl
+                    case 0x04: this->msxKeyCodeMap[6] &= 0b11111011; break; // option as graph
+                }
+                break;
+            case 'M': // pressed subkey
+                switch (this->lastEvent.code) {
+                    case 0x02: this->msxKeyCodeMap[6] |= 0b00000001; break; // left shift
+                    case 0x20: this->msxKeyCodeMap[6] |= 0b00000001; break; // right shift
+                    case 0x01: this->msxKeyCodeMap[6] |= 0b00000010; break; // control as ctrl
+                    case 0x04: this->msxKeyCodeMap[6] |= 0b00000100; break; // option as graph
+                }
+                break;
+            default: // ignore other events
+                return &this->lastEvent;
+        }
+        return &this->lastEvent;
+    }
+};
+
 static uint8_t ram[0x4000];
 static TMS9918A::Context vram;
 static ILI9431 gfx;
@@ -125,6 +339,7 @@ static uint64_t idle0 = 0;
 static uint64_t idle1 = 0;
 static AY8910 psg;
 static Joypad joypad;
+static KantanUsbKeyboard keyboard;
 
 static void displayMessage(const char* format, ...)
 {
@@ -179,7 +394,7 @@ void IRAM_ATTR ticker(void* arg)
         // execute even frame (rendering display buffer)
         uint8_t key = joypad.scan();
         xSemaphoreTake(displayMutex, portMAX_DELAY);
-        msx1.tick(key, 0, 0);
+        msx1.tickWithKeyCodeMap(key, 0, keyboard.msxKeyCodeMap);
         xSemaphoreGive(displayMutex);
         fpsCounter++;
 
@@ -193,7 +408,7 @@ void IRAM_ATTR ticker(void* arg)
 
         // execute odd frame (skip rendering)
         start = millis();
-        msx1.tick(key, 0, 0);
+        msx1.tickWithKeyCodeMap(key, 0, keyboard.msxKeyCodeMap);
         fpsCounter++;
 
         // wait
@@ -247,6 +462,16 @@ void renderer(void* arg)
         gfx.setCursor(0, 232);
         sprintf(buf, "EMU:%d/60fps  LCD:%d/30fps  C0:%d%%  C1:%d%% ", fps, renderFps, cpu0, cpu1);
         gfx.print(buf);
+
+        auto evt = keyboard.check();
+        while (evt) {
+            gfx.fillRect(320 - 32, 232, 32, 8, 0x0000);
+            gfx.setCursor(320 - 32, 232);
+            sprintf(buf, "%02X%c%02X", evt->addr, evt->type, evt->code);
+            gfx.print(buf);
+            evt = keyboard.check();
+        }
+
         xSemaphoreTake(displayMutex, portMAX_DELAY);
         canvas.pushSprite(32, 24);
         xSemaphoreGive(displayMutex);
@@ -284,6 +509,7 @@ void setup()
         GPIO_NUM_11, // Select
         GPIO_NUM_10  // Start
     );
+    keyboard.init();
     gfx.init();
     gfx.setRotation(3);
     gfx.setColorDepth(16);
