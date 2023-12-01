@@ -1,7 +1,7 @@
 CFLAGS = -O2 -I./src -I../src -I/usr/include/SDL2 -I/usr/local/include/SDL2 -I/opt/X11/include -D_THREAD_SAFE
 CPPFLAGS = -std=c++11 $(CFLAGS)
-CC = clang $(CFLAGS)
-CPP = clang++ $(CPPFLAGS)
+CC = gcc $(CFLAGS)
+CPP = g++ $(CPPFLAGS)
 OBJECTS = lz4.o emu2413.o BufferQueue.o app.o
 HEADER_FILES =\
 	../src/ay8910.hpp\
