@@ -26,20 +26,19 @@
   - `MSX2_ROM_TYPE_ASC16_SRAM2` ASCII16 + SRAM メガロム
   - `MSX2_ROM_TYPE_KONAMI_SCC` KONAMI SCC メガロム
   - `MSX2_ROM_TYPE_KONAMI` KONAMI 標準メガロム
-- 各プラットフォーム向けの実装例:
-  - [msx2-osx](./msx2-osx) macOS (MSX2+)
-  - [msx2-android](./msx2-android) Android
-  - [msx2-ios](./msx2-ios) iOS
-  - [msx2-dotnet](./msx2-dotnet) .NET Core
-  - [msx1-osx](./msx1-osx) macOS (MSX1)
-  - [msx1-m5stack](./msx1-m5stack) M5Stack CoreS3 (MSX1)
-  - [msx1-m5stamps3](./msx1-m5stamps3) M5StampS3 (MSX1)
-  - 以下のプラットフォームはまだ提供していません:
-    - Windows（将来的には作るかも）
-    - Linux（将来的には作るかも）
-    - Nintendo Switch（ライセンス的な事情で公開はできないかも）
-    - PlayStation（ライセンス的な事情で公開はできないかも）
-    - XBOX（ライセンス的な事情で公開はできないかも）
+
+## Platform Implementations
+
+|Directory|Platform|Core|
+|:-|:-|:-|:-|
+|[msx1-osx](./msx1-osx)|macOS+Cocoa|MSX1|
+|[msx2-osx](./msx2-osx)|macOS+Cocoa|MSX2+|
+|[msx2-android](./msx2-android)|Android|MSX2+|
+|[msx2-ios](./msx2-ios)|iOS|MSX2+|
+|[msx2-dotnet](./msx2-dotnet)|.NET Core|MSX2+|
+|[msx1-m5stack](./msx1-m5stack)|M5Stack CoreS3|MSX1|
+|[msx1-m5stamp](./msx1-m5stamp)|M5StampS3|MSX1|
+|[msx2-sdl2](./msx2-sdl2)|SDL2 (macOS and Linux)|MSX2+|
 
 ## Unimplemented Features
 
