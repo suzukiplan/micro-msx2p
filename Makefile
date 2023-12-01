@@ -21,6 +21,7 @@ format:
 	make execute-format FILENAME=./src1/msx1mmu.hpp
 	make execute-format FILENAME=./src1/tms9918a.hpp
 	make execute-format FILENAME=./src1/z80.hpp
+	make execute-format FILENAME=./msx2-sdl2/src/app.cpp
 
 execute-format:
 	clang-format -style=file < ${FILENAME} > ${FILENAME}.bak
