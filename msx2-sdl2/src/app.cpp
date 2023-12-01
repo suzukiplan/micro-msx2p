@@ -112,7 +112,11 @@ void* load(const char* path, size_t* size = nullptr)
         return nullptr;
     }
     fseek(fp, 0, SEEK_SET);
-    fread(result, 1, fsize, fp);
+    if (fsize != fread(result, 1, fsize, fp)) {
+        fclose(fp);
+        log("error: File read error");
+        return nullptr;
+    }
     fclose(fp);
     if (size) *size = fsize;
     log("Loaded %s (%d bytes)", path, (int)fsize);
