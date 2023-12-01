@@ -30,7 +30,7 @@
 ## Platform Implementations
 
 |Directory|Platform|Core|
-|:-|:-|:-|:-|
+|:-|:-|:-|
 |[msx1-osx](./msx1-osx)|macOS+Cocoa|MSX1|
 |[msx2-osx](./msx2-osx)|macOS+Cocoa|MSX2+|
 |[msx2-android](./msx2-android)|Android|MSX2+|
