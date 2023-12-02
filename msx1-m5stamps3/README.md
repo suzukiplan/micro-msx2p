@@ -1,5 +1,7 @@
 # micro MSX2+ for M5StampS3
 
+![./m5stamps3.jpg](./m5stamps3.jpg)
+
 - micro-msx2p を M5StampS3 + ILI9341 LCD での動作をサポートしたものです
 - M5StampS3 の性能上の都合で MSX2/2+ の再現度の高いエミュレーションは難しいと判断したため MSX1 コアを使っています
 
