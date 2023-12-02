@@ -37,7 +37,7 @@
 |[msx2-ios](./msx2-ios)|iOS|MSX2+|
 |[msx2-dotnet](./msx2-dotnet)|.NET Core|MSX2+|
 |[msx1-m5stack](./msx1-m5stack)|M5Stack CoreS3|MSX1|
-|[msx1-m5stamp](./msx1-m5stamp)|M5StampS3|MSX1|
+|[msx1-m5stamps3](./msx1-m5stamps3)|M5StampS3|MSX1|
 |[msx2-sdl2](./msx2-sdl2)|SDL2 (macOS and Linux)|MSX2+|
 
 ## Unimplemented Features
