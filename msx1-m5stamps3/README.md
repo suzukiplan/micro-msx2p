@@ -68,7 +68,7 @@
 
 - キーボードは ([かんたんUSBホスト](https://q61.org/blog/2021/06/09/easyusbhost/)) 経由で USB キーボードを接続してご利用ください
 - 現状 Mac 用のキー割当になっています
-- 最後に受信したイベント（AABCC形式）を画面右下にプレビュー表示されるので、Mac 用の USB キーボード以外を利用したい場合、[app.cpp](src/app.cpp) の `KantanUsbKeyboard::check` メソッドの内容を使いたいキーボードに合わせて適宜修正して利用する想定です
+- 最後に受信したイベント（AABCC形式）を画面右下にプレビュー表示されるので、Mac 用の USB キーボード以外を利用したい場合、[app.cpp](src/app.cpp) の `KantanUsbKeyboard::init` メソッドのキーマップ（mapK, mapM）初期化処理を使いたいキーボードに合わせて適宜修正して利用する想定です
 
 |Easy USB Host|M5StampS3|用途|
 |:-|:-|:-|
