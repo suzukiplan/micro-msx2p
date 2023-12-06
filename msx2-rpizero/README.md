@@ -5,7 +5,9 @@
 
 ## WIP Status
 
-- [ ] 映像出力（HDMI）
+- [x] 映像出力（HDMI）
+- [ ] micro MSX2+ 組み込み
+- [ ] 音声出力 (HDMI)
 
 ## Prerequest
 
@@ -40,3 +42,21 @@ make
 1. RaspberryPi Zero の SD カードスロットに準備した SD カードを挿入
 2. HDMI ケーブルで RaspberryPi Zero と 640x480 以上の解像度のモニタ（テレビ等）を接続
 3. USB ケーブルで RaspberryPi Zero へ給電
+
+## License
+
+本プログラムのライセンスは [MIT](LICENSE.txt) とします。
+
+また、本プログラムには以下のソフトウェアに依存しているため、再配布時にはそれぞれのライセンス条項の遵守をお願いいたします。
+
+- Circle
+    - Web Site: [https://github.com/rsta2/circle](https://github.com/rsta2/circle)
+    - License: [GPLv3](../licenses-copy/circle.txt)
+- SUZUKI PLAN - Z80 Emulator
+  - Web Site: [https://github.com/suzukiplan/z80](https://github.com/suzukiplan/z80)
+  - License: [MIT](../licenses-copy/z80.txt)
+  - `Copyright (c) 2019 Yoji Suzuki.`
+- micro MSX2+
+  - Web Site: [https://github.com/suzukiplan/micro-msx2p](https://github.com/suzukiplan/micro-msx2p)
+  - License: [MIT](../LICENSE.txt)
+  - `Copyright (c) 2023 Yoji Suzuki.`

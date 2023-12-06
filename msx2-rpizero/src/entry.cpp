@@ -24,6 +24,7 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
+#include "msx2.hpp"
 #include "mailbox.hpp"
 #include <stdint.h>
 #include <stdio.h>
@@ -46,6 +47,7 @@ extern "C" void interrupt()
 extern "C" void entry()
 {
     Mailbox mailbox(WIDTH, HEIGHT);
+    MSX2 msx2(MSX2_COLOR_MODE_RGB565);
     int count = 0;
     while (1) {
         for (int y = 0; y < HEIGHT; y++) {

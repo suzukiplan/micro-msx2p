@@ -1,3 +1,6 @@
 [submodule "test/google-benchmark/benchmark"]
 	path = test/google-benchmark/benchmark
 	url = https://github.com/google/benchmark.git
+[submodule "msx2-rpizero/circle"]
+	path = msx2-rpizero/circle
+	url = https://github.com/rsta2/circle

@@ -1,2 +1,6 @@
 *.o
-kernel.*
+*.d
+*.elf
+*.img
+*.lst
+*.map
