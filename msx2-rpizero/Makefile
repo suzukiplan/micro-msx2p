@@ -4,7 +4,8 @@ ROMS =\
 	rom_cbios_sub.c\
 	rom_game.c
 
-all: ../tools/circle
+all:
+	cd ../tools && git submodule update --init circle
 	cp ../src/* .
 	cd ../tools/bin2var && make
 	cd ../tools/bmp2img && make
@@ -13,9 +14,6 @@ all: ../tools/circle
 	make roms.hpp
 	cd ../tools/circle && ./makeall
 	make -f Build.mak
-
-../tools/circle:
-	cd ../tools && git submodule update --init circle
 
 clean:
 	make -f Build.mak clean
