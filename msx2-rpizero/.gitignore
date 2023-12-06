@@ -18,3 +18,7 @@ scc.hpp
 tc8566af.hpp
 v9958.hpp
 z80.hpp
+rom_cbios_main_msx2p.c
+rom_cbios_logo_msx2p.c
+rom_cbios_sub.c
+rom_game.c
