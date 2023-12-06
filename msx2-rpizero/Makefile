@@ -11,6 +11,7 @@ all: circle
 	cd tools/varext && make
 	make $(ROMS)
 	make roms.hpp
+	cd circle && ./makeall
 	make -f Build.mak
 
 circle:
