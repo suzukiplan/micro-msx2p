@@ -1,7 +1,7 @@
 #include <circle/startup.h>
-#include <time.h>
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <time.h>
 
 void exit(int code)
 {
@@ -13,7 +13,7 @@ time_t time(time_t* second)
     return 0;
 }
 
-struct tm *localtime (const time_t *_timer)
+struct tm* localtime(const time_t* _timer)
 {
     static struct tm result;
     return &result;

@@ -19,7 +19,23 @@
 //
 #include "kernel.h"
 #include "msx2.hpp"
+#include "roms.hpp"
 #include <circle/timer.h>
+
+volatile uint32_t vsync_counter;
+
+static void vsync(void* data)
+{
+    vsync_counter++;
+}
+
+static void vsync_wait()
+{
+    uint32_t counter = vsync_counter;
+    while (counter == vsync_counter) {
+        ;
+    }
+}
 
 CKernel::CKernel(void) : screen(640, 480)
 {
@@ -37,23 +53,32 @@ boolean CKernel::initialize(void)
 TShutdownMode CKernel::run(void)
 {
     MSX2 msx2(MSX2_COLOR_MODE_RGB565);
-
-    // draw rectangle on screen
-    for (unsigned nPosX = 0; nPosX < screen.GetWidth(); nPosX++) {
-        screen.SetPixel(nPosX, 0, NORMAL_COLOR);
-        screen.SetPixel(nPosX, screen.GetHeight() - 1, NORMAL_COLOR);
-    }
-    for (unsigned nPosY = 0; nPosY < screen.GetHeight(); nPosY++) {
-        screen.SetPixel(0, nPosY, NORMAL_COLOR);
-        screen.SetPixel(screen.GetWidth() - 1, nPosY, NORMAL_COLOR);
-    }
-
-    // draw cross on screen
-    for (unsigned nPosX = 0; nPosX < screen.GetWidth(); nPosX++) {
-        unsigned nPosY = nPosX * screen.GetHeight() / screen.GetWidth();
-
-        screen.SetPixel(nPosX, nPosY, NORMAL_COLOR);
-        screen.SetPixel(screen.GetWidth() - nPosX - 1, nPosY, NORMAL_COLOR);
+    msx2.setupSecondaryExist(false, false, false, true);
+    msx2.setup(0, 0, 0, (void*)rom_cbios_main_msx2p, 0x8000, "MAIN");
+    msx2.setup(0, 0, 4, (void*)rom_cbios_logo_msx2p, 0x4000, "LOGO");
+    msx2.setup(3, 0, 0, (void*)rom_cbios_sub, 0x4000, "SUB");
+    msx2.setupRAM(3, 3);
+    msx2.loadRom((void*)rom_game, sizeof(rom_game), MSX2_ROM_TYPE_NORMAL); // modify here if use mega rom
+    interrupt.ConnectIRQ(ARM_IRQ_SMI, vsync, nullptr);
+    while (1) {
+        msx2.tick(0, 0, 0);
+        size_t pcmSize;
+        msx2.getSound(&pcmSize);
+        // TODO: play sound
+        uint16_t* display = msx2.getDisplay();
+        for (int y = 0; y < 480; y += 2) {
+            for (int x = 0; x < 568; x++) {
+                screen.SetPixel(x + 36, y, display[x]);
+                screen.SetPixel(x + 36, y + 1, display[x]);
+            }
+            for (int x = 0; x < 36; x++) {
+                screen.SetPixel(x, y, display[0]);
+                screen.SetPixel(x + 604, y, display[567]);
+                screen.SetPixel(x, y + 1, display[0]);
+                screen.SetPixel(x + 604, y + 1, display[567]);
+            }
+            display += 568;
+        }
     }
 
     while (1) {
@@ -63,6 +88,5 @@ TShutdownMode CKernel::run(void)
         led.Off();
         CTimer::SimpleMsDelay(100);
     }
-
     return ShutdownHalt;
 }

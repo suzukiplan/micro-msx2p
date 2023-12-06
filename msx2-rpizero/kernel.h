@@ -22,8 +22,11 @@
 
 #include <circle/actled.h>
 #include <circle/devicenameservice.h>
+#include <circle/exceptionhandler.h>
+#include <circle/interrupt.h>
 #include <circle/koptions.h>
 #include <circle/screen.h>
+#include <circle/serial.h>
 #include <circle/types.h>
 
 enum TShutdownMode {
@@ -47,6 +50,9 @@ class CKernel
     CKernelOptions options;
     CDeviceNameService deviceNameService;
     CScreenDevice screen;
+    CSerialDevice serial;
+    CExceptionHandler exceptionHandler;
+    CInterruptSystem interrupt;
 };
 
 #endif
