@@ -18,6 +18,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
+#include "msx2.hpp"
 #include <circle/timer.h>
 
 CKernel::CKernel(void) : screen(640, 480)
@@ -35,6 +36,8 @@ boolean CKernel::initialize(void)
 
 TShutdownMode CKernel::run(void)
 {
+    MSX2 msx2(MSX2_COLOR_MODE_RGB565);
+
     // draw rectangle on screen
     for (unsigned nPosX = 0; nPosX < screen.GetWidth(); nPosX++) {
         screen.SetPixel(nPosX, 0, NORMAL_COLOR);

@@ -1,5 +1,7 @@
 CIRCLEHOME = ./circle
-OBJS = main.o kernel.o
+STANDARD = -std=c++17
+CPPFLAGS = -DZ80_DISABLE_DEBUG -DZ80_DISABLE_BREAKPOINT -DZ80_DISABLE_NESTCHECK -DZ80_NO_FUNCTIONAL -DZ80_NO_EXCEPTION
+OBJS = main.o std.o kernel.o lz4.o emu2413.o
 LIBS = $(CIRCLEHOME)/lib/libcircle.a
 include $(CIRCLEHOME)/Rules.mk
 -include $(DEPS)

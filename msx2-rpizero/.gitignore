@@ -4,3 +4,17 @@
 *.img
 *.lst
 *.map
+ay8910.hpp
+emu2413.c
+emu2413.h
+lz4.c
+lz4.h
+msx2.hpp
+msx2clock.hpp
+msx2def.h
+msx2kanji.hpp
+msx2mmu.hpp
+scc.hpp
+tc8566af.hpp
+v9958.hpp
+z80.hpp

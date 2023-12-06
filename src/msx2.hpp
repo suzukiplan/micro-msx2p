@@ -248,7 +248,7 @@ class MSX2
             }
         });
 #endif
-        this->cpu->setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
+        this->cpu->setConsumeClockCallback([](void* arg, int cpuClocks) {
             ((MSX2*)arg)->consumeClock(cpuClocks);
         });
         memset(&keyCodes, 0, sizeof(keyCodes));
