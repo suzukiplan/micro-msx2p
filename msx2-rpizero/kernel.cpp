@@ -22,21 +22,6 @@
 #include "roms.hpp"
 #include <circle/timer.h>
 
-volatile uint32_t vsync_counter;
-
-static void vsync(void* data)
-{
-    vsync_counter++;
-}
-
-static void vsync_wait()
-{
-    uint32_t counter = vsync_counter;
-    while (counter == vsync_counter) {
-        ;
-    }
-}
-
 CKernel::CKernel(void) : screen(640, 480)
 {
 }
@@ -59,7 +44,6 @@ TShutdownMode CKernel::run(void)
     msx2.setup(3, 0, 0, (void*)rom_cbios_sub, 0x4000, "SUB");
     msx2.setupRAM(3, 3);
     msx2.loadRom((void*)rom_game, sizeof(rom_game), MSX2_ROM_TYPE_NORMAL); // modify here if use mega rom
-    interrupt.ConnectIRQ(ARM_IRQ_SMI, vsync, nullptr);
     while (1) {
         msx2.tick(0, 0, 0);
         size_t pcmSize;
