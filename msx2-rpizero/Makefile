@@ -14,6 +14,15 @@ all:
 	make roms.hpp
 	cd ../tools/circle && ./makeall
 	make -f Build.mak
+	@echo Build succeed!
+	@echo -------------------------------------------------------------------------------
+	@echo Congratulations 🎉
+	@echo Place the bootcode.bin, start.elf, and kernel.img in the root directory of
+	@echo your SD-card and insert it into RaspberryPi Zero to lanch your MSX game.
+	@echo -------------------------------------------------------------------------------
+	@echo - bootcode.bin: https://github.com/raspberrypi/firmware/blob/master/boot/bootcode.bin
+	@echo - start.elf: https://github.com/raspberrypi/firmware/blob/master/boot/start.elf
+	@echo - kernel.img: `ls -l kernel.img | grep kernel`
 
 clean:
 	make -f Build.mak clean
