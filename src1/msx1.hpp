@@ -646,9 +646,9 @@ class MSX1
                 memcpy(&this->mmu.ctx, ptr, chunkSize);
                 this->mmu.bankSwitchover();
             } else if (0 == strcmp(chunk, "RAM")) {
-                memcpy(this->mmu.ram, ptr, chunkSize <= this->mmu.ramSize ? chunkSize : this->mmu.ramSize);
+                memcpy(this->mmu.ram, ptr, chunkSize <= (int)this->mmu.ramSize ? chunkSize : this->mmu.ramSize);
             } else if (0 == strcmp(chunk, "SRM") && this->mmu.sram) {
-                memcpy(this->mmu.sram, ptr, chunkSize <= this->mmu.sramSize ? chunkSize : this->mmu.sramSize);
+                memcpy(this->mmu.sram, ptr, chunkSize <= (int)this->mmu.sramSize ? chunkSize : this->mmu.sramSize);
             } else if (0 == strcmp(chunk, "PSG")) {
 #ifndef MSX1_REMOVE_PSG
                 memcpy(&this->psg.ctx, ptr, chunkSize);

@@ -11,15 +11,11 @@ CPPFLAGS += -DZ80_CALLBACK_PER_INSTRUCTION
 CPPFLAGS += -DZ80_UNSUPPORT_16BIT_PORT
 CPPFLAGS += -DZ80_NO_FUNCTIONAL
 CPPFLAGS += -DZ80_NO_EXCEPTION
-CPPFLAGS += -DMSX2_DISPLAY_HALF_HORIZONTAL
 OBJS = main.o\
 	std.o\
 	kernel.o\
-	lz4.o\
-	emu2413.o\
-	rom_cbios_main_msx2p.o\
-	rom_cbios_logo_msx2p.o\
-	rom_cbios_sub.o\
+	rom_cbios_main_msx1.o\
+	rom_cbios_logo_msx1.o\
 	rom_game.o
 LIBS = $(CIRCLEHOME)/lib/libcircle.a
 include $(CIRCLEHOME)/Rules.mk

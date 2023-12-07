@@ -1,6 +1,6 @@
 # [WIP] micro MSX2+ for RaspberryPi Zero (Bare Metal)
 
-RaspberryPi Zero シリーズ全般（無印、W、WH、2W）のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX2+ コア) の実装例です。
+RaspberryPi Zero シリーズ全般（無印、W、WH、2W）のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX1 コア) の実装例です。
 
 > 通常の Linux 環境で動作させたい場合は [SDL2版](../msx2-sdl2) を用いてください。
 
@@ -8,9 +8,6 @@ RaspberryPi Zero シリーズ全般（無印、W、WH、2W）のベアメタル�
 
 - [x] 映像出力（HDMI）
 - [x] micro MSX2+ 組み込み
-- [ ] micro MSX2+ 性能改善
-  - 現状 RaspberryPi Zero の 無印、W、WH では実用的ではない水準の動作をします
-  - 2W については未確認
 - [ ] 音声出力 (HDMI)
 
 ## Prerequest
@@ -53,10 +50,6 @@ make
 
 また、本プログラムには以下のソフトウェアに依存しているため、再配布時にはそれぞれのライセンス条項の遵守をお願いいたします。
 
-- LZ4 Library
-  - Web Site: [https://github.com/lz4/lz4](https://github.com/lz4/lz4) - [lib](https://github.com/lz4/lz4/tree/dev/lib)
-  - License: [2-Clause BSD](../licenses-copy/lz4-library.txt)
-  - `Copyright (c) 2011-2020, Yann Collet`
 - C-BIOS
   - Web Site: [https://cbios.sourceforge.net/](https://cbios.sourceforge.net/)
   - License: [2-Clause BSD](../licenses-copy/cbios.txt)
@@ -69,10 +62,6 @@ make
   - `Copyright (c) 2004-2006 Joost Yervante Damad.  All rights reserved.`
   - `Copyright (c) 2004-2006 Jussi Pitkänen.  All rights reserved.`
   - `Copyright (c) 2004-2007 Eric Boon.  All rights reserved.`
-- emu2413
-  - Web Site: [https://github.com/digital-sound-antiques/emu2413](https://github.com/digital-sound-antiques/emu2413)
-  - License: [MIT](../licenses-copy/emu2413.txt)
-  - `Copyright (c) 2001-2019 Mitsutaka Okazaki`
 - Circle
     - Web Site: [https://github.com/rsta2/circle](https://github.com/rsta2/circle)
     - License: [GPLv3](../licenses-copy/circle.txt)
