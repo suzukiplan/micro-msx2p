@@ -22,7 +22,11 @@
 #include "roms.hpp"
 #include <circle/timer.h>
 
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+CKernel::CKernel(void) : screen(320, 240)
+#else
 CKernel::CKernel(void) : screen(640, 480)
+#endif
 {
 }
 
@@ -53,6 +57,18 @@ TShutdownMode CKernel::run(void)
         // TODO: play sound
         uint16_t* display = msx2.getDisplay();
         uint16_t* hdmi = (uint16_t*)buffer->GetBuffer();
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+        for (int y = 0; y < 240; y++) {
+            memcpy(hdmi + 18, display, 284 * 2);
+            for (int x = 0; x < 18; x++) {
+                hdmi[x] = display[0];
+                hdmi[x + 302] = display[0];
+            }
+            memcpy(hdmi + pitch, hdmi, 320 * 2);
+            display += 284;
+            hdmi += pitch;
+        }
+#else
         for (int y = 0; y < 480; y += 2) {
             memcpy(hdmi + 36, display, 568 * 2);
             for (int x = 0; x < 36; x++) {
@@ -63,6 +79,7 @@ TShutdownMode CKernel::run(void)
             display += 568;
             hdmi += pitch * 2;
         }
+#endif
     }
 
     while (1) {
