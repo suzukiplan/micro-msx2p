@@ -25,9 +25,15 @@
 #include <circle/exceptionhandler.h>
 #include <circle/interrupt.h>
 #include <circle/koptions.h>
+#include <circle/logger.h>
+#include <circle/sched/scheduler.h>
 #include <circle/screen.h>
 #include <circle/serial.h>
+#include <circle/sound/soundbasedevice.h>
+#include <circle/timer.h>
 #include <circle/types.h>
+#include <vc4/sound/vchiqsounddevice.h>
+#include <vc4/vchiq/vchiqdevice.h>
 
 enum TShutdownMode {
     ShutdownNone,
@@ -53,6 +59,11 @@ class CKernel
     CSerialDevice serial;
     CExceptionHandler exceptionHandler;
     CInterruptSystem interrupt;
+    CTimer timer;
+    CLogger logger;
+    CScheduler scheduler;
+    CVCHIQDevice vchiq;
+    CVCHIQSoundDevice sound;
 };
 
 #endif
