@@ -39,8 +39,27 @@
 |[msx1-m5stack](./msx1-m5stack)|M5Stack CoreS3|MSX1|
 |[msx1-m5stamps3](./msx1-m5stamps3)|M5StampS3|MSX1|
 |[msx2-sdl2](./msx2-sdl2)|SDL2 (macOS and Linux)|MSX2+|
-|[msx1-rpizero](./msx1-rpizero)|RaspberryPi Zero, Zero W, Zero WH (Baremetal)|MSX1|
-|[msx2-rpizero](./msx2-rpizero)|RaspberryPi Zero, Zero W, Zero WH (Baremetal)|MSX2+|
+|[msx1-rpizero](./msx1-rpizero)|RaspberryPi Zero, Zero W, Zero WH (Bare Metal)|MSX1|
+|[msx2-rpizero](./msx2-rpizero)|RaspberryPi Zero, Zero W, Zero WH (Bare Metal)|MSX2+|
+
+Following platform support is now planning:
+
+|Directory|Platform|Core|
+|:-|:-|:-|
+|msx1-rpizero2|RaspberryPi Zero 2W (Bare Metal)|MSX1|
+|msx2-rpizero2|RaspberryPi Zero 2W (Bare Metal)|MSX2+|
+|msx1-rpi4b|RaspberryPi 4 model B (Bare Metal)|MSX1|
+|msx2-rpi4b|RaspberryPi 4 model B (Bare Metal)|MSX2+|
+|msx1-dotnet-wpf|Windows .NET Framework|MSX1|
+|msx2-dotnet-wpf|Windows .NET Framework|MSX2+|
+|msx1-uwp|Universal Windows Platform|MSX1|
+|msx2-uwp|Universal Windows Platform|MSX2+|
+|msx1-win32|Windows native x86 (32bit)|MSX1|
+|msx2-win32|Windows native x86 (32bit)|MSX2+|
+|msx1-win64|Windows native x64|MSX1|
+|msx2-win64|Windows native x64|MSX2+|
+|msx1-win64a|Windows native ARMv8|MSX1|
+|msx2-win64a|Windows native ARMv8|MSX2+|
 
 ## Unimplemented Features
 
