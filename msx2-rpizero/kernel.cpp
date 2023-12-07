@@ -44,24 +44,24 @@ TShutdownMode CKernel::run(void)
     msx2.setup(3, 0, 0, (void*)rom_cbios_sub, 0x4000, "SUB");
     msx2.setupRAM(3, 3);
     msx2.loadRom((void*)rom_game, sizeof(rom_game), MSX2_ROM_TYPE_NORMAL); // modify here if use mega rom
+    auto buffer = screen.GetFrameBuffer();
+    int pitch = buffer->GetPitch() / sizeof(TScreenColor);
     while (1) {
         msx2.tick(0, 0, 0);
         size_t pcmSize;
         msx2.getSound(&pcmSize);
         // TODO: play sound
         uint16_t* display = msx2.getDisplay();
+        uint16_t* hdmi = (uint16_t*)buffer->GetBuffer();
         for (int y = 0; y < 480; y += 2) {
-            for (int x = 0; x < 568; x++) {
-                screen.SetPixel(x + 36, y, display[x]);
-                screen.SetPixel(x + 36, y + 1, display[x]);
-            }
+            memcpy(hdmi + 36, display, 568 * 2);
             for (int x = 0; x < 36; x++) {
-                screen.SetPixel(x, y, display[0]);
-                screen.SetPixel(x + 604, y, display[567]);
-                screen.SetPixel(x, y + 1, display[0]);
-                screen.SetPixel(x + 604, y + 1, display[567]);
+                hdmi[x] = display[0];
+                hdmi[x + 604] = display[0];
             }
+            memcpy(hdmi + pitch, hdmi, 640 * 2);
             display += 568;
+            hdmi += pitch * 2;
         }
     }
 
