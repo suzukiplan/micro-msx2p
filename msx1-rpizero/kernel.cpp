@@ -46,7 +46,7 @@ TShutdownMode CKernel::run(void)
 
     unsigned char ram[0x4000];
     TMS9918A::Context vram;
-    MSX1 msx1(TMS9918A::ColorMode::RGB555, ram, sizeof(ram), &vram, [](void* arg, int frame, int line, unsigned short* display) {
+    MSX1 msx1(TMS9918A::ColorMode::RGB565, ram, sizeof(ram), &vram, [](void* arg, int frame, int line, unsigned short* display) {
         memcpy(&hdmiBuffer[line * hdmiPitch], display, 512);
     });
     msx1.setup(0, 0, (void*)rom_cbios_main_msx1, 0x8000, "MAIN");
