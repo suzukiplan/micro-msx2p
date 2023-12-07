@@ -2,16 +2,20 @@
 
 RaspberryPi Zero シリーズ全般（無印、W、WH、2W）のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX2+ コア) の実装例です。
 
+ただし、RaspberryPi Zero の 無印、W、WH では十分なパフォーマンスを発揮できません。
+
+[MSX1 コア版](../msx1-rpizero) なら 無印、W、WH でも 60fps で動作するので、それらをターゲットにする場合は MSX1 向けのゲーム開発をご検討ください。
+
+> 想定ターゲットは RaspberryPi Zero ですが、RaspberryPi 2〜4 あたりでも動作する可能性があります。
 > 通常の Linux 環境で動作させたい場合は [SDL2版](../msx2-sdl2) を用いてください。
 
 ## WIP Status
 
 - [x] 映像出力（HDMI）
 - [x] micro MSX2+ 組み込み
-- [ ] micro MSX2+ 性能改善
-  - 現状 RaspberryPi Zero の 無印、W、WH では実用的ではない水準の動作をします
-  - 2W については未確認
 - [ ] 音声出力 (HDMI)
+- [ ] USBキーボード入力
+- [ ] USBゲームパッド入力
 
 ## Prerequest
 
