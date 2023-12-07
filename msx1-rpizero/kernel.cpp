@@ -52,10 +52,14 @@ TShutdownMode CKernel::run(void)
     msx1.setup(0, 0, (void*)rom_cbios_main_msx1, 0x8000, "MAIN");
     msx1.setup(0, 4, (void*)rom_cbios_logo_msx1, 0x4000, "LOGO");
     msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL); // modify here if use mega rom
+    int swap = 0;
     while (1) {
         msx1.tick(0, 0, 0);
         size_t pcmSize;
         msx1.getSound(&pcmSize);
+        swap = 192 - swap;
+		buffer->SetVirtualOffset(0, swap);
+		buffer->WaitForVerticalSync();
     }
 
     while (1) {
