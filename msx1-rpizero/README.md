@@ -66,7 +66,9 @@ make
   - `Copyright (c) 2004-2006 Jussi Pitkänen.  All rights reserved.`
   - `Copyright (c) 2004-2007 Eric Boon.  All rights reserved.`
 - Circle
-    - Web Site: [https://github.com/rsta2/circle](https://github.com/rsta2/circle)
+    - Web Site:
+      - [https://circle-rpi.readthedocs.io/](https://circle-rpi.readthedocs.io/)
+      - [https://github.com/rsta2/circle](https://github.com/rsta2/circle)
     - License: [GPLv3](../licenses-copy/circle.txt)
 - SUZUKI PLAN - Z80 Emulator
   - Web Site: [https://github.com/suzukiplan/z80](https://github.com/suzukiplan/z80)

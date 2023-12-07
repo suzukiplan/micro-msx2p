@@ -78,7 +78,9 @@ make
   - License: [MIT](../licenses-copy/emu2413.txt)
   - `Copyright (c) 2001-2019 Mitsutaka Okazaki`
 - Circle
-    - Web Site: [https://github.com/rsta2/circle](https://github.com/rsta2/circle)
+    - Web Site:
+      - [https://circle-rpi.readthedocs.io/](https://circle-rpi.readthedocs.io/)
+      - [https://github.com/rsta2/circle](https://github.com/rsta2/circle)
     - License: [GPLv3](../licenses-copy/circle.txt)
 - SUZUKI PLAN - Z80 Emulator
   - Web Site: [https://github.com/suzukiplan/z80](https://github.com/suzukiplan/z80)
