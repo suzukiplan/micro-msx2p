@@ -1,9 +1,10 @@
 # [WIP] micro MSX2+ for RaspberryPi Zero (Bare Metal)
 
-RaspberryPi Zero シリーズ全般（無印、W、WH、2W）のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX1 コア) の実装例です。
+RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX1 コア) の実装例です。
 
-> 想定ターゲットは RaspberryPi Zero ですが、RaspberryPi 2〜4 あたりでも動作する可能性があります。
-> 通常の Linux 環境で動作させたい場合は [SDL2版](../msx2-sdl2) を用いてください。
+- RaspberryPi Zero 2W では動作しません
+- 想定ターゲットは RaspberryPi Zero ですが、初代 RaspberryPi でも動作する可能性があります
+- 通常の Linux 環境（Raspbian や DietPi）で動作させたい場合は [SDL2版](../msx2-sdl2) を用いてください
 
 ## WIP Status
 

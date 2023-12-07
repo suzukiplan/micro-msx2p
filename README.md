@@ -39,8 +39,8 @@
 |[msx1-m5stack](./msx1-m5stack)|M5Stack CoreS3|MSX1|
 |[msx1-m5stamps3](./msx1-m5stamps3)|M5StampS3|MSX1|
 |[msx2-sdl2](./msx2-sdl2)|SDL2 (macOS and Linux)|MSX2+|
-|[msx1-rpizero](./msx1-rpizero)|RaspberryPi Zero series (Baremetal)|MSX1|
-|[msx2-rpizero](./msx2-rpizero)|RaspberryPi Zero series (Baremetal)|MSX2+|
+|[msx1-rpizero](./msx1-rpizero)|RaspberryPi Zero, Zero W, Zero WH (Baremetal)|MSX1|
+|[msx2-rpizero](./msx2-rpizero)|RaspberryPi Zero, Zero W, Zero WH (Baremetal)|MSX2+|
 
 ## Unimplemented Features
 
