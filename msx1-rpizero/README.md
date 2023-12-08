@@ -50,8 +50,10 @@ make
 ### Launch Sequence
 
 1. RaspberryPi Zero の SD カードスロットに準備した SD カードを挿入
-2. HDMI ケーブルで RaspberryPi Zero と 640x480 以上の解像度のモニタ（テレビ等）を接続
+2. HDMI ケーブルで RaspberryPi Zero と 640x480 以上の解像度でリフレッシュレート 60Hz のモニタ（テレビ等）を接続
 3. USB ケーブルで RaspberryPi Zero へ給電
+
+> リフレッシュレートが 60Hz よりも速いモニタでは正常に動作しない可能性があります。
 
 ## License
 
