@@ -25,10 +25,12 @@ format:
 	make execute-format FILENAME=./msx2-rpizero/main.cpp
 	make execute-format FILENAME=./msx2-rpizero/kernel.h
 	make execute-format FILENAME=./msx2-rpizero/kernel.cpp
+	make execute-format FILENAME=./msx2-rpizero/kernel_run.cpp
 	make execute-format FILENAME=./msx2-rpizero/std.c
 	make execute-format FILENAME=./msx1-rpizero/main.cpp
 	make execute-format FILENAME=./msx1-rpizero/kernel.h
 	make execute-format FILENAME=./msx1-rpizero/kernel.cpp
+	make execute-format FILENAME=./msx1-rpizero/kernel_run.cpp
 	make execute-format FILENAME=./msx1-rpizero/std.c
 
 execute-format:

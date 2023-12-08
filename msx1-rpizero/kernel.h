@@ -32,6 +32,7 @@
 #include <circle/sound/soundbasedevice.h>
 #include <circle/timer.h>
 #include <circle/types.h>
+#include <vc4/sound/vchiqsoundbasedevice.h>
 #include <vc4/sound/vchiqsounddevice.h>
 #include <vc4/vchiq/vchiqdevice.h>
 

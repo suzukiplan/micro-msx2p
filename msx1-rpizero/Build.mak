@@ -17,6 +17,7 @@ OBJS =\
 	main.o\
 	std.o\
 	kernel.o\
+	kernel_run.o\
 	rom_cbios_main_msx1.o\
 	rom_cbios_logo_msx1.o\
 	rom_game.o

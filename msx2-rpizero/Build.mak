@@ -17,6 +17,7 @@ OBJS =\
 	main.o\
 	std.o\
 	kernel.o\
+	kernel_run.o\
 	lz4.o\
 	emu2413.o\
 	rom_cbios_main_msx2p.o\

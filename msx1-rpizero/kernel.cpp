@@ -18,12 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include "msx1.hpp"
-#include "roms.hpp"
-#include <vc4/sound/vchiqsoundbasedevice.h>
-
-static uint16_t* hdmiBuffer;
-static int hdmiPitch;
 
 CKernel::CKernel(void) : screen(256, 192),
                          timer(&interrupt),
@@ -75,46 +69,4 @@ boolean CKernel::initialize(void)
         led.Off();
     }
     return bOK;
-}
-
-TShutdownMode CKernel::run(void)
-{
-    auto buffer = screen.GetFrameBuffer();
-    hdmiPitch = buffer->GetPitch() / sizeof(TScreenColor);
-    hdmiBuffer = (uint16_t*)buffer->GetBuffer();
-
-    unsigned char ram[0x4000];
-    TMS9918A::Context vram;
-    MSX1 msx1(TMS9918A::ColorMode::RGB565, ram, sizeof(ram), &vram, [](void* arg, int frame, int line, unsigned short* display) {
-        memcpy(&hdmiBuffer[line * hdmiPitch], display, 512);
-    });
-    msx1.psg.setVolume(4);
-    msx1.setup(0, 0, (void*)rom_cbios_main_msx1, 0x8000, "MAIN");
-    msx1.setup(0, 4, (void*)rom_cbios_logo_msx1, 0x4000, "LOGO");
-    msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL); // modify here if use mega rom
-    msx1.reset();
-    msx1.psg.reset(320);
-    sound.SetControl(VCHIQ_SOUND_VOLUME_MAX);
-
-    // main loop
-    int swap = 0;
-    while (1) {
-        // execute MSX tick and rendering
-        msx1.tick(0, 0, 0);
-
-        // flip screen and wait V-SYNC
-        swap = 192 - swap;
-        buffer->SetVirtualOffset(0, swap);
-        buffer->WaitForVerticalSync();
-
-        // play sound
-        size_t pcmSize;
-        int16_t* pcmData = (int16_t*)msx1.getSound(&pcmSize);
-        while (sound.PlaybackActive()) {
-            scheduler.Sleep(1);
-        }
-        sound.Playback(pcmData, pcmSize / 2, 1, 16);
-    }
-
-    return ShutdownHalt;
 }

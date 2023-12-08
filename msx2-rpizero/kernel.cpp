@@ -18,12 +18,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
-#include "msx2.hpp"
-#include "roms.hpp"
-#include <vc4/sound/vchiqsoundbasedevice.h>
-
-static uint16_t* hdmiBuffer;
-static int hdmiPitch;
 
 CKernel::CKernel(void) :
 #ifdef MSX2_DISPLAY_HALF_HORIZONTAL
@@ -80,61 +74,4 @@ boolean CKernel::initialize(void)
         led.Off();
     }
     return bOK;
-}
-
-TShutdownMode CKernel::run(void)
-{
-    auto buffer = screen.GetFrameBuffer();
-    hdmiPitch = buffer->GetPitch() / sizeof(TScreenColor);
-    hdmiBuffer = (uint16_t*)buffer->GetBuffer();
-    MSX2 msx2(MSX2_COLOR_MODE_RGB565);
-    msx2.setupSecondaryExist(false, false, false, true);
-    msx2.setup(0, 0, 0, (void*)rom_cbios_main_msx2p, 0x8000, "MAIN");
-    msx2.setup(0, 0, 4, (void*)rom_cbios_logo_msx2p, 0x4000, "LOGO");
-    msx2.setup(3, 0, 0, (void*)rom_cbios_sub, 0x4000, "SUB");
-    msx2.setupRAM(3, 3);
-    msx2.loadRom((void*)rom_game, sizeof(rom_game), MSX2_ROM_TYPE_NORMAL); // modify here if use mega rom
-    int swap = 0;
-    while (1) {
-        msx2.tick(0, 0, 0);
-        uint16_t* display = msx2.getDisplay();
-        uint16_t* hdmi = hdmiBuffer;
-#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
-        for (int y = 0; y < 240; y++) {
-            memcpy(hdmi + 18, display, 284 * 2);
-            for (int x = 0; x < 18; x++) {
-                hdmi[x] = display[0];
-                hdmi[x + 302] = display[0];
-            }
-            memcpy(hdmi + pitch, hdmi, 320 * 2);
-            display += 284;
-            hdmi += hdmiPitch;
-        }
-        swap = 240 - swap;
-#else
-        for (int y = 0; y < 480; y += 2) {
-            memcpy(hdmi + 36, display, 568 * 2);
-            for (int x = 0; x < 36; x++) {
-                hdmi[x] = display[0];
-                hdmi[x + 604] = display[0];
-            }
-            memcpy(hdmi + hdmiPitch, hdmi, 640 * 2);
-            display += 568;
-            hdmi += hdmiPitch * 2;
-        }
-        swap = 480 - swap;
-#endif
-        buffer->SetVirtualOffset(0, swap);
-        buffer->WaitForVerticalSync();
-
-        // play sound
-        size_t pcmSize;
-        int16_t* pcmData = (int16_t*)msx2.getSound(&pcmSize);
-        while (sound.PlaybackActive()) {
-            scheduler.Sleep(1);
-        }
-        sound.Playback(pcmData, pcmSize / 2, 1, 16);
-    }
-
-    return ShutdownHalt;
 }
