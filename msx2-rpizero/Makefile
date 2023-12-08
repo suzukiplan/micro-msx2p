@@ -13,6 +13,8 @@ all:
 	make $(ROMS)
 	make roms.hpp
 	cd ../tools/circle && ./makeall
+	cd ../tools/circle/addon/linux && make
+	cd ../tools/circle/addon/vc4 && ./makeall --nosample
 	make -f Build.mak
 	@echo Build succeed!
 	@echo -------------------------------------------------------------------------------

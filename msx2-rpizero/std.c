@@ -26,23 +26,20 @@
  */
 #include <circle/startup.h>
 #include <stdarg.h>
-#include <stdio.h>
-#include <time.h>
 
 void exit(int code)
 {
     halt();
 }
 
-time_t time(time_t* second)
+signed long time(signed long* second)
 {
     return 0;
 }
 
-struct tm* localtime(const time_t* _timer)
+void* localtime(const signed long* _timer)
 {
-    static struct tm result;
-    return &result;
+    return (void*)0;
 }
 
 int printf(const char* format, ...)
@@ -53,14 +50,4 @@ int printf(const char* format, ...)
 int puts(const char* text)
 {
     return 0;
-}
-
-int snprintf(char* buffer, size_t size, const char* format, ...)
-{
-    return 0;
-}
-
-int vsnprintf(char* buffer, size_t size, const char* format, va_list arg)
-{
-    return snprintf(buffer, size, format, arg);
 }

@@ -1,6 +1,5 @@
 # [WIP] micro MSX2+ for RaspberryPi Zero (Bare Metal)
 
-
 RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX2+ コア) の実装例です。
 
 - RaspberryPi Zero 2W では動作しません
@@ -17,7 +16,7 @@ RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS�
 
 - [x] 映像出力（HDMI）
 - [x] micro MSX2+ 組み込み
-- [ ] 音声出力 (HDMI)
+- [x] 音声出力 (HDMI)
 - [ ] USBキーボード入力
 - [ ] USBゲームパッド入力
 
@@ -57,7 +56,7 @@ make
 
 ## License
 
-本プログラムのライセンスは [MIT](LICENSE.txt) とします。
+本プログラムのライセンスは [MIT](../LICENSE.txt) とします。
 
 また、本プログラムには以下のソフトウェアに依存しているため、再配布時にはそれぞれのライセンス条項の遵守をお願いいたします。
 

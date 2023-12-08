@@ -26,7 +26,7 @@ RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS�
 git clone https://github.com/suzukiplan/micro-msx2p
 
 # リポジトリのディレクトリへ移動
-cd micro-msx2p/msx2-rpizero
+cd micro-msx2p/msx1-rpizero
 
 # ビルド
 make
@@ -50,7 +50,7 @@ make
 
 ## License
 
-本プログラムのライセンスは [MIT](LICENSE.txt) とします。
+本プログラムのライセンスは [MIT](../LICENSE.txt) とします。
 
 また、本プログラムには以下のソフトウェアに依存しているため、再配布時にはそれぞれのライセンス条項の遵守をお願いいたします。
 

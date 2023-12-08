@@ -20,14 +20,23 @@
 #include "kernel.h"
 #include "msx2.hpp"
 #include "roms.hpp"
-#include <circle/timer.h>
+#include <vc4/sound/vchiqsoundbasedevice.h>
 
+static uint16_t* hdmiBuffer;
+static int hdmiPitch;
+
+CKernel::CKernel(void) :
 #ifdef MSX2_DISPLAY_HALF_HORIZONTAL
-CKernel::CKernel(void) : screen(320, 240)
+                         screen(320, 240),
 #else
-CKernel::CKernel(void) : screen(640, 480)
+                         screen(640, 480),
 #endif
+                         timer(&interrupt),
+                         logger(options.GetLogLevel(), &timer),
+                         vchiq(CMemorySystem::Get(), &interrupt),
+                         sound(&vchiq, (TVCHIQSoundDestination)options.GetSoundOption())
 {
+    led.Blink(5); // show we are alive
 }
 
 CKernel::~CKernel(void)
@@ -36,11 +45,48 @@ CKernel::~CKernel(void)
 
 boolean CKernel::initialize(void)
 {
-    return screen.Initialize();
+    boolean bOK = TRUE;
+    led.On();
+
+    if (bOK) {
+        bOK = screen.Initialize();
+    }
+
+    if (bOK) {
+        bOK = serial.Initialize(115200);
+    }
+
+    if (bOK) {
+        CDevice* target = deviceNameService.GetDevice(options.GetLogDevice(), FALSE);
+        if (target == 0) {
+            target = &screen;
+        }
+        bOK = logger.Initialize(target);
+    }
+
+    if (bOK) {
+        bOK = interrupt.Initialize();
+    }
+
+    if (bOK) {
+        bOK = timer.Initialize();
+    }
+
+    if (bOK) {
+        bOK = vchiq.Initialize();
+    }
+
+    if (bOK) {
+        led.Off();
+    }
+    return bOK;
 }
 
 TShutdownMode CKernel::run(void)
 {
+    auto buffer = screen.GetFrameBuffer();
+    hdmiPitch = buffer->GetPitch() / sizeof(TScreenColor);
+    hdmiBuffer = (uint16_t*)buffer->GetBuffer();
     MSX2 msx2(MSX2_COLOR_MODE_RGB565);
     msx2.setupSecondaryExist(false, false, false, true);
     msx2.setup(0, 0, 0, (void*)rom_cbios_main_msx2p, 0x8000, "MAIN");
@@ -48,15 +94,11 @@ TShutdownMode CKernel::run(void)
     msx2.setup(3, 0, 0, (void*)rom_cbios_sub, 0x4000, "SUB");
     msx2.setupRAM(3, 3);
     msx2.loadRom((void*)rom_game, sizeof(rom_game), MSX2_ROM_TYPE_NORMAL); // modify here if use mega rom
-    auto buffer = screen.GetFrameBuffer();
-    int pitch = buffer->GetPitch() / sizeof(TScreenColor);
+    int swap = 0;
     while (1) {
         msx2.tick(0, 0, 0);
-        size_t pcmSize;
-        msx2.getSound(&pcmSize);
-        // TODO: play sound
         uint16_t* display = msx2.getDisplay();
-        uint16_t* hdmi = (uint16_t*)buffer->GetBuffer();
+        uint16_t* hdmi = hdmiBuffer;
 #ifdef MSX2_DISPLAY_HALF_HORIZONTAL
         for (int y = 0; y < 240; y++) {
             memcpy(hdmi + 18, display, 284 * 2);
@@ -66,8 +108,9 @@ TShutdownMode CKernel::run(void)
             }
             memcpy(hdmi + pitch, hdmi, 320 * 2);
             display += 284;
-            hdmi += pitch;
+            hdmi += hdmiPitch;
         }
+        swap = 240 - swap;
 #else
         for (int y = 0; y < 480; y += 2) {
             memcpy(hdmi + 36, display, 568 * 2);
@@ -75,19 +118,23 @@ TShutdownMode CKernel::run(void)
                 hdmi[x] = display[0];
                 hdmi[x + 604] = display[0];
             }
-            memcpy(hdmi + pitch, hdmi, 640 * 2);
+            memcpy(hdmi + hdmiPitch, hdmi, 640 * 2);
             display += 568;
-            hdmi += pitch * 2;
+            hdmi += hdmiPitch * 2;
         }
+        swap = 480 - swap;
 #endif
+        buffer->SetVirtualOffset(0, swap);
+        buffer->WaitForVerticalSync();
+
+        // play sound
+        size_t pcmSize;
+        int16_t* pcmData = (int16_t*)msx2.getSound(&pcmSize);
+        while (sound.PlaybackActive()) {
+            scheduler.Sleep(1);
+        }
+        sound.Playback(pcmData, pcmSize / 2, 1, 16);
     }
 
-    while (1) {
-        led.On();
-        CTimer::SimpleMsDelay(100);
-
-        led.Off();
-        CTimer::SimpleMsDelay(100);
-    }
     return ShutdownHalt;
 }

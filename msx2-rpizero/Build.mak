@@ -11,8 +11,10 @@ CPPFLAGS += -DZ80_CALLBACK_PER_INSTRUCTION
 CPPFLAGS += -DZ80_UNSUPPORT_16BIT_PORT
 CPPFLAGS += -DZ80_NO_FUNCTIONAL
 CPPFLAGS += -DZ80_NO_EXCEPTION
-CPPFLAGS += -DMSX2_DISPLAY_HALF_HORIZONTAL
-OBJS = main.o\
+CPPFLAGS += -D_TIME_T_DECLARED
+#CPPFLAGS += -DMSX2_DISPLAY_HALF_HORIZONTAL
+OBJS =\
+	main.o\
 	std.o\
 	kernel.o\
 	lz4.o\
@@ -21,6 +23,12 @@ OBJS = main.o\
 	rom_cbios_logo_msx2p.o\
 	rom_cbios_sub.o\
 	rom_game.o
-LIBS = $(CIRCLEHOME)/lib/libcircle.a
+LIBS =\
+	$(CIRCLEHOME)/lib/libcircle.a\
+	$(CIRCLEHOME)/lib/sound/libsound.a\
+	$(CIRCLEHOME)/lib/sched/libsched.a\
+	$(CIRCLEHOME)/addon/vc4/vchiq/libvchiq.a\
+	$(CIRCLEHOME)/addon/vc4/sound/libvchiqsound.a\
+	$(CIRCLEHOME)/addon/linux/liblinuxemu.a
 include $(CIRCLEHOME)/Rules.mk
 -include $(DEPS)
