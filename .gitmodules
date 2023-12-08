@@ -4,3 +4,6 @@
 [submodule "tools/circle"]
 	path = tools/circle
 	url = https://github.com/rsta2/circle
+[submodule "tools/circle64"]
+	path = tools/circle64
+	url = https://github.com/rsta2/circle
