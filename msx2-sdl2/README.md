@@ -62,7 +62,8 @@ usage: app [/path/to/file.rom] ........... Use ROM
                | konami+scc .............. MegaRom: KONAMI+SCC
                }]
            [-d /path/to/disk*.dsk ...] ... Use Floppy Disk(s) *Max 9 disks
-           [-g { OpenGL .................. GPU: OpenGL <default>
+           [-g { None .................... GPU: Do not use
+               | OpenGL .................. GPU: OpenGL <default>
                | Vulkan .................. GPU: Vulkan
                | Metal ................... GPU: Metal
                }]
