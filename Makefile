@@ -32,6 +32,11 @@ format:
 	make execute-format FILENAME=./msx1-rpizero/kernel.cpp
 	make execute-format FILENAME=./msx1-rpizero/kernel_run.cpp
 	make execute-format FILENAME=./msx1-rpizero/std.c
+	make execute-format FILENAME=./msx2-rpizero2/main.cpp
+	make execute-format FILENAME=./msx2-rpizero2/kernel.h
+	make execute-format FILENAME=./msx2-rpizero2/kernel.cpp
+	make execute-format FILENAME=./msx2-rpizero2/kernel_run.cpp
+	make execute-format FILENAME=./msx2-rpizero2/std.c
 
 execute-format:
 	clang-format -style=file < ${FILENAME} > ${FILENAME}.bak

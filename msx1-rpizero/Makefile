@@ -27,6 +27,9 @@ all:
 
 clean:
 	make -f Build.mak clean
+	cd ../tools/circle && ./makeall clean
+	cd ../tools/circle/addon/linux && make clean
+	cd ../tools/circle/addon/vc4 && ./makeall clean
 
 rom_cbios_main_msx1.c: bios/cbios_main_msx1.rom
 	../tools/bin2var/bin2var bios/cbios_main_msx1.rom > rom_cbios_main_msx1.c

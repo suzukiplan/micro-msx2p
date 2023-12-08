@@ -27,6 +27,8 @@ __ただし、RaspberryPi Zero の 無印、W、WH では十分なパフォー�
 - GNU Make
 - CLANG
 - [GNU Arm Embedded Toolchain](https://developer.arm.com/downloads/-/gnu-rm)
+  - `arm-none-eabi` をダウンロード & インストールしてパスを切ってください
+  - macOS: `/Applications/ARM/bin`
 
 ## How to Build
 
@@ -58,6 +60,12 @@ make
 3. USB ケーブルで RaspberryPi Zero へ給電
 
 > リフレッシュレートが 60Hz よりも速いモニタでは正常に動作しない可能性があります。
+
+## Replace to your game ROM
+
+- [./bios/game.rom](./bios/game.rom) を起動対象のゲーム ROM ファイルに置換
+- メガROM の場合 [./kernel_run.cpp](./kernel_run.cpp) の `msx2.loadRom` の引数を修正
+- `make`
 
 ## License
 
