@@ -1109,9 +1109,15 @@ class V9958
                 }
                 if (this->isMaskLeft8px()) {
                     auto borderColor = this->getBackdropColor();
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+                    for (int i = 0; i < 8; i++) {
+                        renderPosition[i] = borderColor;
+                    }
+#else
                     for (int i = 0; i < 16; i++) {
                         renderPosition[i] = borderColor;
                     }
+#endif
                 }
             } else
                 return;
