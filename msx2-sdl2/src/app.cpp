@@ -209,6 +209,8 @@ int main(int argc, char* argv[])
                     gpuType = SDL_WINDOW_VULKAN;
                 } else if (0 == strcasecmp(argv[i], "Metal")) {
                     gpuType = SDL_WINDOW_METAL;
+                } else if (0 == strcasecmp(argv[i], "None")) {
+                    gpuType = 0;
                 }
                 break;
             case 'h':
@@ -264,7 +266,8 @@ int main(int argc, char* argv[])
         puts("               | konami+scc .............. MegaRom: KONAMI+SCC");
         puts("               }]");
         puts("           [-d /path/to/disk*.dsk ...] ... Use Floppy Disk(s) *Max 9 disks");
-        puts("           [-g { OpenGL .................. GPU: OpenGL <default>");
+        puts("           [-g { None .................... GPU: Do not use");
+        puts("               | OpenGL .................. GPU: OpenGL <default>");
         puts("               | Vulkan .................. GPU: Vulkan");
         puts("               | Metal ................... GPU: Metal");
         puts("               }]");
