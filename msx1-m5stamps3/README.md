@@ -129,6 +129,18 @@ make build
 
 また、本プログラムには以下のソフトウェアに依存しているため、再配布時にはそれぞれのライセンス条項の遵守をお願いいたします。
 
+- C-BIOS
+  - Web Site: [https://cbios.sourceforge.net/](https://cbios.sourceforge.net/)
+  - License: [2-Clause BSD](../licenses-copy/cbios.txt)
+  - `Copyright (c) 2002-2005 BouKiCHi.  All rights reserved.`
+  - `Copyright (c) 2003 Reikan.  All rights reserved.`
+  - `Copyright (c) 2004-2006,2008-2010 Maarten ter Huurne.  All rights reserved.`
+  - `Copyright (c) 2004-2006,2008-2011 Albert Beevendorp.  All rights reserved.`
+  - `Copyright (c) 2004-2005 Patrick van Arkel.  All rights reserved.`
+  - `Copyright (c) 2004,2010-2011 Manuel Bilderbeek.  All rights reserved.`
+  - `Copyright (c) 2004-2006 Joost Yervante Damad.  All rights reserved.`
+  - `Copyright (c) 2004-2006 Jussi Pitkänen.  All rights reserved.`
+  - `Copyright (c) 2004-2007 Eric Boon.  All rights reserved.`
 - LovyanGFX
     - Web Site: [https://github.com/lovyan03/LovyanGFX](https://github.com/lovyan03/LovyanGFX)
     - License: [FreeBSD](../licenses-copy/LovyanGFX.txt)

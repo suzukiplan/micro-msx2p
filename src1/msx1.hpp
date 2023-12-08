@@ -177,10 +177,10 @@ class MSX1
         this->mmu.setupRAM(ram, ramSize);
         this->vdp.initialize(
             colorMode, this, [](void* arg) { ((MSX1*)arg)->cpu.generateIRQ(0x07); }, [](void* arg) { ((MSX1*)arg)->cpu.requestBreak(); }, displayCallback, vram);
-        this->cpu.setupCallbackFP([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort(port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
+        this->cpu.setupCallback([](void* arg, unsigned short addr) { return ((MSX1*)arg)->mmu.read(addr); }, [](void* arg, unsigned short addr, unsigned char value) { ((MSX1*)arg)->mmu.write(addr, value); }, [](void* arg, unsigned short port) { return ((MSX1*)arg)->inPort(port); }, [](void* arg, unsigned short port, unsigned char value) { ((MSX1*)arg)->outPort((unsigned char)port, value); }, this, false);
         this->cpu.wtc.fetch = 1;
         this->cpu.wtc.fetchM = 1;
-        this->cpu.setConsumeClockCallbackFP([](void* arg, int cpuClocks) {
+        this->cpu.setConsumeClockCallback([](void* arg, int cpuClocks) {
             ((MSX1*)arg)->consumeClock(cpuClocks);
         });
         this->initPortTable();
@@ -646,9 +646,9 @@ class MSX1
                 memcpy(&this->mmu.ctx, ptr, chunkSize);
                 this->mmu.bankSwitchover();
             } else if (0 == strcmp(chunk, "RAM")) {
-                memcpy(this->mmu.ram, ptr, chunkSize <= this->mmu.ramSize ? chunkSize : this->mmu.ramSize);
+                memcpy(this->mmu.ram, ptr, chunkSize <= (int)this->mmu.ramSize ? chunkSize : this->mmu.ramSize);
             } else if (0 == strcmp(chunk, "SRM") && this->mmu.sram) {
-                memcpy(this->mmu.sram, ptr, chunkSize <= this->mmu.sramSize ? chunkSize : this->mmu.sramSize);
+                memcpy(this->mmu.sram, ptr, chunkSize <= (int)this->mmu.sramSize ? chunkSize : this->mmu.sramSize);
             } else if (0 == strcmp(chunk, "PSG")) {
 #ifndef MSX1_REMOVE_PSG
                 memcpy(&this->psg.ctx, ptr, chunkSize);

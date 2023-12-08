@@ -183,7 +183,7 @@ class TC8566AF
         memset(buf, 0, sizeof(buf));
         memcpy(buf, data, size);
         unsigned int crc = 0;
-        for (int i = 0; i < sizeof(buf) / 4; i++) {
+        for (int i = 0; i < (int)sizeof(buf) / 4; i++) {
             crc += buf[i];
         }
         return crc;

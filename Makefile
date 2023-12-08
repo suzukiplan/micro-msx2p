@@ -22,6 +22,16 @@ format:
 	make execute-format FILENAME=./src1/tms9918a.hpp
 	make execute-format FILENAME=./src1/z80.hpp
 	make execute-format FILENAME=./msx2-sdl2/src/app.cpp
+	make execute-format FILENAME=./msx2-rpizero/main.cpp
+	make execute-format FILENAME=./msx2-rpizero/kernel.h
+	make execute-format FILENAME=./msx2-rpizero/kernel.cpp
+	make execute-format FILENAME=./msx2-rpizero/kernel_run.cpp
+	make execute-format FILENAME=./msx2-rpizero/std.c
+	make execute-format FILENAME=./msx1-rpizero/main.cpp
+	make execute-format FILENAME=./msx1-rpizero/kernel.h
+	make execute-format FILENAME=./msx1-rpizero/kernel.cpp
+	make execute-format FILENAME=./msx1-rpizero/kernel_run.cpp
+	make execute-format FILENAME=./msx1-rpizero/std.c
 
 execute-format:
 	clang-format -style=file < ${FILENAME} > ${FILENAME}.bak

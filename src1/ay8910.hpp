@@ -35,7 +35,7 @@ class AY8910
     unsigned int clock;
     unsigned char regMask[16];
     unsigned int levels[32];
-    int volume;
+    int volumeShift;
 
   public:
     struct Context {
@@ -76,11 +76,11 @@ class AY8910
     void setVolume(int volume)
     {
         switch (volume) {
-            case 0: this->volume = 16; break;
-            case 1: this->volume = 10; break; // low
-            case 2: this->volume = 7; break;  // mid
-            case 3: this->volume = 4; break;  // high
-            case 4: this->volume = 0; break;  // not shift (original)
+            case 0: this->volumeShift = 16; break;
+            case 1: this->volumeShift = 10; break; // low
+            case 2: this->volumeShift = 7; break;  // mid
+            case 3: this->volumeShift = 4; break;  // high
+            case 4: this->volumeShift = 0; break;  // not shift (original)
         }
     }
 
@@ -222,7 +222,7 @@ class AY8910
         } else {
             this->ctx.mix[ch] >>= 1;
         }
-        return (mix + this->ctx.mix[ch]) >> this->volume;
+        return (mix + this->ctx.mix[ch]) >> this->volumeShift;
     }
 };
 
