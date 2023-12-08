@@ -1,4 +1,4 @@
-# [WIP] micro MSX2+ for RaspberryPi Zero (Bare Metal)
+# micro MSX2+ for RaspberryPi Zero (Bare Metal) - MSX1 core
 
 RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX1 コア) の実装例です。
 
@@ -6,15 +6,19 @@ RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS�
 - 想定ターゲットは RaspberryPi Zero ですが、初代 RaspberryPi でも動作する可能性があります
 - 通常の Linux 環境（Raspbian や DietPi）で動作させたい場合は [SDL2版](../msx2-sdl2) を用いてください
 
-## WIP Status
-
-- [x] 映像出力（HDMI）
-- [x] micro MSX2+ (MSX1 core) 組み込み
-- [x] 音声出力 (HDMI)
-- [ ] USBキーボード入力
-- [ ] USBゲームパッド入力
-
 ## Prerequest
+
+### Hardware
+
+- RaspberryPi Zero (無印, W, WH のいずれか)
+- HDMI で映像と音声の出力に対応したディスプレイ + 接続ケーブル
+- USB ゲームパッド + 接続ケーブル
+
+> USB ゲームパッドについて:
+>
+> 本リポジトリの実装は [Elecom JC-U3312S](https://www2.elecom.co.jp/peripheral/gamepad/jc-u3312s/) で問題なく動作するキー割り当てになっています。お手持ちの USB ゲームパッドで適切に動作しない場合、[circle/sample/27-usbgamepad](https://github.com/rsta2/circle/tree/master/sample/27-usbgamepad) を動かして適切なキーコードを確認して、[kernel.cpp](kernel.cpp) の `CKernel::updateUsbStatus` を実装を修正してください。
+
+### Software
 
 - GNU Make
 - [GNU Arm Embedded Toolchain](https://developer.arm.com/downloads/-/gnu-rm)

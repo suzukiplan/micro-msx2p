@@ -32,6 +32,8 @@
 #include <circle/sound/soundbasedevice.h>
 #include <circle/timer.h>
 #include <circle/types.h>
+#include <circle/usb/usbgamepad.h>
+#include <circle/usb/usbhcidevice.h>
 #include <vc4/sound/vchiqsoundbasedevice.h>
 #include <vc4/sound/vchiqsounddevice.h>
 #include <vc4/vchiq/vchiqdevice.h>
@@ -41,6 +43,8 @@ enum TShutdownMode {
     ShutdownHalt,
     ShutdownReboot
 };
+
+extern int msxPad1;
 
 class CKernel
 {
@@ -62,9 +66,12 @@ class CKernel
     CInterruptSystem interrupt;
     CTimer timer;
     CLogger logger;
+    CUSBHCIDevice usb;
     CScheduler scheduler;
     CVCHIQDevice vchiq;
     CVCHIQSoundDevice sound;
+    CUSBGamePadDevice* volatile gamePad;
+    void updateUsbStatus(void);
 };
 
 #endif

@@ -30,6 +30,10 @@ LIBS =\
 	$(CIRCLEHOME)/lib/sched/libsched.a\
 	$(CIRCLEHOME)/addon/vc4/vchiq/libvchiq.a\
 	$(CIRCLEHOME)/addon/vc4/sound/libvchiqsound.a\
-	$(CIRCLEHOME)/addon/linux/liblinuxemu.a
+	$(CIRCLEHOME)/addon/linux/liblinuxemu.a\
+	$(CIRCLEHOME)/addon/linux/liblinuxemu.a\
+	$(CIRCLEHOME)/lib/input/libinput.a\
+	$(CIRCLEHOME)/lib/fs/libfs.a\
+	$(CIRCLEHOME)/lib/usb/libusb.a
 include $(CIRCLEHOME)/Rules.mk
 -include $(DEPS)

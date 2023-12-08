@@ -45,6 +45,8 @@ TShutdownMode CKernel::run(void)
     msx1.psg.setVolume(4);
     msx1.setup(0, 0, (void*)rom_cbios_main_msx1, 0x8000, "MAIN");
     msx1.setup(0, 4, (void*)rom_cbios_logo_msx1, 0x4000, "LOGO");
+    msx1.setupKeyAssign(0, MSX1_JOY_S1, ' ');                              // start button: SPACE
+    msx1.setupKeyAssign(0, MSX1_JOY_S2, 0x1B);                             // select button: ESC
     msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL); // modify here if use mega rom
     msx1.reset();
     msx1.psg.reset(320);
@@ -53,8 +55,8 @@ TShutdownMode CKernel::run(void)
     // main loop
     int swap = 0;
     while (1) {
-        // execute MSX tick and rendering
-        msx1.tick(0, 0, 0);
+        updateUsbStatus();
+        msx1.tick(msxPad1, 0, 0);
 
         // flip screen and wait V-SYNC
         swap = 192 - swap;

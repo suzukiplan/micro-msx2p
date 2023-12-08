@@ -18,6 +18,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "kernel.h"
+#include "msx2def.h"
+
+#define TAG "kernel"
+int msxPad1 = 0;
 
 CKernel::CKernel(void) :
 #ifdef MSX2_DISPLAY_HALF_HORIZONTAL
@@ -27,8 +31,10 @@ CKernel::CKernel(void) :
 #endif
                          timer(&interrupt),
                          logger(options.GetLogLevel(), &timer),
+                         usb(&interrupt, &timer, TRUE),
                          vchiq(CMemorySystem::Get(), &interrupt),
-                         sound(&vchiq, (TVCHIQSoundDestination)options.GetSoundOption())
+                         sound(&vchiq, (TVCHIQSoundDestination)options.GetSoundOption()),
+                         gamePad(nullptr)
 {
     led.Blink(5); // show we are alive
 }
@@ -59,19 +65,54 @@ boolean CKernel::initialize(void)
     }
 
     if (bOK) {
+        logger.Write(TAG, LogNotice, "init interrupt");
         bOK = interrupt.Initialize();
     }
 
     if (bOK) {
+        logger.Write(TAG, LogNotice, "init timer");
         bOK = timer.Initialize();
     }
 
     if (bOK) {
+        logger.Write(TAG, LogNotice, "init vchiq");
         bOK = vchiq.Initialize();
+    }
+
+    if (bOK) {
+        logger.Write(TAG, LogNotice, "init usb");
+        bOK = usb.Initialize();
     }
 
     if (bOK) {
         led.Off();
     }
     return bOK;
+}
+
+void CKernel::updateUsbStatus(void)
+{
+    if (usb.UpdatePlugAndPlay()) {
+        if (!gamePad) {
+            gamePad = (CUSBGamePadDevice*)deviceNameService.GetDevice("upad1", FALSE);
+            if (gamePad) {
+                gamePad->RegisterStatusHandler([](unsigned index, const TGamePadState* state) {
+                    msxPad1 = 0;
+                    msxPad1 |= state->axes[0].value == state->axes[0].minimum ? MSX2_JOY_LE : 0;
+                    msxPad1 |= state->axes[0].value == state->axes[0].maximum ? MSX2_JOY_RI : 0;
+                    msxPad1 |= state->axes[1].value == state->axes[1].minimum ? MSX2_JOY_UP : 0;
+                    msxPad1 |= state->axes[1].value == state->axes[1].maximum ? MSX2_JOY_DW : 0;
+                    msxPad1 |= (state->buttons & 0x0001) ? MSX2_JOY_T2 : 0;
+                    msxPad1 |= (state->buttons & 0x0002) ? MSX2_JOY_T1 : 0;
+                    msxPad1 |= (state->buttons & 0x0100) ? MSX2_JOY_S2 : 0;
+                    msxPad1 |= (state->buttons & 0x0200) ? MSX2_JOY_S1 : 0;
+                });
+            }
+        } else {
+            if (!(CUSBGamePadDevice*)deviceNameService.GetDevice("upad1", FALSE)) {
+                gamePad = nullptr;
+                msxPad1 = 0;
+            }
+        }
+    }
 }

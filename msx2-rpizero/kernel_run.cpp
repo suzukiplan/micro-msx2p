@@ -42,10 +42,13 @@ TShutdownMode CKernel::run(void)
     msx2.setup(0, 0, 4, (void*)rom_cbios_logo_msx2p, 0x4000, "LOGO");
     msx2.setup(3, 0, 0, (void*)rom_cbios_sub, 0x4000, "SUB");
     msx2.setupRAM(3, 3);
+    msx2.setupKeyAssign(0, MSX2_JOY_S1, ' ');                              // start button: SPACE
+    msx2.setupKeyAssign(0, MSX2_JOY_S2, 0x1B);                             // select button: ESC
     msx2.loadRom((void*)rom_game, sizeof(rom_game), MSX2_ROM_TYPE_NORMAL); // modify here if use mega rom
     int swap = 0;
     while (1) {
-        msx2.tick(0, 0, 0);
+        updateUsbStatus();
+        msx2.tick(msxPad1, 0, 0);
         uint16_t* display = msx2.getDisplay();
         uint16_t* hdmi = hdmiBuffer;
 #ifdef MSX2_DISPLAY_HALF_HORIZONTAL
