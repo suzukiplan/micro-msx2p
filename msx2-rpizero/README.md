@@ -20,11 +20,12 @@ __ただし、RaspberryPi Zero の 無印、W、WH では十分なパフォー�
 
 > USB ゲームパッドについて:
 >
-> 本リポジトリの実装は [Elecom JC-U3312S](https://www2.elecom.co.jp/peripheral/gamepad/jc-u3312s/) で問題なく動作するキー割り当てになっています。お手持ちの USB ゲームパッドで適切に動作しない場合、[circle/sample/27-usbgamepad](https://github.com/rsta2/circle/tree/master/sample/27-usbgamepad) を動かして適切なキーコードを確認して、[kernel.cpp](kernel.cpp) の `CKernel::updateUsbStatus` を実装を修正してください。
+> 本リポジトリの実装は [Elecom JC-U3312S](https://www2.elecom.co.jp/peripheral/gamepad/jc-u3312s/) で問題なく動作するキー割り当てになっています。お手持ちの USB ゲームパッドで適切に動作しない場合、[circle/sample/27-usbgamepad](https://github.com/rsta2/circle/tree/master/sample/27-usbgamepad) を動かして適切なキーコードを確認して、[kernel.cpp](kernel.cpp) の `CKernel::updateUsbStatus` の実装を修正してください。
 
 ### Software
 
 - GNU Make
+- CLANG
 - [GNU Arm Embedded Toolchain](https://developer.arm.com/downloads/-/gnu-rm)
 
 ## How to Build
