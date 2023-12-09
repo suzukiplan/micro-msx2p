@@ -6,9 +6,10 @@ RaspberryPi Zero 2W のベアメタル環境（OS無し）で動作する micro 
 - 想定ターゲットは RaspberryPi Zero 2W ですが、RaspberryPi 3 でも動作する可能性があります
 - 通常の Linux 環境（Raspbian や DietPi）で動作させたい場合は [SDL2版](../msx2-sdl2) を用いてください
 
-__ただし、RaspberryPi Zero の 無印、W、WH では十分なパフォーマンスを発揮できません。__
+__ただし、MSX2+ コアでは十分なパフォーマンスを発揮できません。__
 
-> [MSX1 コア](../msx1-rpizero) なら余裕をもって 60fps で動作するので、それらをターゲットにする場合は MSX1 向けのゲーム開発を検討することをお勧めします。
+> [MSX1 コア](../msx1-rpizero2) なら余裕をもって 60fps で動作するので、MSX1 向けのゲーム開発を検討することをお勧めします。
+> 引き続き MSX2+ コア向けの性能向上を検討中です。
 
 ## Prerequest
 
