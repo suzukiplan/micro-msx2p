@@ -1,3 +1,8 @@
+RASPPI = 3
+AARCH = 64
+CIRCLE = circle8
+CIRCLEHOME = ../tools/$(CIRCLE)
+
 ROMS =\
 	rom_cbios_main_msx2p.c\
 	rom_cbios_logo_msx2p.c\
@@ -5,17 +10,17 @@ ROMS =\
 	rom_game.c
 
 all:
-	cd ../tools && git submodule update --init circle64
+	cd ../tools && git submodule update --init $(CIRCLE)
 	cp ../src/* .
 	cd ../tools/bin2var && make
 	cd ../tools/bmp2img && make
 	cd ../tools/varext && make
 	make $(ROMS)
 	make roms.hpp
-	cd ../tools/circle64 && ./makeall --nosample RASPPI=3 AARCH=64
-	cd ../tools/circle64/addon/linux && make RASPPI=3 AARCH=64
-	cd ../tools/circle64/addon/vc4 && ./makeall --nosample RASPPI=3 AARCH=64
-	make -f Build.mak
+	cd $(CIRCLEHOME) && ./makeall --nosample RASPPI=$(RASPPI) AARCH=$(AARCH)
+	cd $(CIRCLEHOME)/addon/linux && make RASPPI=$(RASPPI) AARCH=$(AARCH)
+	cd $(CIRCLEHOME)/addon/vc4 && ./makeall --nosample RASPPI=$(RASPPI) AARCH=$(AARCH)
+	make -f Build.mak CIRCLEHOME=$(CIRCLEHOME) RASPPI=$(RASPPI) AARCH=$(AARCH)
 	@echo Build succeed!
 	@echo -------------------------------------------------------------------------------
 	@echo Congratulations 🎉
@@ -23,14 +28,14 @@ all:
 	@echo your SD-card and insert it into RaspberryPi Zero 2W to lanch your MSX game.
 	@echo -------------------------------------------------------------------------------
 	@echo - bootcode.bin: https://github.com/raspberrypi/firmware/blob/master/boot/bootcode.bin
-	@echo - start4.elf: https://github.com/raspberrypi/firmware/blob/master/boot/start4.elf
-	@echo - kernel8-rpi4.img: `ls -l kernel8-rpi4.img | grep kernel`
+	@echo - start.elf: https://github.com/raspberrypi/firmware/blob/master/boot/start.elf
+	@echo - kernel8.img: `ls -l kernel8.img | grep kernel`
 
 clean:
 	make -f Build.mak clean
-	cd ../tools/circle64 && ./makeall clean
-	cd ../tools/circle64/addon/linux && make clean
-	cd ../tools/circle64/addon/vc4 && ./makeall clean
+	cd ../tools/circle8 && ./makeall clean
+	cd ../tools/circle8/addon/linux && make clean
+	cd ../tools/circle8/addon/vc4 && ./makeall clean
 
 rom_cbios_main_msx2p.c: bios/cbios_main_msx2p.rom
 	../tools/bin2var/bin2var bios/cbios_main_msx2p.rom > rom_cbios_main_msx2p.c

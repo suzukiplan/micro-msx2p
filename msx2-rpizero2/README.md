@@ -3,7 +3,7 @@
 RaspberryPi Zero 2W のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX2+ コア) の実装例です。
 
 - RaspberryPi Zero, Zero W, Zero WH では動作しません
-- 想定ターゲットは RaspberryPi Zero 2W ですが、RaspberryPi 4 シリーズでも動作する可能性があります
+- 想定ターゲットは RaspberryPi Zero 2W ですが、RaspberryPi 3 でも動作する可能性があります
 - 通常の Linux 環境（Raspbian や DietPi）で動作させたい場合は [SDL2版](../msx2-sdl2) を用いてください
 
 __ただし、RaspberryPi Zero の 無印、W、WH では十分なパフォーマンスを発揮できません。__

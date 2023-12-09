@@ -58,7 +58,6 @@ TShutdownMode CKernel::run(void)
                 hdmi[x] = display[0];
                 hdmi[x + 302] = display[0];
             }
-            memcpy(hdmi + pitch, hdmi, 320 * 2);
             display += 284;
             hdmi += hdmiPitch;
         }
