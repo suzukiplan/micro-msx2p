@@ -60,7 +60,7 @@ class V9958
         int vi[262];
     } evt;
 
-    void updateEventTableH()
+    inline void updateEventTableH()
     {
         for (int i = 0; i < 1368; i++) {
             int ii = i + this->getAdjustX();
@@ -93,7 +93,7 @@ class V9958
         }
     }
 
-    void updateEventTableV()
+    inline void updateEventTableV()
     {
         for (int i = 0; i < 262; i++) {
             int ii = i + this->getAdjustY();
@@ -305,7 +305,7 @@ class V9958
         return mode;
     }
 
-    void updateEventTables()
+    inline void updateEventTables()
     {
         this->updateEventTableH();
         this->updateEventTableV();
@@ -554,31 +554,33 @@ class V9958
         }
     }
 
-    inline void tick()
+    inline void tick(int tickCount)
     {
-        // execute command
-        if (this->ctx.cmd.wait) {
-            this->ctx.cmd.wait--;
-        }
-        if (this->ctx.command && 0 == this->ctx.cmd.wait) {
-            switch (this->ctx.command) {
-                case 0b1101: this->executeCommandHMMM(false); break;
-                case 0b1100: this->executeCommandHMMV(false); break;
-                case 0b1001: this->executeCommandLMMM(false); break;
-                case 0b1000: this->executeCommandLMMV(false); break;
-                case 0b0111: this->executeCommandLINE(false); break;
-                case 0b0110: this->executeCommandSRCH(false); break;
-                case 0b0101: this->executeCommandPSET(false); break;
-                case 0b0100: this->executeCommandPOINT(false); break;
+        for (int i = 0; i < tickCount; i++) {
+            // execute command
+            if (this->ctx.cmd.wait) {
+                this->ctx.cmd.wait--;
             }
-        }
+            if (this->ctx.command && 0 == this->ctx.cmd.wait) {
+                switch (this->ctx.command) {
+                    case 0b1101: this->executeCommandHMMM(false); break;
+                    case 0b1100: this->executeCommandHMMV(false); break;
+                    case 0b1001: this->executeCommandLMMM(false); break;
+                    case 0b1000: this->executeCommandLMMV(false); break;
+                    case 0b0111: this->executeCommandLINE(false); break;
+                    case 0b0110: this->executeCommandSRCH(false); break;
+                    case 0b0101: this->executeCommandPSET(false); break;
+                    case 0b0100: this->executeCommandPOINT(false); break;
+                }
+            }
 
-        // count up (H)
-        auto htPrev = this->evt.ht[this->ctx.countH];
-        this->ctx.countH++;
-        this->ctx.countH %= 1368;
-        if (htPrev != this->evt.ht[this->ctx.countH]) {
-            tick_checkHorizontalEvents();
+            // count up (H)
+            auto htPrev = this->evt.ht[this->ctx.countH];
+            this->ctx.countH++;
+            this->ctx.countH %= 1368;
+            if (htPrev != this->evt.ht[this->ctx.countH]) {
+                tick_checkHorizontalEvents();
+            }
         }
     }
 
