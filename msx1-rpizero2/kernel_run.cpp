@@ -25,7 +25,7 @@
  * -----------------------------------------------------------------------------
  */
 #include "kernel.h"
-#include "msx2.hpp"
+#include "msx1.hpp"
 #include "roms.hpp"
 
 static uint16_t* hdmiBuffer;
@@ -35,52 +35,38 @@ TShutdownMode CKernel::run(void)
 {
     auto buffer = screen.GetFrameBuffer();
     hdmiPitch = buffer->GetPitch() / sizeof(TScreenColor);
-    hdmiBuffer = (uint16_t*)buffer->GetBuffer();
-    MSX2 msx2(MSX2_COLOR_MODE_RGB565);
-    msx2.setupSecondaryExist(false, false, false, true);
-    msx2.setup(0, 0, 0, (void*)rom_cbios_main_msx2p, 0x8000, "MAIN");
-    msx2.setup(0, 0, 4, (void*)rom_cbios_logo_msx2p, 0x4000, "LOGO");
-    msx2.setup(3, 0, 0, (void*)rom_cbios_sub, 0x4000, "SUB");
-    msx2.setupRAM(3, 3);
-    msx2.setupKeyAssign(0, MSX2_JOY_S1, ' ');                              // start button: SPACE
-    msx2.setupKeyAssign(0, MSX2_JOY_S2, 0x1B);                             // select button: ESC
-    msx2.loadRom((void*)rom_game, sizeof(rom_game), MSX2_ROM_TYPE_NORMAL); // modify here if use mega rom
+    uint64_t bufferPointer = buffer->GetBuffer(); 
+    hdmiBuffer = (uint16_t*)bufferPointer;
+
+    unsigned char ram[0x4000];
+    TMS9918A::Context vram;
+    MSX1 msx1(TMS9918A::ColorMode::RGB565, ram, sizeof(ram), &vram, [](void* arg, int frame, int line, unsigned short* display) {
+        memcpy(&hdmiBuffer[line * hdmiPitch], display, 512);
+    });
+    msx1.psg.setVolume(4);
+    msx1.setup(0, 0, (void*)rom_cbios_main_msx1, 0x8000, "MAIN");
+    msx1.setup(0, 4, (void*)rom_cbios_logo_msx1, 0x4000, "LOGO");
+    msx1.setupKeyAssign(0, MSX1_JOY_S1, ' ');                              // start button: SPACE
+    msx1.setupKeyAssign(0, MSX1_JOY_S2, 0x1B);                             // select button: ESC
+    msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL); // modify here if use mega rom
+    msx1.reset();
+    msx1.psg.reset(320);
+    sound.SetControl(VCHIQ_SOUND_VOLUME_MAX);
+
+    // main loop
     int swap = 0;
     while (1) {
         updateUsbStatus();
-        msx2.tick(msxPad1, 0, 0);
-        uint16_t* display = msx2.getDisplay();
-        uint16_t* hdmi = hdmiBuffer;
-#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
-        for (int y = 0; y < 240; y++) {
-            memcpy(hdmi + 18, display, 284 * 2);
-            for (int x = 0; x < 18; x++) {
-                hdmi[x] = display[0];
-                hdmi[x + 302] = display[0];
-            }
-            display += 284;
-            hdmi += hdmiPitch;
-        }
-        swap = 240 - swap;
-#else
-        for (int y = 0; y < 480; y += 2) {
-            memcpy(hdmi + 36, display, 568 * 2);
-            for (int x = 0; x < 36; x++) {
-                hdmi[x] = display[0];
-                hdmi[x + 604] = display[0];
-            }
-            memcpy(hdmi + hdmiPitch, hdmi, 640 * 2);
-            display += 568;
-            hdmi += hdmiPitch * 2;
-        }
-        swap = 480 - swap;
-#endif
+        msx1.tick(msxPad1, 0, 0);
+
+        // flip screen and wait V-SYNC
+        swap = 192 - swap;
         buffer->SetVirtualOffset(0, swap);
         buffer->WaitForVerticalSync();
 
         // play sound
         size_t pcmSize;
-        int16_t* pcmData = (int16_t*)msx2.getSound(&pcmSize);
+        int16_t* pcmData = (int16_t*)msx1.getSound(&pcmSize);
         while (sound.PlaybackActive()) {
             scheduler.Sleep(1);
         }

@@ -588,10 +588,9 @@ class MSX2
         }
         // Asynchronous with VDP
         this->vdp->ctx.bobo += cpuClocks * VDP_CLOCK;
-        while (0 < this->vdp->ctx.bobo) {
-            this->vdp->ctx.bobo -= CPU_CLOCK;
-            this->vdp->tick();
-        }
+        int tickCount = (this->vdp->ctx.bobo / CPU_CLOCK) + 1;
+        this->vdp->tick(tickCount);
+        this->vdp->ctx.bobo -= tickCount * CPU_CLOCK;
         // Asynchronous with Clock IC
         this->clock->ctx.bobo += cpuClocks;
         while (CPU_CLOCK <= this->clock->ctx.bobo) {

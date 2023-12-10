@@ -1,16 +1,21 @@
-# micro MSX2+ for RaspberryPi Zero (Bare Metal) - MSX1 core
+# [WIP] micro MSX2+ for RaspberryPi Zero 2W (Bare Metal) - MSX2+ core
 
-RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX1 コア) の実装例です。
+RaspberryPi Zero 2W のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX2+ コア) の実装例です。
 
-- RaspberryPi Zero 2W では動作しません
-- 想定ターゲットは RaspberryPi Zero ですが、初代 RaspberryPi でも動作する可能性があります
+- RaspberryPi Zero, Zero W, Zero WH では動作しません
+- 想定ターゲットは RaspberryPi Zero 2W ですが、RaspberryPi 3 でも動作する可能性があります
 - 通常の Linux 環境（Raspbian や DietPi）で動作させたい場合は [SDL2版](../msx2-sdl2) を用いてください
+
+__ただし、MSX2+ コアでは十分なパフォーマンスを発揮できません。__
+
+> [MSX1 コア](../msx1-rpizero2) なら余裕をもって 60fps で動作するので、MSX1 向けのゲーム開発を検討することをお勧めします。
+> 引き続き MSX2+ コア向けの性能向上を検討中です。（WIP）
 
 ## Prerequest
 
 ### Hardware
 
-- RaspberryPi Zero (無印, W, WH のいずれか)
+- RaspberryPi Zero 2W
 - HDMI で映像と音声の出力に対応したディスプレイ + 接続ケーブル
 - USB ゲームパッド + 接続ケーブル
 
@@ -22,9 +27,10 @@ RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS�
 
 - GNU Make
 - GCC
-- [GNU Arm Embedded Toolchain](https://developer.arm.com/downloads/-/gnu-rm)
-  - `arm-none-eabi` をダウンロード & インストールしてパスを切ってください
-  - macOS: `/Applications/ARM/bin`
+- [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
+  - `aarch64-none-elf` をダウンロード & インストールしてパスを切ってください
+    - macOS: `/Applications/ArmGNUToolchain/13.2.Rel1/aarch64-none-elf/bin`
+    - `13.2.Rel1` の箇所はダウンロードした最新版に適宜変更してください
 
 ## How to Build
 
@@ -33,7 +39,7 @@ RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS�
 git clone https://github.com/suzukiplan/micro-msx2p
 
 # リポジトリのディレクトリへ移動
-cd micro-msx2p/msx1-rpizero
+cd micro-msx2p/msx2-rpizero
 
 # ビルド
 make
@@ -45,22 +51,22 @@ make
 
 以下のファイルを micro SD カード（FAT32フォーマット）のルートディレクトリに配置したもの準備してください。
 
-- kernel.img ([How to Build](#how-to-build) の手順で生成)
+- kernel8.img ([How to Build](#how-to-build) の手順で生成)
 - [bootcode.bin](https://github.com/raspberrypi/firmware/blob/master/boot/bootcode.bin)
 - [start.elf](https://github.com/raspberrypi/firmware/blob/master/boot/start.elf)
 
 ### Launch Sequence
 
-1. RaspberryPi Zero の SD カードスロットに準備した SD カードを挿入
-2. HDMI ケーブルで RaspberryPi Zero と 640x480 以上の解像度でリフレッシュレート 60Hz のモニタ（テレビ等）を接続
-3. USB ケーブルで RaspberryPi Zero へ給電
+1. RaspberryPi Zero 2W の SD カードスロットに準備した SD カードを挿入
+2. HDMI ケーブルで RaspberryPi Zero 2W と 256x192 以上の解像度でリフレッシュレート 60Hz のモニタ（テレビ等）を接続
+3. USB ケーブルで RaspberryPi Zero 2W へ給電
 
 > リフレッシュレートが 60Hz よりも速いモニタでは正常に動作しない可能性があります。
 
 ## Replace to your game ROM
 
 - [./bios/game.rom](./bios/game.rom) を起動対象のゲーム ROM ファイルに置換
-- メガROM の場合 [./kernel_run.cpp](./kernel_run.cpp) の `msx1.loadRom` の引数を修正
+- メガROM の場合 [./kernel_run.cpp](./kernel_run.cpp) の `msx2.loadRom` の引数を修正
 - `make`
 
 ## License
@@ -69,6 +75,10 @@ make
 
 また、本プログラムには以下のソフトウェアに依存しているため、再配布時にはそれぞれのライセンス条項の遵守をお願いいたします。
 
+- LZ4 Library
+  - Web Site: [https://github.com/lz4/lz4](https://github.com/lz4/lz4) - [lib](https://github.com/lz4/lz4/tree/dev/lib)
+  - License: [2-Clause BSD](../licenses-copy/lz4-library.txt)
+  - `Copyright (c) 2011-2020, Yann Collet`
 - C-BIOS
   - Web Site: [https://cbios.sourceforge.net/](https://cbios.sourceforge.net/)
   - License: [2-Clause BSD](../licenses-copy/cbios.txt)
@@ -81,6 +91,10 @@ make
   - `Copyright (c) 2004-2006 Joost Yervante Damad.  All rights reserved.`
   - `Copyright (c) 2004-2006 Jussi Pitkänen.  All rights reserved.`
   - `Copyright (c) 2004-2007 Eric Boon.  All rights reserved.`
+- emu2413
+  - Web Site: [https://github.com/digital-sound-antiques/emu2413](https://github.com/digital-sound-antiques/emu2413)
+  - License: [MIT](../licenses-copy/emu2413.txt)
+  - `Copyright (c) 2001-2019 Mitsutaka Okazaki`
 - Circle
     - Web Site:
       - [https://circle-rpi.readthedocs.io/](https://circle-rpi.readthedocs.io/)

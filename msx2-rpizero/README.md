@@ -1,4 +1,4 @@
-# micro MSX2+ for RaspberryPi Zero (Bare Metal) - MSX2+ core
+# [WIP] micro MSX2+ for RaspberryPi Zero (Bare Metal) - MSX2+ core
 
 RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX2+ コア) の実装例です。
 
@@ -6,9 +6,10 @@ RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS�
 - 想定ターゲットは RaspberryPi Zero ですが、初代 RaspberryPi でも動作する可能性があります
 - 通常の Linux 環境（Raspbian や DietPi）で動作させたい場合は [SDL2版](../msx2-sdl2) を用いてください
 
-__ただし、RaspberryPi Zero の 無印、W、WH では十分なパフォーマンスを発揮できません。__
+__ただし、MSX2+ コアでは十分なパフォーマンスを発揮できません。__
 
-> [MSX1 コア](../msx1-rpizero) なら余裕をもって 60fps で動作するので、それらをターゲットにする場合は MSX1 向けのゲーム開発を検討することをお勧めします。
+> [MSX1 コア](../msx1-rpizero) なら余裕をもって 60fps で動作するので、MSX1 向けのゲーム開発を検討することをお勧めします。
+> 引き続き MSX2+ コア向けの性能向上を検討中です。
 
 ## Prerequest
 
@@ -25,8 +26,10 @@ __ただし、RaspberryPi Zero の 無印、W、WH では十分なパフォー�
 ### Software
 
 - GNU Make
-- CLANG
+- GCC
 - [GNU Arm Embedded Toolchain](https://developer.arm.com/downloads/-/gnu-rm)
+  - `arm-none-eabi` をダウンロード & インストールしてパスを切ってください
+  - macOS: `/Applications/ARM/bin`
 
 ## How to Build
 
@@ -58,6 +61,12 @@ make
 3. USB ケーブルで RaspberryPi Zero へ給電
 
 > リフレッシュレートが 60Hz よりも速いモニタでは正常に動作しない可能性があります。
+
+## Replace to your game ROM
+
+- [./bios/game.rom](./bios/game.rom) を起動対象のゲーム ROM ファイルに置換
+- メガROM の場合 [./kernel_run.cpp](./kernel_run.cpp) の `msx2.loadRom` の引数を修正
+- `make`
 
 ## License
 

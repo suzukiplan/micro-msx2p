@@ -1,4 +1,4 @@
 all: varext
 
 varext: varext.cpp
-	clang++ varext.cpp -o varext
+	g++ varext.cpp -o varext

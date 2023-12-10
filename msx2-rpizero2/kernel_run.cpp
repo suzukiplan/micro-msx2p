@@ -35,7 +35,8 @@ TShutdownMode CKernel::run(void)
 {
     auto buffer = screen.GetFrameBuffer();
     hdmiPitch = buffer->GetPitch() / sizeof(TScreenColor);
-    hdmiBuffer = (uint16_t*)buffer->GetBuffer();
+    uint64_t bufferPointer = buffer->GetBuffer();
+    hdmiBuffer = (uint16_t*)bufferPointer;
     MSX2 msx2(MSX2_COLOR_MODE_RGB565);
     msx2.setupSecondaryExist(false, false, false, true);
     msx2.setup(0, 0, 0, (void*)rom_cbios_main_msx2p, 0x8000, "MAIN");
