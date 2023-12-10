@@ -1,0 +1,15 @@
+*.o
+*.d
+*.elf
+*.img
+*.lst
+*.map
+ay8910.hpp
+msx1.hpp
+msx1def.h
+msx1mmu.hpp
+tms9918a.hpp
+z80.hpp
+rom_cbios_main_msx1.c
+rom_cbios_logo_msx1.c
+rom_game.c

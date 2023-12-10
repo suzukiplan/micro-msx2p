@@ -33,7 +33,7 @@ all:
 	@echo - kernel image: `ls -l $(KERNEL_IMG) | grep $(KERNEL_IMG)`
 
 clean:
-	make -f Build.mak clean
+	make -f Build.mak clean CIRCLEHOME=$(CIRCLEHOME) RASPPI=$(RASPPI) AARCH=$(AARCH)
 	cd $(CIRCLEHOME) && ./makeall clean
 	cd $(CIRCLEHOME)/addon/linux && make clean
 	cd $(CIRCLEHOME)/addon/vc4 && ./makeall clean

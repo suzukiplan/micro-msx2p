@@ -51,7 +51,7 @@ make
 
 以下のファイルを micro SD カード（FAT32フォーマット）のルートディレクトリに配置したもの準備してください。
 
-- kernel8-rpi4.img ([How to Build](#how-to-build) の手順で生成)
+- kernel8.img ([How to Build](#how-to-build) の手順で生成)
 - [bootcode.bin](https://github.com/raspberrypi/firmware/blob/master/boot/bootcode.bin)
 - [start.elf](https://github.com/raspberrypi/firmware/blob/master/boot/start.elf)
 

@@ -1,8 +1,8 @@
-RASPPI = 1
-AARCH = 32
-CIRCLE = circle
+RASPPI = 3
+AARCH = 64
+CIRCLE = circle8
 CIRCLEHOME = ../tools/$(CIRCLE)
-KERNEL_IMG = kernel.img
+KERNEL_IMG = kernel8.img
 
 ROMS =\
 	rom_cbios_main_msx1.c\
