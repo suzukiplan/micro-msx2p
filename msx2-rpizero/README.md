@@ -1,4 +1,4 @@
-# micro MSX2+ for RaspberryPi Zero (Bare Metal) - MSX2+ core
+# [WIP] micro MSX2+ for RaspberryPi Zero (Bare Metal) - MSX2+ core
 
 RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX2+ コア) の実装例です。
 
