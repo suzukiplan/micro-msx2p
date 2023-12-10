@@ -26,7 +26,7 @@ __ただし、MSX2+ コアでは十分なパフォーマンスを発揮できま
 ### Software
 
 - GNU Make
-- CLANG
+- GCC
 - [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
   - `aarch64-none-elf` をダウンロード & インストールしてパスを切ってください
     - macOS: `/Applications/ArmGNUToolchain/13.2.Rel1/aarch64-none-elf/bin`

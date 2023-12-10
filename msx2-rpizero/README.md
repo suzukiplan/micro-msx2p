@@ -26,7 +26,7 @@ __ただし、MSX2+ コアでは十分なパフォーマンスを発揮できま
 ### Software
 
 - GNU Make
-- CLANG
+- GCC
 - [GNU Arm Embedded Toolchain](https://developer.arm.com/downloads/-/gnu-rm)
   - `arm-none-eabi` をダウンロード & インストールしてパスを切ってください
   - macOS: `/Applications/ARM/bin`

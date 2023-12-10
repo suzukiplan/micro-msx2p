@@ -2,6 +2,7 @@ RASPPI = 3
 AARCH = 64
 CIRCLE = circle8
 CIRCLEHOME = ../tools/$(CIRCLE)
+KERNEL_IMG = kernel8.img
 
 ROMS =\
 	rom_cbios_main_msx2p.c\
@@ -24,18 +25,18 @@ all:
 	@echo Build succeed!
 	@echo -------------------------------------------------------------------------------
 	@echo Congratulations 🎉
-	@echo Place the bootcode.bin, start.elf, and kernel8.img in the root directory of
+	@echo Place the bootcode.bin, start.elf, and kernel image in the root directory of
 	@echo your SD-card and insert it into RaspberryPi Zero 2W to lanch your MSX game.
 	@echo -------------------------------------------------------------------------------
 	@echo - bootcode.bin: https://github.com/raspberrypi/firmware/blob/master/boot/bootcode.bin
 	@echo - start.elf: https://github.com/raspberrypi/firmware/blob/master/boot/start.elf
-	@echo - kernel8.img: `ls -l kernel8.img | grep kernel`
+	@echo - kernel image: `ls -l $(KERNEL_IMG) | grep $(KERNEL_IMG)`
 
 clean:
 	make -f Build.mak clean
-	cd ../tools/circle8 && ./makeall clean
-	cd ../tools/circle8/addon/linux && make clean
-	cd ../tools/circle8/addon/vc4 && ./makeall clean
+	cd $(CIRCLEHOME) && ./makeall clean
+	cd $(CIRCLEHOME)/addon/linux && make clean
+	cd $(CIRCLEHOME)/addon/vc4 && ./makeall clean
 
 rom_cbios_main_msx2p.c: bios/cbios_main_msx2p.rom
 	../tools/bin2var/bin2var bios/cbios_main_msx2p.rom > rom_cbios_main_msx2p.c
