@@ -42,7 +42,7 @@
 |[msx1-rpizero](./msx1-rpizero)|RaspberryPi Zero, Zero W, Zero WH (Bare Metal)|MSX1|
 |[msx2-rpizero](./msx2-rpizero) **[*WIP](https://github.com/suzukiplan/micro-msx2p/issues/50)**|RaspberryPi Zero, Zero W, Zero WH (Bare Metal)|MSX2+|
 |[msx1-rpizero2](./msx1-rpizero2)|RaspberryPi Zero 2W (Bare Metal)|MSX1|
-[|msx2-rpizero2](./msx2-rpizero2) **[*WIP](https://github.com/suzukiplan/micro-msx2p/issues/50)**|RaspberryPi Zero 2W (Bare Metal)|MSX2+|
+|[|msx2-rpizero2](./msx2-rpizero2) **[*WIP](https://github.com/suzukiplan/micro-msx2p/issues/50)**|RaspberryPi Zero 2W (Bare Metal)|MSX2+|
 
 Following platform support is now planning:
 
