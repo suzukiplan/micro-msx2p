@@ -8,6 +8,7 @@ extern int msxPad1;
 extern uint16_t* hdmiBuffer;
 extern int hdmiPitch;
 extern CVCHIQSoundDevice* hdmiSoundDevice;
+extern CLogger* clogger;
 static MSX2 msx2(MSX2_COLOR_MODE_RGB565);
 
 #define DISPLAY_SIZE 568 * 240 * 2
@@ -36,9 +37,11 @@ MultiCoreManager::~MultiCoreManager(void)
 
 boolean MultiCoreManager::Initialize(void)
 {
+    clogger->Write("MCM", LogNotice, "init multi-core-support");
     if (!CMultiCoreSupport::Initialize()) {
         return FALSE;
     }
+    clogger->Write("MCM", LogNotice, "init MSX2+ core");
     msx2.setupSecondaryExist(false, false, false, true);
     msx2.setup(0, 0, 0, (void*)rom_cbios_main_msx2p, 0x8000, "MAIN");
     msx2.setup(0, 0, 4, (void*)rom_cbios_logo_msx2p, 0x4000, "LOGO");
@@ -49,6 +52,7 @@ boolean MultiCoreManager::Initialize(void)
     msx2.loadRom((void*)rom_game, sizeof(rom_game), MSX2_ROM_TYPE_NORMAL); // modify here if use mega rom
     currentBuffer = 0;
     previousBuffer = 1;
+    clogger->Write("MCM", LogNotice, "wait for idle...");
     for (unsigned nCore = 1; nCore < CORES; nCore++) {
         while (coreStatus[nCore] != CoreStatus::Idle) {
             ; // just wait
@@ -60,6 +64,9 @@ boolean MultiCoreManager::Initialize(void)
 void MultiCoreManager::Run(unsigned nCore)
 {
     assert(1 <= nCore && nCore < CORES);
+    char buf[80];
+    sprintf(buf, "cpu#%u idle", nCore);
+    clogger->Write("MCM", LogNotice, buf);
     coreStatus[nCore] = CoreStatus::Idle;
     while (1) {
         ; // just wait interrupt

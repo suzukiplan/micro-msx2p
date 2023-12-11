@@ -26,14 +26,15 @@ int msxPad1 = 0;
 uint16_t* hdmiBuffer;
 int hdmiPitch;
 CVCHIQSoundDevice* hdmiSoundDevice;
+CLogger* clogger;
 
 CKernel::CKernel(void) : screen(640, 480),
                          timer(&interrupt),
                          logger(options.GetLogLevel(), &timer),
-                         mcm(CMemorySystem::Get()),
                          usb(&interrupt, &timer, TRUE),
                          vchiq(CMemorySystem::Get(), &interrupt),
                          sound(&vchiq, (TVCHIQSoundDestination)options.GetSoundOption()),
+                         mcm(CMemorySystem::Get()),
                          gamePad(nullptr)
 {
     led.Blink(5); // show we are alive
@@ -91,6 +92,7 @@ boolean CKernel::initialize(void)
 
     if (bOK) {
         logger.Write(TAG, LogNotice, "init mcm");
+        clogger = &logger;
         bOK = mcm.Initialize();
     }
 

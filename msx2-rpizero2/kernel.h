@@ -67,11 +67,11 @@ class CKernel
     CInterruptSystem interrupt;
     CTimer timer;
     CLogger logger;
-    MultiCoreManager mcm;
     CUSBHCIDevice usb;
     CScheduler scheduler;
     CVCHIQDevice vchiq;
     CVCHIQSoundDevice sound;
+    MultiCoreManager mcm;
     CUSBGamePadDevice* volatile gamePad;
 };
 
