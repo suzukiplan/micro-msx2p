@@ -1,15 +1,11 @@
-# [WIP] micro MSX2+ for RaspberryPi Zero 2W (Bare Metal) - MSX2+ core
+# micro MSX2+ for RaspberryPi Zero 2W (Bare Metal) - MSX2+ core
 
 RaspberryPi Zero 2W のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX2+ コア) の実装例です。
 
 - RaspberryPi Zero, Zero W, Zero WH では動作しません
 - 想定ターゲットは RaspberryPi Zero 2W ですが、RaspberryPi 3 でも動作する可能性があります
 - 通常の Linux 環境（Raspbian や DietPi）で動作させたい場合は [SDL2版](../msx2-sdl2) を用いてください
-
-__ただし、MSX2+ コアでは十分なパフォーマンスを発揮できません。__
-
-> [MSX1 コア](../msx1-rpizero2) なら余裕をもって 60fps で動作するので、MSX1 向けのゲーム開発を検討することをお勧めします。
-> 引き続き MSX2+ コア向けの性能向上を検討中です。（WIP）
+- 4コアをフルに使って性能を確保している関係で [MSX1 コア](../msx1-rpizero2) と比較して消費電力が多いため、MSX1 向けのゲームであれば、シングルコアで動作する MSX1 コアの利用を推奨します
 
 ## Prerequest
 
@@ -39,7 +35,7 @@ __ただし、MSX2+ コアでは十分なパフォーマンスを発揮できま
 git clone https://github.com/suzukiplan/micro-msx2p
 
 # リポジトリのディレクトリへ移動
-cd micro-msx2p/msx2-rpizero
+cd micro-msx2p/msx2-rpizero2
 
 # ビルド
 make

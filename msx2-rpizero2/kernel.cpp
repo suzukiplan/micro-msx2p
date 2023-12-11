@@ -25,16 +25,9 @@
 int msxPad1 = 0;
 uint16_t* hdmiBuffer;
 int hdmiPitch;
-CTimer* ctimer;
-CLogger* clogger;
 CVCHIQSoundDevice* hdmiSoundDevice;
 
-CKernel::CKernel(void) :
-#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
-                         screen(320, 240),
-#else
-                         screen(640, 480),
-#endif
+CKernel::CKernel(void) : screen(640, 480),
                          timer(&interrupt),
                          logger(options.GetLogLevel(), &timer),
                          mcm(CMemorySystem::Get()),
@@ -95,8 +88,6 @@ boolean CKernel::initialize(void)
     hdmiPitch = buffer->GetPitch() / sizeof(TScreenColor);
     uint64_t bufferPointer = buffer->GetBuffer();
     hdmiBuffer = (uint16_t*)bufferPointer;
-    ctimer = &timer;
-    clogger = &logger;
 
     if (bOK) {
         logger.Write(TAG, LogNotice, "init mcm");
@@ -137,11 +128,7 @@ TShutdownMode CKernel::run(void)
                 }
             }
         }
-#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
-        swap = 240 - swap;
-#else
         swap = 480 - swap;
-#endif
         screen.GetFrameBuffer()->SetVirtualOffset(0, swap);
         screen.GetFrameBuffer()->WaitForVerticalSync();
         CMultiCoreSupport::SendIPI(1, IPI_USER + 0); // execute tick at core1

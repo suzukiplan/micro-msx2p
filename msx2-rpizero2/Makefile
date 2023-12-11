@@ -1,6 +1,6 @@
 RASPPI = 3
 AARCH = 64
-CIRCLE = circle8
+CIRCLE = circle8m
 CIRCLEHOME = ../tools/$(CIRCLE)
 KERNEL_IMG = kernel8.img
 

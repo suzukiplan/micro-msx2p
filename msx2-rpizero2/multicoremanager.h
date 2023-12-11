@@ -20,24 +20,23 @@
 #include <vc4/sound/vchiqsounddevice.h>
 #include <vc4/vchiq/vchiqdevice.h>
 
-enum class CoreStatus
-{
-	Init,
-	Idle,
-	Busy,
-	Exit,
-	Unknown
+enum class CoreStatus {
+    Init,
+    Idle,
+    Busy,
+    Exit,
+    Unknown
 };
 
 class MultiCoreManager : public CMultiCoreSupport
 {
-private:
-	CoreStatus coreStatus[CORES];
+  private:
+    CoreStatus coreStatus[CORES];
 
-public:
-	MultiCoreManager(CMemorySystem *pMemorySystem);
-	~MultiCoreManager(void);
+  public:
+    MultiCoreManager(CMemorySystem* pMemorySystem);
+    ~MultiCoreManager(void);
     boolean Initialize(void);
     void Run(unsigned nCore) override;
-	void IPIHandler(unsigned nCore, unsigned nIPI) override;
+    void IPIHandler(unsigned nCore, unsigned nIPI) override;
 };

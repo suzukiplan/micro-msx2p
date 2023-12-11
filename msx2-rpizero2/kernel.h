@@ -20,6 +20,7 @@
 #ifndef _kernel_h
 #define _kernel_h
 
+#include "multicoremanager.h"
 #include <circle/actled.h>
 #include <circle/devicenameservice.h>
 #include <circle/exceptionhandler.h>
@@ -37,7 +38,6 @@
 #include <vc4/sound/vchiqsoundbasedevice.h>
 #include <vc4/sound/vchiqsounddevice.h>
 #include <vc4/vchiq/vchiqdevice.h>
-#include "multicoremanager.h"
 
 enum TShutdownMode {
     ShutdownNone,
