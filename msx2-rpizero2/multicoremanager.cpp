@@ -1,5 +1,7 @@
-#include "msx2.hpp"
 #include "multicoremanager.h"
+
+// micro-msx2p
+#include "msx2.hpp"
 #include "roms.hpp"
 
 extern int msxPad1;
