@@ -37,6 +37,7 @@
 #include <vc4/sound/vchiqsoundbasedevice.h>
 #include <vc4/sound/vchiqsounddevice.h>
 #include <vc4/vchiq/vchiqdevice.h>
+#include "multicoremanager.h"
 
 enum TShutdownMode {
     ShutdownNone,
@@ -66,12 +67,12 @@ class CKernel
     CInterruptSystem interrupt;
     CTimer timer;
     CLogger logger;
+    MultiCoreManager mcm;
     CUSBHCIDevice usb;
     CScheduler scheduler;
     CVCHIQDevice vchiq;
     CVCHIQSoundDevice sound;
     CUSBGamePadDevice* volatile gamePad;
-    void updateUsbStatus(void);
 };
 
 #endif

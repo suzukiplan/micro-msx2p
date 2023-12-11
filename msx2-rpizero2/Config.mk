@@ -1,0 +1,4 @@
+RASPPI = 3
+AARCH = 64
+DEFINE += -DARM_ALLOW_MULTI_CORE
+PREFIX64 = aarch64-none-elf-

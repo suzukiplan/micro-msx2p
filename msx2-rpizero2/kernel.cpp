@@ -19,9 +19,15 @@
 //
 #include "kernel.h"
 #include "msx2def.h"
+#include <circle/multicore.h>
 
 #define TAG "kernel"
 int msxPad1 = 0;
+uint16_t* hdmiBuffer;
+int hdmiPitch;
+CTimer* ctimer;
+CLogger* clogger;
+CVCHIQSoundDevice* hdmiSoundDevice;
 
 CKernel::CKernel(void) :
 #ifdef MSX2_DISPLAY_HALF_HORIZONTAL
@@ -31,6 +37,7 @@ CKernel::CKernel(void) :
 #endif
                          timer(&interrupt),
                          logger(options.GetLogLevel(), &timer),
+                         mcm(CMemorySystem::Get()),
                          usb(&interrupt, &timer, TRUE),
                          vchiq(CMemorySystem::Get(), &interrupt),
                          sound(&vchiq, (TVCHIQSoundDestination)options.GetSoundOption()),
@@ -84,35 +91,60 @@ boolean CKernel::initialize(void)
         bOK = usb.Initialize();
     }
 
+    auto buffer = screen.GetFrameBuffer();
+    hdmiPitch = buffer->GetPitch() / sizeof(TScreenColor);
+    uint64_t bufferPointer = buffer->GetBuffer();
+    hdmiBuffer = (uint16_t*)bufferPointer;
+    ctimer = &timer;
+    clogger = &logger;
+
+    if (bOK) {
+        logger.Write(TAG, LogNotice, "init mcm");
+        bOK = mcm.Initialize();
+    }
+
     if (bOK) {
         led.Off();
     }
     return bOK;
 }
 
-void CKernel::updateUsbStatus(void)
+TShutdownMode CKernel::run(void)
 {
-    if (usb.UpdatePlugAndPlay()) {
-        if (!gamePad) {
-            gamePad = (CUSBGamePadDevice*)deviceNameService.GetDevice("upad1", FALSE);
-            if (gamePad) {
-                gamePad->RegisterStatusHandler([](unsigned index, const TGamePadState* state) {
+    hdmiSoundDevice = &sound;
+    int swap = 0;
+    while (1) {
+        if (usb.UpdatePlugAndPlay()) {
+            if (!gamePad) {
+                gamePad = (CUSBGamePadDevice*)deviceNameService.GetDevice("upad1", FALSE);
+                if (gamePad) {
+                    gamePad->RegisterStatusHandler([](unsigned index, const TGamePadState* state) {
+                        msxPad1 = 0;
+                        msxPad1 |= state->axes[0].value == state->axes[0].minimum ? MSX2_JOY_LE : 0;
+                        msxPad1 |= state->axes[0].value == state->axes[0].maximum ? MSX2_JOY_RI : 0;
+                        msxPad1 |= state->axes[1].value == state->axes[1].minimum ? MSX2_JOY_UP : 0;
+                        msxPad1 |= state->axes[1].value == state->axes[1].maximum ? MSX2_JOY_DW : 0;
+                        msxPad1 |= (state->buttons & 0x0001) ? MSX2_JOY_T2 : 0;
+                        msxPad1 |= (state->buttons & 0x0002) ? MSX2_JOY_T1 : 0;
+                        msxPad1 |= (state->buttons & 0x0100) ? MSX2_JOY_S2 : 0;
+                        msxPad1 |= (state->buttons & 0x0200) ? MSX2_JOY_S1 : 0;
+                    });
+                }
+            } else {
+                if (!(CUSBGamePadDevice*)deviceNameService.GetDevice("upad1", FALSE)) {
+                    gamePad = nullptr;
                     msxPad1 = 0;
-                    msxPad1 |= state->axes[0].value == state->axes[0].minimum ? MSX2_JOY_LE : 0;
-                    msxPad1 |= state->axes[0].value == state->axes[0].maximum ? MSX2_JOY_RI : 0;
-                    msxPad1 |= state->axes[1].value == state->axes[1].minimum ? MSX2_JOY_UP : 0;
-                    msxPad1 |= state->axes[1].value == state->axes[1].maximum ? MSX2_JOY_DW : 0;
-                    msxPad1 |= (state->buttons & 0x0001) ? MSX2_JOY_T2 : 0;
-                    msxPad1 |= (state->buttons & 0x0002) ? MSX2_JOY_T1 : 0;
-                    msxPad1 |= (state->buttons & 0x0100) ? MSX2_JOY_S2 : 0;
-                    msxPad1 |= (state->buttons & 0x0200) ? MSX2_JOY_S1 : 0;
-                });
-            }
-        } else {
-            if (!(CUSBGamePadDevice*)deviceNameService.GetDevice("upad1", FALSE)) {
-                gamePad = nullptr;
-                msxPad1 = 0;
+                }
             }
         }
+#ifdef MSX2_DISPLAY_HALF_HORIZONTAL
+        swap = 240 - swap;
+#else
+        swap = 480 - swap;
+#endif
+        screen.GetFrameBuffer()->SetVirtualOffset(0, swap);
+        screen.GetFrameBuffer()->WaitForVerticalSync();
+        CMultiCoreSupport::SendIPI(1, IPI_USER + 0); // execute tick at core1
     }
+    return ShutdownHalt;
 }
