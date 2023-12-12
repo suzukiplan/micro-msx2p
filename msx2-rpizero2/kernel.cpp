@@ -21,6 +21,10 @@
 #include "msx2def.h"
 #include <circle/multicore.h>
 
+// defined in multicoremanager.cpp
+bool isMsxTickEnd();
+int16_t* getPreviousSoundBuffer(size_t* size);
+
 #define TAG "kernel"
 int msxPad1 = 0;
 uint16_t* hdmiBuffer;
@@ -107,6 +111,7 @@ TShutdownMode CKernel::run(void)
     hdmiSoundDevice = &sound;
     int swap = 0;
     while (1) {
+        // peripheral devices proc
         if (usb.UpdatePlugAndPlay()) {
             if (!gamePad) {
                 gamePad = (CUSBGamePadDevice*)deviceNameService.GetDevice("upad1", FALSE);
@@ -130,10 +135,39 @@ TShutdownMode CKernel::run(void)
                 }
             }
         }
+
+        // wait v-sync
         swap = 480 - swap;
         screen.GetFrameBuffer()->SetVirtualOffset(0, swap);
         screen.GetFrameBuffer()->WaitForVerticalSync();
-        CMultiCoreSupport::SendIPI(1, IPI_USER + 0); // execute tick at core1
+
+        // output sound
+        while (!isMsxTickEnd()) {
+            ;
+        }
+        size_t pcmSize;
+        int16_t* pcmData = getPreviousSoundBuffer(&pcmSize);
+        if (0 < pcmSize) {
+            // gain volume
+            for (size_t i = 0; i < pcmSize; i++) {
+                int pcm = pcmData[i];
+                pcm *= 256;
+                if (32767 < pcm) {
+                    pcm = 32767;
+                } else if (pcm < -32768) {
+                    pcm = -32768;
+                }
+                pcmData[i] = (int16_t)pcm;
+            }
+            // playback
+            while (sound.PlaybackActive()) {
+                ;
+            }
+            sound.Playback(pcmData, pcmSize / 4, 2, 16);
+        }
+
+        // request MSX tick to core-1
+        CMultiCoreSupport::SendIPI(1, IPI_USER + 0);
     }
     return ShutdownHalt;
 }

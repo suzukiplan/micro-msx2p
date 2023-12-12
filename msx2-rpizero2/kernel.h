@@ -73,6 +73,7 @@ class CKernel
     CVCHIQSoundDevice sound;
     MultiCoreManager mcm;
     CUSBGamePadDevice* volatile gamePad;
+    CSpinLock locker;
 };
 
 #endif

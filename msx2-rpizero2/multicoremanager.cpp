@@ -7,17 +7,24 @@
 extern int msxPad1;
 extern uint16_t* hdmiBuffer;
 extern int hdmiPitch;
-extern CVCHIQSoundDevice* hdmiSoundDevice;
 extern CLogger* clogger;
 static MSX2 msx2(MSX2_COLOR_MODE_RGB565);
 
 #define DISPLAY_SIZE 568 * 240 * 2
 static unsigned short displayBuffer[2][DISPLAY_SIZE / 2];
-static short soundBuffer[2][65536];
+static short soundBuffer[2][4096];
 static size_t soundBufferSize[2];
-static int pcmData32[65536];
 static int currentBuffer;
 static int previousBuffer;
+static bool msxTickEnd;
+
+bool isMsxTickEnd() { return msxTickEnd; }
+
+int16_t* getPreviousSoundBuffer(size_t* size)
+{
+    *size = soundBufferSize[previousBuffer];
+    return soundBuffer[previousBuffer];
+}
 
 MultiCoreManager::MultiCoreManager(CMemorySystem* pMemorySystem) : CMultiCoreSupport(pMemorySystem)
 {
@@ -53,11 +60,12 @@ boolean MultiCoreManager::Initialize(void)
     currentBuffer = 0;
     previousBuffer = 1;
     clogger->Write("MCM", LogNotice, "wait for idle...");
-    for (unsigned nCore = 1; nCore < CORES; nCore++) {
+    for (unsigned nCore = 1; nCore < 3; nCore++) {
         while (coreStatus[nCore] != CoreStatus::Idle) {
             ; // just wait
         }
     }
+    msxTickEnd = true;
     return TRUE;
 }
 
@@ -77,17 +85,18 @@ void MultiCoreManager::IPIHandler(unsigned nCore, unsigned nIPI)
 {
     if (nIPI == IPI_USER + 0) {
         // execute MSX core
+        msxTickEnd = false;
         msx2.tick(msxPad1, 0, 0);
         memcpy(displayBuffer[currentBuffer], msx2.getDisplay(), DISPLAY_SIZE);
         void* pcm = msx2.getSound(&soundBufferSize[currentBuffer]);
         memcpy(soundBuffer[currentBuffer], pcm, soundBufferSize[currentBuffer]);
+        msxTickEnd = true;
         previousBuffer = currentBuffer;
         currentBuffer++;
         currentBuffer &= 1;
-        CMultiCoreSupport::SendIPI(2, IPI_USER + 1); // execute video hal at core2
-        CMultiCoreSupport::SendIPI(3, IPI_USER + 2); // execute sound hal at core3
+        CMultiCoreSupport::SendIPI(2, IPI_USER + 1);
     } else if (nIPI == IPI_USER + 1) {
-        // execute video hal
+        // execute video buffering
         uint16_t* display = &displayBuffer[previousBuffer][0];
         uint16_t* hdmi = hdmiBuffer;
         for (int y = 0; y < 480; y += 2) {
@@ -99,20 +108,6 @@ void MultiCoreManager::IPIHandler(unsigned nCore, unsigned nIPI)
             memcpy(hdmi + hdmiPitch, hdmi, 640 * 2);
             display += 568;
             hdmi += hdmiPitch * 2;
-        }
-    } else if (nIPI == IPI_USER + 2) {
-        // execute sound hal
-        const int ptr = previousBuffer;
-        int16_t* pcmData = &soundBuffer[ptr][0];
-        size_t pcmSize = soundBufferSize[ptr];
-        for (size_t i = 0; i < pcmSize / 2; i++) {
-            pcmData32[i] = (int)pcmData[i] * 256;
-        }
-        if (hdmiSoundDevice) {
-            while (hdmiSoundDevice->PlaybackActive()) {
-                ;
-            }
-            hdmiSoundDevice->Playback(pcmData32, pcmSize / 2, 2, 24);
         }
     }
 }
