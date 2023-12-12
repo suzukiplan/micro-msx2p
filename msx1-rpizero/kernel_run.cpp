@@ -33,6 +33,7 @@ static int hdmiPitch;
 
 TShutdownMode CKernel::run(void)
 {
+    sound.SetControl(VCHIQ_SOUND_VOLUME_MAX);
     auto buffer = screen.GetFrameBuffer();
     hdmiPitch = buffer->GetPitch() / sizeof(TScreenColor);
     hdmiBuffer = (uint16_t*)buffer->GetBuffer();
@@ -49,7 +50,6 @@ TShutdownMode CKernel::run(void)
     msx1.setupKeyAssign(0, MSX1_JOY_S2, 0x1B);                             // select button: ESC
     msx1.loadRom((void*)rom_game, sizeof(rom_game), MSX1_ROM_TYPE_NORMAL); // modify here if use mega rom
     msx1.reset();
-    msx1.psg.reset(320);
     sound.SetControl(VCHIQ_SOUND_VOLUME_MAX);
 
     // main loop
