@@ -90,10 +90,10 @@ void MultiCoreManager::IPIHandler(unsigned nCore, unsigned nIPI)
         memcpy(displayBuffer[currentBuffer], msx2.getDisplay(), DISPLAY_SIZE);
         void* pcm = msx2.getSound(&soundBufferSize[currentBuffer]);
         memcpy(soundBuffer[currentBuffer], pcm, soundBufferSize[currentBuffer]);
-        msxTickEnd = true;
         previousBuffer = currentBuffer;
         currentBuffer++;
         currentBuffer &= 1;
+        msxTickEnd = true;
         CMultiCoreSupport::SendIPI(2, IPI_USER + 1);
     } else if (nIPI == IPI_USER + 1) {
         // execute video buffering
