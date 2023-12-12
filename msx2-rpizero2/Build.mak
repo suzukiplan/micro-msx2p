@@ -1,4 +1,3 @@
-CHECK_DEPS = 0
 STANDARD = -std=c++17
 CFLAGS = -O3
 CFLAGS += -Wno-stringop-overflow
@@ -12,13 +11,12 @@ CPPFLAGS += -DZ80_UNSUPPORT_16BIT_PORT
 CPPFLAGS += -DZ80_NO_FUNCTIONAL
 CPPFLAGS += -DZ80_NO_EXCEPTION
 CPPFLAGS += -D_TIME_T_DECLARED
-#CPPFLAGS += -DMSX2_DISPLAY_HALF_HORIZONTAL
-#CPPFLAGS += -DMSX2_REMOVE_OPLL
+CPPFLAGS += -DARM_ALLOW_MULTI_CORE
 OBJS =\
 	main.o\
 	std.o\
 	kernel.o\
-	kernel_run.o\
+	multicoremanager.o\
 	lz4.o\
 	emu2413.o\
 	rom_cbios_main_msx2p.o\

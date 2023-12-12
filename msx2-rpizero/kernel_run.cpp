@@ -33,6 +33,7 @@ static int hdmiPitch;
 
 TShutdownMode CKernel::run(void)
 {
+    sound.SetControl(VCHIQ_SOUND_VOLUME_MAX);
     auto buffer = screen.GetFrameBuffer();
     hdmiPitch = buffer->GetPitch() / sizeof(TScreenColor);
     hdmiBuffer = (uint16_t*)buffer->GetBuffer();
@@ -84,7 +85,7 @@ TShutdownMode CKernel::run(void)
         while (sound.PlaybackActive()) {
             scheduler.Sleep(1);
         }
-        sound.Playback(pcmData, pcmSize / 2, 1, 16);
+        sound.Playback(pcmData, pcmSize / 4, 2, 16);
     }
 
     return ShutdownHalt;

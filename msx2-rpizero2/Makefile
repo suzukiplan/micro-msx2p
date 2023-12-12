@@ -1,6 +1,6 @@
 RASPPI = 3
 AARCH = 64
-CIRCLE = circle8
+CIRCLE = circle8m
 CIRCLEHOME = ../tools/$(CIRCLE)
 KERNEL_IMG = kernel8.img
 
@@ -18,6 +18,7 @@ all:
 	cd ../tools/varext && make
 	make $(ROMS)
 	make roms.hpp
+	cp Config.mk $(CIRCLEHOME)/Config.mk
 	cd $(CIRCLEHOME) && ./makeall --nosample RASPPI=$(RASPPI) AARCH=$(AARCH)
 	cd $(CIRCLEHOME)/addon/linux && make RASPPI=$(RASPPI) AARCH=$(AARCH)
 	cd $(CIRCLEHOME)/addon/vc4 && ./makeall --nosample RASPPI=$(RASPPI) AARCH=$(AARCH)
@@ -33,6 +34,7 @@ all:
 	@echo - kernel image: `ls -l $(KERNEL_IMG) | grep $(KERNEL_IMG)`
 
 clean:
+	cp Config.mk $(CIRCLEHOME)/Config.mk
 	make -f Build.mak clean CIRCLEHOME=$(CIRCLEHOME) RASPPI=$(RASPPI) AARCH=$(AARCH)
 	cd $(CIRCLEHOME) && ./makeall clean
 	cd $(CIRCLEHOME)/addon/linux && make clean

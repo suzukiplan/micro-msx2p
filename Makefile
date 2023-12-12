@@ -35,7 +35,8 @@ format:
 	make execute-format FILENAME=./msx2-rpizero2/main.cpp
 	make execute-format FILENAME=./msx2-rpizero2/kernel.h
 	make execute-format FILENAME=./msx2-rpizero2/kernel.cpp
-	make execute-format FILENAME=./msx2-rpizero2/kernel_run.cpp
+	make execute-format FILENAME=./msx2-rpizero2/multicoremanager.cpp
+	make execute-format FILENAME=./msx2-rpizero2/multicoremanager.h
 	make execute-format FILENAME=./msx2-rpizero2/std.c
 
 execute-format:

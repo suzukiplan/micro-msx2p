@@ -1,4 +1,4 @@
-# [WIP] micro MSX2+ for RaspberryPi Zero (Bare Metal) - MSX2+ core
+# micro MSX2+ for RaspberryPi Zero (Bare Metal) - MSX2+ core
 
 RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS無し）で動作する micro MSX2+ (MSX2+ コア) の実装例です。
 
@@ -9,7 +9,7 @@ RaspberryPi Zero シリーズ（無印、W、WH）のベアメタル環境（OS�
 __ただし、MSX2+ コアでは十分なパフォーマンスを発揮できません。__
 
 > [MSX1 コア](../msx1-rpizero) なら余裕をもって 60fps で動作するので、MSX1 向けのゲーム開発を検討することをお勧めします。
-> 引き続き MSX2+ コア向けの性能向上を検討中です。
+> MSX2 以降をターゲットにしたい場合、ターゲットデバイスを RaspberryPi 2W にしてください。
 
 ## Prerequest
 

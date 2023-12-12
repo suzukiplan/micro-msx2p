@@ -20,6 +20,7 @@
 #ifndef _kernel_h
 #define _kernel_h
 
+#include "multicoremanager.h"
 #include <circle/actled.h>
 #include <circle/devicenameservice.h>
 #include <circle/exceptionhandler.h>
@@ -70,8 +71,9 @@ class CKernel
     CScheduler scheduler;
     CVCHIQDevice vchiq;
     CVCHIQSoundDevice sound;
+    MultiCoreManager mcm;
     CUSBGamePadDevice* volatile gamePad;
-    void updateUsbStatus(void);
+    CSpinLock locker;
 };
 
 #endif
