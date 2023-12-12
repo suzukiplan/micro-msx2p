@@ -22,7 +22,6 @@
 #include <circle/multicore.h>
 
 // defined in multicoremanager.cpp
-bool isMsxTickEnd();
 int16_t* getPreviousSoundBuffer(size_t* size);
 
 #define TAG "kernel"
@@ -108,6 +107,7 @@ boolean CKernel::initialize(void)
 
 TShutdownMode CKernel::run(void)
 {
+    sound.SetControl(VCHIQ_SOUND_VOLUME_MAX);
     hdmiSoundDevice = &sound;
     int swap = 0;
     while (1) {
@@ -142,23 +142,9 @@ TShutdownMode CKernel::run(void)
         screen.GetFrameBuffer()->WaitForVerticalSync();
 
         // output sound
-        while (!isMsxTickEnd()) {
-            ;
-        }
         size_t pcmSize;
         int16_t* pcmData = getPreviousSoundBuffer(&pcmSize);
         if (0 < pcmSize) {
-            // gain volume
-            for (size_t i = 0; i < pcmSize; i++) {
-                int pcm = pcmData[i];
-                pcm *= 256;
-                if (32767 < pcm) {
-                    pcm = 32767;
-                } else if (pcm < -32768) {
-                    pcm = -32768;
-                }
-                pcmData[i] = (int16_t)pcm;
-            }
             // playback
             while (sound.PlaybackActive()) {
                 ;

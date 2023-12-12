@@ -16,9 +16,6 @@ static short soundBuffer[2][4096];
 static size_t soundBufferSize[2];
 static int currentBuffer;
 static int previousBuffer;
-static bool msxTickEnd;
-
-bool isMsxTickEnd() { return msxTickEnd; }
 
 int16_t* getPreviousSoundBuffer(size_t* size)
 {
@@ -65,7 +62,6 @@ boolean MultiCoreManager::Initialize(void)
             ; // just wait
         }
     }
-    msxTickEnd = true;
     return TRUE;
 }
 
@@ -85,7 +81,6 @@ void MultiCoreManager::IPIHandler(unsigned nCore, unsigned nIPI)
 {
     if (nIPI == IPI_USER + 0) {
         // execute MSX core
-        msxTickEnd = false;
         msx2.tick(msxPad1, 0, 0);
         memcpy(displayBuffer[currentBuffer], msx2.getDisplay(), DISPLAY_SIZE);
         void* pcm = msx2.getSound(&soundBufferSize[currentBuffer]);
@@ -93,7 +88,6 @@ void MultiCoreManager::IPIHandler(unsigned nCore, unsigned nIPI)
         previousBuffer = currentBuffer;
         currentBuffer++;
         currentBuffer &= 1;
-        msxTickEnd = true;
         CMultiCoreSupport::SendIPI(2, IPI_USER + 1);
     } else if (nIPI == IPI_USER + 1) {
         // execute video buffering
