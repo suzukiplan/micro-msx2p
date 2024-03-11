@@ -38,6 +38,8 @@
 #include <vector>
 
 #define WINDOW_TITLE "micro MSX2+ for SDL2"
+#define VRAM_WIDTH 568
+#define VRAM_HEIGHT 480
 #define USE_CBIOS
 
 static BufferQueue soundQueue(65536);
@@ -364,33 +366,74 @@ int main(int argc, char* argv[])
     log("- obtained.samples = %d", obtained.samples);
     SDL_PauseAudioDevice(audioDeviceId, 0);
 
-    log("create SDL window");
-    auto window = SDL_CreateWindow(
-        WINDOW_TITLE,
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        640,
-        480,
-        gpuType | fullScreen);
+    SDL_Surface* windowSurface = nullptr;
+    SDL_Renderer* renderer = nullptr;
+    SDL_Texture* texture = nullptr;
+    SDL_Window* window = nullptr;
+    int frameWidth = 0;
+    int frameHeight = 0;
+    int framePitch = 0;
+    int offsetX = 0;
+    int offsetY = 0;
+    unsigned int* frameBuffer;
     if (fullScreen) {
+        log("create SDL window and renderer");
+        SDL_DisplayMode display;
+        SDL_GetCurrentDisplayMode(0, &display);
+        log("Screen Resolution: width=%d, height=%d", display.w, display.h);
+        if (0 != SDL_CreateWindowAndRenderer(display.w, display.h, gpuType | SDL_WINDOW_FULLSCREEN, &window, &renderer)) {
+            log("SDL_CreateWindowAndRenderer failed: %s", SDL_GetError());
+            exit(-1);
+        }
+        double sw = display.w / ((double)VRAM_WIDTH);
+        double sh = display.h / ((double)VRAM_HEIGHT);
+        double scale = sw < sh ? sw : sh;
+        frameWidth = (int)(display.w / scale);
+        frameHeight = (int)(display.h / scale);
+        framePitch = frameWidth * 4;
+        offsetX = (frameWidth - VRAM_WIDTH) / 2;
+        offsetY = (frameHeight - VRAM_HEIGHT) / 2;
+        log("Texture: width=%d, height=%d, offsetX=%d, offsetY=%d", frameWidth, frameHeight, offsetX, offsetY);
+        SDL_RenderSetLogicalSize(renderer, frameWidth, frameHeight);
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, frameWidth, frameHeight);
+        if (!texture) {
+            log("SDL_CreateTexture failed: %s", SDL_GetError());
+            exit(-1);
+        }
+        frameBuffer = (unsigned int*)malloc(framePitch * frameHeight);
+        if (!frameBuffer) {
+            log("No memory");
+            exit(-1);
+        }
+        memset(frameBuffer, 0, frameWidth * frameHeight * 4);
         SDL_ShowCursor(SDL_DISABLE);
+    } else {
+        log("create SDL window");
+        window = SDL_CreateWindow(
+            WINDOW_TITLE,
+            SDL_WINDOWPOS_UNDEFINED,
+            SDL_WINDOWPOS_UNDEFINED,
+            VRAM_WIDTH,
+            VRAM_HEIGHT,
+            gpuType | fullScreen);
+        log("Get SDL window surface");
+        windowSurface = SDL_GetWindowSurface(window);
+        if (!windowSurface) {
+            log("SDL_GetWindowSurface failed: %s", SDL_GetError());
+            exit(-1);
+        }
+        log("PixelFormat: %d bits (%d bytes)", (int)windowSurface->format->BitsPerPixel, (int)windowSurface->format->BytesPerPixel);
+        log("Rmask: %08X", (int)windowSurface->format->Rmask);
+        log("Gmask: %08X", (int)windowSurface->format->Gmask);
+        log("Bmask: %08X", (int)windowSurface->format->Bmask);
+        log("Amask: %08X", (int)windowSurface->format->Amask);
+        if (4 != windowSurface->format->BytesPerPixel) {
+            log("unsupported pixel format (support only 4 bytes / pixel)");
+            exit(-1);
+        }
+        SDL_UpdateWindowSurface(window);
     }
-    log("Get SDL window surface");
-    auto windowSurface = SDL_GetWindowSurface(window);
-    if (!windowSurface) {
-        log("SDL_GetWindowSurface failed: %s", SDL_GetError());
-        exit(-1);
-    }
-    log("PixelFormat: %d bits (%d bytes)", (int)windowSurface->format->BitsPerPixel, (int)windowSurface->format->BytesPerPixel);
-    log("Rmask: %08X", (int)windowSurface->format->Rmask);
-    log("Gmask: %08X", (int)windowSurface->format->Gmask);
-    log("Bmask: %08X", (int)windowSurface->format->Bmask);
-    log("Amask: %08X", (int)windowSurface->format->Amask);
-    if (4 != windowSurface->format->BytesPerPixel) {
-        log("unsupported pixel format (support only 4 bytes / pixel)");
-        exit(-1);
-    }
-    SDL_UpdateWindowSurface(window);
 
     log("Initializing keyboard map");
     std::map<int, MSXKeyCode*> keyMap;
@@ -554,28 +597,50 @@ int main(int argc, char* argv[])
 
         // render graphics
         auto msxDisplay = msx2.getDisplay();
-        auto pcDisplay = (unsigned int*)windowSurface->pixels;
-        auto pitch = windowSurface->pitch / windowSurface->format->BytesPerPixel;
-        for (int y = 0; y < 480; y += 2) {
-            for (int x = 0; x < 568; x++) {
-                unsigned int rgb555 = msxDisplay[x];
-                unsigned int rgb888 = 0xFF00;
-                rgb888 |= bit5To8((rgb555 & 0b0111110000000000) >> 10);
-                rgb888 <<= 8;
-                rgb888 |= bit5To8((rgb555 & 0b0000001111100000) >> 5);
-                rgb888 <<= 8;
-                rgb888 |= bit5To8(rgb555 & 0b0000000000011111);
-                pcDisplay[x + 36] = rgb888;
+        if (fullScreen) {
+            auto pcDisplay = (unsigned int*)frameBuffer;
+            pcDisplay += offsetY * frameWidth;
+            for (int y = 0; y < VRAM_HEIGHT; y += 2) {
+                for (int x = 0; x < VRAM_WIDTH; x++) {
+                    unsigned int rgb555 = msxDisplay[x];
+                    unsigned int rgb888 = 0;
+                    rgb888 |= bit5To8((rgb555 & 0b0111110000000000) >> 10);
+                    rgb888 <<= 8;
+                    rgb888 |= bit5To8((rgb555 & 0b0000001111100000) >> 5);
+                    rgb888 <<= 8;
+                    rgb888 |= bit5To8(rgb555 & 0b0000000000011111);
+                    rgb888 <<= 8;
+                    auto offset = offsetX + x;
+                    pcDisplay[offset] = rgb888;
+                    pcDisplay[offset + frameWidth] = rgb888;
+                }
+                msxDisplay += VRAM_WIDTH;
+                pcDisplay += frameWidth * 2;
             }
-            for (int x = 0; x < 36; x++) {
-                pcDisplay[x] = pcDisplay[36];
-                pcDisplay[604 + x] = pcDisplay[603];
+            SDL_UpdateTexture(texture, nullptr, frameBuffer, framePitch);
+            SDL_SetRenderTarget(renderer, nullptr);
+            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+            SDL_RenderPresent(renderer);
+        } else {
+            auto pcDisplay = (unsigned int*)windowSurface->pixels;
+            auto pitch = windowSurface->pitch / windowSurface->format->BytesPerPixel;
+            for (int y = 0; y < VRAM_HEIGHT; y += 2) {
+                for (int x = 0; x < VRAM_WIDTH; x++) {
+                    unsigned int rgb555 = msxDisplay[x];
+                    unsigned int rgb888 = 0xFF00;
+                    rgb888 |= bit5To8((rgb555 & 0b0111110000000000) >> 10);
+                    rgb888 <<= 8;
+                    rgb888 |= bit5To8((rgb555 & 0b0000001111100000) >> 5);
+                    rgb888 <<= 8;
+                    rgb888 |= bit5To8(rgb555 & 0b0000000000011111);
+                    pcDisplay[x] = rgb888;
+                }
+                msxDisplay += VRAM_WIDTH;
+                memcpy(&pcDisplay[pitch], &pcDisplay[0], VRAM_WIDTH * 4);
+                pcDisplay += pitch * 2;
             }
-            msxDisplay += 568;
-            memcpy(&pcDisplay[pitch], &pcDisplay[0], 640 * 4);
-            pcDisplay += pitch * 2;
+            SDL_UpdateWindowSurface(window);
         }
-        SDL_UpdateWindowSurface(window);
 
         // sync 60fps
         std::chrono::duration<double> diff = std::chrono::system_clock::now() - start;
@@ -595,6 +660,11 @@ int main(int argc, char* argv[])
 
     log("Terminating");
     SDL_CloseAudioDevice(audioDeviceId);
+    if (fullScreen) {
+        SDL_DestroyTexture(texture);
+        SDL_DestroyRenderer(renderer);
+        free(frameBuffer);
+    }
     SDL_DestroyWindow(window);
     SDL_Quit();
 #ifdef USE_CBIOS
