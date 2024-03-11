@@ -72,6 +72,11 @@ usage: app [/path/to/file.rom] ........... Use ROM
 
 > `-d` (ディスク) は C-BIOS ではできない点をご注意ください
 
+### About GPU Option
+
+- `-g` オプション（GPU 描画）はフルスクリーンモード (`-f`) の時にのみ有効です
+- ウィンドウモード（`-f` 未指定）の場合、常に Surface 描画（CPU 描画）になります
+
 ### Keyboard Assign
 
 キーボードの割当は Mac のキーボードを仮定しています。
