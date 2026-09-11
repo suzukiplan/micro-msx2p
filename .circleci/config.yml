@@ -5,7 +5,18 @@ jobs:
     docker:
       - image: cimg/base:stable
     steps:
-      - checkout
+      - run:
+          name: "Checkout over HTTPS"
+          command: |
+            set -eu
+            : "${CIRCLE_PROJECT_USERNAME:?CIRCLE_PROJECT_USERNAME is required}"
+            : "${CIRCLE_PROJECT_REPONAME:?CIRCLE_PROJECT_REPONAME is required}"
+            : "${CIRCLE_SHA1:?CIRCLE_SHA1 is required}"
+            # This public repository does not require a CircleCI SSH checkout key.
+            git init .
+            git remote add origin "https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git"
+            GIT_TERMINAL_PROMPT=0 git fetch origin "$CIRCLE_SHA1"
+            git checkout --detach FETCH_HEAD
       - run:
           name: "Update apt-get"
           command: "sudo apt-get update"
